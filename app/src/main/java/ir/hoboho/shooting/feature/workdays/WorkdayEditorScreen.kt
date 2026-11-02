@@ -183,6 +183,7 @@ fun WorkdayEditorScreen(
             ShootingButton(
                 text = stringResource(R.string.action_save),
                 onClick = viewModel::save,
+                enabled = !state.saving && !state.saved,
             )
         }
     }
