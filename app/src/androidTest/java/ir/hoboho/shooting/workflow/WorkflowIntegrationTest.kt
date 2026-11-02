@@ -199,6 +199,7 @@ class WorkflowIntegrationTest {
             ReportSpecBuilder.daily(detail, references().getAllCableTypes()),
             "daily-workflow.pdf",
         )
+        Unit
     }
 
     @Test
@@ -264,6 +265,7 @@ class WorkflowIntegrationTest {
             ExpenseReportRow(expense, settlements.filter { it.expenseId == expense.id })
         }
         render(ReportSpecBuilder.expenses(rows, range), "expenses-workflow.pdf")
+        Unit
     }
 
     @Test
@@ -341,5 +343,6 @@ class WorkflowIntegrationTest {
         }
         assertThat(tamperRejected).isTrue()
         assertThat(backups().counts().projects).isEqualTo(1)
+        Unit
     }
 }

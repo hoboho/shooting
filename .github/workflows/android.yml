@@ -159,19 +159,20 @@ jobs:
           profile: pixel_5
           disable-animations: true
           avd-name: shooting-api34
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
+          # Artifacts must be pulled before this action shuts the emulator down.
+          script: |
+            set +e
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            STATUS=$?
+            mkdir -p qa-pdf-samples
+            adb pull /sdcard/Android/data/ir.hoboho.shooting/files/qa qa-pdf-samples/ || true
+            find qa-pdf-samples -type f -printf '%p %s bytes\n' || true
+            exit $STATUS
 
       - name: Print instrumented test XML
         if: always()
         run: |
           find app/build/outputs/androidTest-results -name '*.xml' -print -exec cat {} \; || true
-
-      - name: Collect generated PDF samples
-        if: always()
-        run: |
-          mkdir -p qa-pdf-samples
-          adb pull /sdcard/Android/data/ir.hoboho.shooting/files/qa qa-pdf-samples/ || true
-          find qa-pdf-samples -type f -printf '%p %s bytes\n' || true
 
       - name: Upload PDF samples
         if: always()
