@@ -184,13 +184,16 @@ object BackupMapper {
         val projectUuids = payload.projects.map { it.uuid }.toSet()
         val workdayUuids = payload.workdays.map { it.uuid }.toSet()
         val expenseUuids = payload.expenses.map { it.uuid }.toSet()
+        val operationUuids = payload.operations.map { it.uuid }.toSet()
+        val settlementUuids = payload.settlements.map { it.uuid }.toSet()
         if (projectUuids.size != payload.projects.size) add("شناسه پروژه تکراری است")
         if (workdayUuids.size != payload.workdays.size) add("شناسه گزارش تکراری است")
         if (expenseUuids.size != payload.expenses.size) add("شناسه هزینه تکراری است")
+        if (operationUuids.size != payload.operations.size) add("شناسه عملیات تکراری است")
+        if (settlementUuids.size != payload.settlements.size) add("شناسه تسویه تکراری است")
         if (payload.projects.map { it.name }.toSet().size != payload.projects.size) add("نام پروژه در فایل پشتیبان تکراری است")
         if (payload.cableTypes.map { it.coreCount }.toSet().size != payload.cableTypes.size) add("تعداد کور کابل در فایل پشتیبان تکراری است")
         if (payload.categories.map { it.name }.toSet().size != payload.categories.size) add("نام دسته هزینه در فایل پشتیبان تکراری است")
-        val projectUuidByWorkday = payload.workdays.associate { it.uuid to it.projectUuid }
         val workdayKeys = payload.workdays.map { "${it.projectUuid}:${it.dateEpochDay}" }
         if (workdayKeys.toSet().size != workdayKeys.size) add("برای یک پروژه و تاریخ، بیش از یک گزارش در فایل وجود دارد")
         payload.workdays.filter { it.projectUuid !in projectUuids }.forEach { add("گزارش بدون پروژه: ${it.uuid}") }
