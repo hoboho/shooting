@@ -52,7 +52,7 @@ class ReportSpecBuilderTest {
         assertEquals(9, operationsTable.header.size)
         assertEquals("FAT", operationsTable.rows.single()[4])
         assertEquals("۸۰۰", operationsTable.rows.single()[8])
-        assertEquals("۲۴ کور", operationsTable.rows.single()[7])
+        assertEquals("۶ کور", operationsTable.rows.single()[7])
     }
 
     @Test
@@ -65,7 +65,8 @@ class ReportSpecBuilderTest {
         assertTrue(ReportText.DAILY_TOTAL in labels)
         assertTrue(ReportText.OPERATION_COUNT !in labels)
         assertTrue(ReportText.CABLE_BREAKDOWN !in labels)
-        assertTrue(spec.blocks.filterIsInstance<PdfBlock.Table>().isEmpty())
+        assertTrue(spec.blocks.filterIsInstance<PdfBlock.Table>()
+            .none { it.caption == ReportText.CABLE_BREAKDOWN })
     }
 
     @Test

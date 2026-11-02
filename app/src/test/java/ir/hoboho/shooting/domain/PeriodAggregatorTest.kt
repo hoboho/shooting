@@ -80,7 +80,7 @@ class PeriodAggregatorTest {
         )
         val days = listOf(
             workday(1L, 10L, "پروژه الف", 20_001L, 300, listOf(op(1L, 100), op(1L, 200))),
-            workday(2L, 10L, "پروژه الف", 20_002L, 500, listOf(op(3L, 500))),
+            workday(2L, 10L, "پروژه الف", 20_002L, 500, listOf(op(4L, 500))),
         )
         val range = DateRange(20_001L, 20_002L)
         val report = PeriodAggregator.build(

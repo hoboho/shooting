@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -43,6 +44,7 @@ class PublicDownloadSaver @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun saveWithMediaStore(file: File, name: String, mimeType: String): SavedFile {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
