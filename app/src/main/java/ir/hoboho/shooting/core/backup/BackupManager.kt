@@ -65,7 +65,32 @@ class BackupManager @Inject constructor(
     /** Validates and previews a file without writing a single row. */
     suspend fun inspect(text: String, strategy: RestoreStrategy): BackupInspection {
         val payload = requirePayload(text)
-        val warnings = BackupMapper.validate(payload)
+        val warnings = BackupMapper.validate(payload).toMutableList()
+        if (strategy != RestoreStrategy.REPLACE && warnings.isEmpty()) {
+            val incoming = BackupMapper.toData(payload)
+            val existing = repository.snapshot()
+            val projectUuidByIncomingId = incoming.projects.associate { it.id to it.uuid }
+            val existingProjectsByName = existing.projects.associateBy { it.name }
+            incoming.projects.forEach { project ->
+                val nameOwner = existingProjectsByName[project.name]
+                if (nameOwner != null && nameOwner.uuid != project.uuid) {
+                    warnings += "نام پروژه «${project.name}» در اطلاعات فعلی متعلق به شناسه دیگری است"
+                }
+            }
+            val existingProjectUuidById = existing.projects.associate { it.id to it.uuid }
+            val existingWorkdayKeys = existing.workdays.mapNotNull { day ->
+                val projectUuid = existingProjectUuidById[day.projectId] ?: return@mapNotNull null
+                "${projectUuid}:${day.dateEpochDay}" to day.uuid
+            }.toMap()
+            incoming.workdays.forEach { day ->
+                val projectUuid = projectUuidByIncomingId[day.projectId] ?: return@forEach
+                val key = "${projectUuid}:${day.dateEpochDay}"
+                val ownerUuid = existingWorkdayKeys[key]
+                if (ownerUuid != null && ownerUuid != day.uuid) {
+                    warnings += "برای این پروژه در تاریخ گزارش «${day.dateEpochDay}» گزارش دیگری ثبت شده است"
+                }
+            }
+        }
         val preview = RestorePreview(
             formatVersion = payload.formatVersion,
             appVersionName = payload.appVersionName,
@@ -74,9 +99,9 @@ class BackupManager @Inject constructor(
             existing = repository.counts(),
             strategy = strategy,
             formatSupported = payload.formatVersion == BackupCodec.FORMAT_VERSION,
-            warnings = warnings,
+            warnings = warnings.distinct(),
         )
-        return BackupInspection(preview, warnings)
+        return BackupInspection(preview, warnings.distinct())
     }
 
     suspend fun restore(text: String, strategy: RestoreStrategy): RestoreOutcome {
