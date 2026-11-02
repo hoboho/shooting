@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- The app is Persian-only and pins layout direction to RTL in code. -->
+    <issue id="RtlHardcoded" severity="warning" />
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="UnusedResources" severity="warning" />
+</lint>
