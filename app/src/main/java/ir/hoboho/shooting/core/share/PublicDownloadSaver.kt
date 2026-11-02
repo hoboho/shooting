@@ -58,13 +58,20 @@ class PublicDownloadSaver @Inject constructor(
         }
         val uri: Uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
             ?: throw IllegalStateException("Could not create Downloads entry")
-        resolver.openOutputStream(uri)?.use { output ->
-            file.inputStream().use { input -> input.copyTo(output) }
-        } ?: throw IllegalStateException("Could not open Downloads output")
-        values.clear()
-        values.put(MediaStore.Downloads.IS_PENDING, 0)
-        resolver.update(uri, values, null, null)
-        return SavedFile("${Environment.DIRECTORY_DOWNLOADS}/Shooting/$name")
+        try {
+            resolver.openOutputStream(uri)?.use { output ->
+                file.inputStream().use { input -> input.copyTo(output) }
+            } ?: throw IllegalStateException("Could not open Downloads output")
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            val published = resolver.update(uri, values, null, null)
+            if (published <= 0) throw IllegalStateException("Could not publish Downloads entry")
+            return SavedFile("${Environment.DIRECTORY_DOWNLOADS}/Shooting/$name")
+        } catch (failure: Throwable) {
+            // Remove the pending/partial row so failed exports never leave broken files.
+            runCatching { resolver.delete(uri, null, null) }
+            throw failure
+        }
     }
 
     @Suppress("DEPRECATION")
