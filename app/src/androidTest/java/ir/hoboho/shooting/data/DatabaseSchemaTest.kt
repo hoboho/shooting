@@ -38,7 +38,11 @@ class DatabaseSchemaTest {
     private fun sqlite() = db.openHelper.writableDatabase
 
     private fun tableNames(): Set<String> {
-        val cursor = sqlite().query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'room_%'")
+        val cursor = sqlite().query(
+            "SELECT name FROM sqlite_master WHERE type='table' " +
+                "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'room_%' " +
+                "AND name != 'android_metadata'",
+        )
         return cursor.use {
             val names = LinkedHashSet<String>()
             val index = it.getColumnIndexOrThrow("name")
@@ -80,15 +84,18 @@ class DatabaseSchemaTest {
     @Test
     fun uniqueIndex_preventsAccidentalDuplicateProjectDate() {
         sqlite().execSQL(
-            "INSERT INTO projects (uuid, name) VALUES ('p1', 'پروژه')",
+            "INSERT INTO projects (uuid, name, workArea, employer, supervisor, description, " +
+                "active, createdAt, updatedAt) VALUES ('p1', 'پروژه', '', '', '', '', 1, 0, 0)",
         )
+        val workdayValues = "(uuid, projectId, dateEpochDay, workArea, employer, supervisor, " +
+            "workerCount, notes, totalLengthMeters, createdAt, updatedAt) VALUES "
         sqlite().execSQL(
-            "INSERT INTO workdays (uuid, projectId, dateEpochDay) VALUES ('w1', 1, 20000)",
+            "INSERT INTO workdays $workdayValues ('w1', 1, 20000, '', '', '', 0, '', 0, 0, 0)",
         )
         var rejected = false
         try {
             sqlite().execSQL(
-                "INSERT INTO workdays (uuid, projectId, dateEpochDay) VALUES ('w2', 1, 20000)",
+                "INSERT INTO workdays $workdayValues ('w2', 1, 20000, '', '', '', 0, '', 0, 0, 0)",
             )
         } catch (e: SQLiteConstraintException) {
             rejected = true
@@ -99,12 +106,16 @@ class DatabaseSchemaTest {
     @Test
     fun foreignKeys_areEnforced() {
         sqlite().execSQL("PRAGMA foreign_keys=ON")
+        // A valid cable type exists, so the only violated FK is workdayId.
+        sqlite().execSQL(
+            "INSERT INTO cable_types (coreCount, label, active, sortOrder) VALUES (24, '۲۴ کور', 1, 0)",
+        )
         var rejected = false
         try {
             sqlite().execSQL(
                 "INSERT INTO operations (uuid, workdayId, startType, startCode, startMeter, " +
-                    "endType, endCode, endMeter, cableTypeId, lengthMeters) " +
-                    "VALUES ('o1', 999, 'ODC', 'A', 0, 'FAT', 'B', 10, 1, 10)",
+                    "endType, endCode, endMeter, cableTypeId, lengthMeters, createdAt, updatedAt) " +
+                    "VALUES ('o1', 999, 'ODC', 'A', 0, 'FAT', 'B', 10, 1, 10, 0, 0)",
             )
         } catch (e: SQLiteConstraintException) {
             rejected = true

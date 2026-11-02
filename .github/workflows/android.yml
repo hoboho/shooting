@@ -161,10 +161,17 @@ jobs:
           avd-name: shooting-api34
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
 
+      - name: Print instrumented test XML
+        if: always()
+        run: |
+          find app/build/outputs/androidTest-results -name '*.xml' -print -exec cat {} \; || true
+
       - name: Upload instrumented test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: instrumented-test-report
-          path: app/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
           if-no-files-found: ignore
