@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="shooting_background">#F7F9F7</color>
+    <color name="shooting_background_dark">#101614</color>
+    <color name="ic_launcher_background">#176B5B</color>
+</resources>

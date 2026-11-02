@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A stylised fibre run entering a cable reel: two parallel lines and a reel. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,49 L60,49 L60,46 L84,54 L60,62 L60,59 L24,59 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,70 A14,14 0 1,1 58,70 A14,14 0 1,1 30,70 Z M38,70 A6,6 0 1,0 50,70 A6,6 0 1,0 38,70 Z" />
+</vector>
