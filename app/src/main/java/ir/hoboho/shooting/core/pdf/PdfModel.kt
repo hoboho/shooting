@@ -52,7 +52,7 @@ data class PdfDocumentSpec(
     val subtitle: String? = null,
     val headerLines: List<String> = emptyList(),
     val blocks: List<PdfBlock>,
-    val footerText: String = "تهیهشده با شوتینگ",
+    val footerText: String = "تهیه شده با شوتینگ",
     val pageNumbers: Boolean = true,
     val documentLanguageTag: String = "fa",
 )

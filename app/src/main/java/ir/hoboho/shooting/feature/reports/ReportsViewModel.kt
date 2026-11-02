@@ -3,12 +3,15 @@ package ir.hoboho.shooting.feature.reports
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.date.DateRange
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.share.FileSharer
+import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.core.share.ReportFileWriter
 import ir.hoboho.shooting.domain.PeriodAggregator
+import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.PeriodReport
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 enum class ReportTab { DAILY, PERIOD, EXPENSES }
@@ -36,6 +40,7 @@ data class ReportsUiState(
     val projects: List<Project> = emptyList(),
     val workdays: List<Workday> = emptyList(),
     val selectedWorkdayId: Long? = null,
+    val cableTypes: List<CableType> = emptyList(),
     val periodReport: PeriodReport = PeriodReport(
         range = DateRange.thisMonth(), projectFilter = null, projectFilterName = null,
         workdayCount = 0, totalLengthMeters = 0, dailyBreakdown = emptyList(),
@@ -54,6 +59,7 @@ class ReportsViewModel @Inject constructor(
     private val referenceRepository: ReferenceRepository,
     private val writer: ReportFileWriter,
     private val sharer: FileSharer,
+    private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
 
@@ -71,7 +77,13 @@ class ReportsViewModel @Inject constructor(
                 workdayRepository.observeWorkdays(),
                 expenseRepository.observeExpenses(),
                 expenseRepository.observeAllSettlements(),
-                combine(tab, range, projectFilter, selectedWorkdayId) { t, r, p, s -> ReportsInputs(t, r, p, s) },
+                combine(
+                    tab,
+                    range,
+                    projectFilter,
+                    selectedWorkdayId,
+                    referenceRepository.observeCableTypes(),
+                ) { t, r, p, s, cables -> ReportsInputs(t, r, p, s, cables) },
             ) { projects, workdays, expenses, settlements, inputs ->
                 val filteredWorkdays = PeriodAggregator.filterWorkdays(workdays, inputs.range, inputs.projectId)
                 val filteredExpenses = PeriodAggregator.filterExpenses(expenses, inputs.range, inputs.projectId)
@@ -85,12 +97,14 @@ class ReportsViewModel @Inject constructor(
                     projects = projects,
                     workdays = filteredWorkdays,
                     selectedWorkdayId = chosenId,
+                    cableTypes = inputs.cableTypes,
                     periodReport = PeriodAggregator.build(
                         range = inputs.range,
                         projectFilter = inputs.projectId,
                         projectFilterName = projectName,
                         workdays = workdays,
                         expenses = expenses,
+                        cableTypes = inputs.cableTypes,
                     ),
                     expenseRows = filteredExpenses.map { expense ->
                         ExpenseReportRow(expense, settlementsByExpense[expense.id].orEmpty())
@@ -105,7 +119,7 @@ class ReportsViewModel @Inject constructor(
     fun setTab(value: ReportTab) { tab.value = value }
     fun setRange(start: Long, end: Long) {
         if (end < start) {
-            showMessage(strings.get(ir.hoboho.shooting.R.string.msg_invalid_range))
+            showMessage(strings.get(R.string.msg_invalid_range))
             return
         }
         range.value = DateRange(start, end)
@@ -115,7 +129,7 @@ class ReportsViewModel @Inject constructor(
 
     fun exportDailyPdf() {
         val id = _state.value.selectedWorkdayId ?: run {
-            showMessage(strings.get(ir.hoboho.shooting.R.string.msg_no_data_for_pdf)); return
+            showMessage(strings.get(R.string.msg_no_data_for_pdf)); return
         }
         viewModelScope.launch {
             try {
@@ -125,10 +139,11 @@ class ReportsViewModel @Inject constructor(
                 val spec = ReportSpecBuilder.daily(workday, cables)
                 val name = "daily-${DateFormatter.format(workday.dateEpochDay, false).replace('/', '-')}-${workday.id}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
+                val saved = persistPdf(file, name)
                 sharer.sharePdf(file)
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved))
+                showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_failed))
+                showMessage(strings.get(R.string.msg_pdf_failed))
             }
         }
     }
@@ -136,17 +151,18 @@ class ReportsViewModel @Inject constructor(
     fun exportPeriodPdf() {
         val report = _state.value.periodReport
         if (report.workdayCount == 0 && report.expenseCount == 0) {
-            showMessage(strings.get(ir.hoboho.shooting.R.string.msg_no_data_for_pdf)); return
+            showMessage(strings.get(R.string.msg_no_data_for_pdf)); return
         }
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.period(report)
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
+                val saved = persistPdf(file, name)
                 sharer.sharePdf(file)
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved))
+                showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_failed))
+                showMessage(strings.get(R.string.msg_pdf_failed))
             }
         }
     }
@@ -154,22 +170,32 @@ class ReportsViewModel @Inject constructor(
     fun exportExpensesPdf() {
         val rows = _state.value.expenseRows
         if (rows.isEmpty()) {
-            showMessage(strings.get(ir.hoboho.shooting.R.string.msg_no_data_for_pdf)); return
+            showMessage(strings.get(R.string.msg_no_data_for_pdf)); return
         }
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.expenses(rows, _state.value.range)
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
+                val saved = persistPdf(file, name)
                 sharer.sharePdf(file)
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved))
+                showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
-                showMessage(strings.get(ir.hoboho.shooting.R.string.msg_pdf_failed))
+                showMessage(strings.get(R.string.msg_pdf_failed))
             }
         }
     }
 
     fun consumeMessage() { _state.value = _state.value.copy(message = null) }
+
+    private suspend fun persistPdf(file: File, name: String): PublicDownloadSaver.SavedFile? =
+        withContext(Dispatchers.IO) {
+            runCatching { saver.savePdf(file, name) }.getOrNull()
+        }
+
+    private fun pdfSavedMessage(saved: PublicDownloadSaver.SavedFile?): String =
+        saved?.let { strings.get(R.string.msg_pdf_saved, it.displayPath) }
+            ?: strings.get(R.string.msg_save_failed)
 
     private fun showMessage(text: String) { _state.value = _state.value.copy(message = text) }
 
@@ -178,5 +204,6 @@ class ReportsViewModel @Inject constructor(
         val range: DateRange,
         val projectId: Long?,
         val selectedId: Long?,
+        val cableTypes: List<CableType>,
     )
 }

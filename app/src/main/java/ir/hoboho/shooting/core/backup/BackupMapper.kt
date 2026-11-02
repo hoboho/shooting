@@ -179,7 +179,7 @@ object BackupMapper {
     /** Structural + business validation performed before any write. */
     fun validate(payload: BackupPayload): List<String> = buildList {
         if (payload.formatVersion != BackupCodec.FORMAT_VERSION) {
-            add("نسخه قالب پشتیبانی نمیشود: ${payload.formatVersion}")
+            add("نسخه قالب پشتیبانی نمی شود: ${payload.formatVersion}")
         }
         val projectUuids = payload.projects.map { it.uuid }.toSet()
         val workdayUuids = payload.workdays.map { it.uuid }.toSet()
@@ -205,11 +205,11 @@ object BackupMapper {
             if (op.startMeter < 0 || op.endMeter < 0) {
                 add("کنتور نامعتبر: ${op.uuid}")
             } else if (op.lengthMeters != ShootingCalculator.lengthMeters(op.startMeter, op.endMeter)) {
-                add("طول ذخیرهشده عملیات ناسازگار است: ${op.uuid}")
+                add("طول ذخیره شده عملیات ناسازگار است: ${op.uuid}")
             }
         }
         if (!Validator.expensesAreConsistent(toExpenseShapesOrEmpty(payload))) {
-            add("دادههای هزینه ناسازگار است")
+            add("داده های هزینه ناسازگار است")
         }
     }
 

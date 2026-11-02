@@ -14,6 +14,9 @@ concurrency:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
 
+permissions:
+  contents: read
+
 jobs:
   # --------------------------------------------------------------- fast gate
   # Runs without an Android SDK; catches resource/import/navigation mistakes.
@@ -34,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     needs: static
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -106,6 +111,30 @@ jobs:
           name: shooting-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # Manual dispatch or a [publish-apk] push publishes a stable, directly
+      # downloadable .apk URL. This is a debug-signed build, not a release.
+      - name: Publish debug APK as a prerelease asset
+        if: >-
+          success() && (
+            github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'push' &&
+             contains(github.event.head_commit.message, '[publish-apk]'))
+          )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=debug-latest
+          ASSET=Shooting-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk "$ASSET"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" --clobber
+          else
+            gh release create "$TAG" "$ASSET" \
+              --prerelease \
+              --title "Shooting debug APK" \
+              --notes "Automated debug build from ${GITHUB_SHA}. Debug-signed, not a production release."
+          fi
 
   # ------------------------------------------------------------ on-device DB
   # Room/SQLite tests cannot run on a plain JVM. Kept separate so a flaky AVD
@@ -188,3 +217,49 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore
+
+  # ------------------------------------------------ permanent download links
+  # Manual dispatch or a [publish-apk] push refreshes both stable assets:
+  # the APK and a ZIP holding every artifact of the same CI run.
+  bundle:
+    name: Publish download bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [ unit, instrumented ]
+    if: >-
+      success() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' &&
+         contains(github.event.head_commit.message, '[publish-apk]'))
+      )
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download all CI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bundle
+
+      - name: Create ZIP bundle
+        env:
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_RUN: ${{ github.run_id }}
+        run: |
+          {
+            echo "Shooting debug bundle"
+            echo "commit: $BUILD_SHA"
+            echo "workflow run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/$BUILD_RUN"
+            echo "generated (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "Debug-signed CI build; not a production release."
+          } > bundle/BUILD-INFO.txt
+          cd bundle
+          zip -r ../Shooting-latest.zip .
+
+      - name: Publish ZIP as a prerelease asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job does not check out the repository, so gh cannot infer it
+          # from a git remote; specify it explicitly.
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload debug-latest Shooting-latest.zip --clobber

@@ -4,4 +4,6 @@
     <issue id="RtlHardcoded" severity="warning" />
     <issue id="MissingTranslation" severity="ignore" />
     <issue id="UnusedResources" severity="warning" />
+    <!-- Legacy public Downloads writes are explicitly limited to API 28. -->
+    <issue id="ScopedStorage" severity="warning" />
 </lint>

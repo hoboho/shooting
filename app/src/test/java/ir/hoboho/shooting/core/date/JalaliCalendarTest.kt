@@ -68,7 +68,7 @@ class JalaliCalendarTest {
     fun weekdayAndMonthBoundaries() {
         // 1970-01-01 was a Thursday, index 5 in a Saturday-first Persian week.
         assertEquals(5, JalaliCalendar.dayOfWeek(0L))
-        assertEquals("پنجشنبه", JalaliCalendar.weekdayName(0L))
+        assertEquals("پنج شنبه", JalaliCalendar.weekdayName(0L))
         val today = epoch(2026, 11, 2)
         assertEquals(JalaliCalendar.toEpochDay(JalaliDate(1405, 8, 1)), JalaliCalendar.firstDayOfMonth(today))
         assertEquals(JalaliCalendar.toEpochDay(JalaliDate(1405, 8, 30)), JalaliCalendar.lastDayOfMonth(today))

@@ -1,9 +1,9 @@
 # بررسی کامپایل آفلاین Kotlin
 
 `run.sh` چهلودو فایل `core/`, `domain/`, `data/` و `di/` را با `kotlinc` واقعی،
-کتابخانهٔ واقعی `kotlinx-coroutines-core` و **استابهای کوچک** APIهای
-Android/Room/Hilt/Dagger کامپایل میکند. هدف، گرفتن خطاهای نحوی، نوعی،
-`suspend` و ارجاعهای حلنشده در لایهٔ داده/منطق در محیطی است که Gradle و Maven
+کتابخانهٔ واقعی `kotlinx-coroutines-core` و **استاب های کوچک** APIهای
+Android/Room/Hilt/Dagger کامپایل می کند. هدف، گرفتن خطا های نحوی، نوعی،
+`suspend` و ارجاع های حلنشده در لایهٔ داده/منطق در محیطی است که Gradle و Maven
 در دسترس نیستند.
 
 ```bash
@@ -13,11 +13,11 @@ COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar \
 ```
 
 اگر `COROUTINES_JAR` تنظیم نشود، اسکریپت آن را در `$KOTLIN_HOME/lib` یا کنار
-`kotlinc` جستجو میکند. `R.kt` بهصورت پویا از `res/values/strings.xml` ساخته
-میشود تا با منابع هماهنگ بماند.
+`kotlinc` جستجو می کند. `R.kt` بهصورت پویا از `res/values/strings.xml` ساخته
+می شود تا با منابع هماهنگ بماند.
 
-**محدودیتها (مهم):** استابها فقط امضای تقریبی APIها هستند؛ این بررسی جایگزین
+**محدودیت ها (مهم):** استاب ها فقط امضای تقریبی APIها هستند؛ این بررسی جایگزین
 کامپایل اندروید، پردازش انوتیشن Room/KSP/Hilt، تولید `R` واقعی، لینت، ساخت APK
 یا کامپایل صفحات Compose نیست. همچنین `app/src/main/java/.../ui` و `feature`
-در آن شرکت نمیکنند؛ آنها توسط `scripts/check_sources.py` و در نهایت
-`./gradlew :app:assembleDebug` بررسی میشوند.
+در آن شرکت نمی کنند؛ آن ها توسط `scripts/check_sources.py` و در نهایت
+`./gradlew :app:assembleDebug` بررسی می شوند.

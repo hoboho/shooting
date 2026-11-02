@@ -288,6 +288,7 @@ class WorkflowIntegrationTest {
             range = range,
             workdays = allWorkdays,
             expenses = allExpenses,
+            cableTypes = references().getAllCableTypes(),
         )
         assertThat(report.totalLengthMeters).isEqualTo(300)
         assertThat(report.totalExpensesToman).isEqualTo(1_000L)

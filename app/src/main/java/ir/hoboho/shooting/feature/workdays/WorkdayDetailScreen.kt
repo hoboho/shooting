@@ -39,6 +39,7 @@ import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.StatRow
+import ir.hoboho.shooting.ui.components.rememberFileSaveAction
 
 @Composable
 fun WorkdayDetailScreen(
@@ -50,6 +51,7 @@ fun WorkdayDetailScreen(
     val workday by viewModel.workday.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val exportPdf = rememberFileSaveAction(viewModel::exportPdf)
 
     LaunchedEffect(workdayId) { viewModel.load(workdayId) }
     LaunchedEffect(message) {
@@ -144,7 +146,7 @@ fun WorkdayDetailScreen(
                     )
                     ShootingButton(
                         text = stringResource(R.string.action_export_pdf),
-                        onClick = viewModel::exportPdf,
+                        onClick = exportPdf,
                         icon = Icons.Filled.PictureAsPdf,
                         level = ButtonLevel.Secondary,
                         fullWidth = false,

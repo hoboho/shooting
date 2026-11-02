@@ -16,6 +16,15 @@ data class ProjectLengthRow(
     val workdayCount: Int,
 )
 
+/** Length aggregated by the extensible cable-type (core-count) reference row. */
+data class CableLengthRow(
+    val cableTypeId: Long,
+    val label: String,
+    val coreCount: Int,
+    val totalLengthMeters: Int,
+    val operationCount: Int,
+)
+
 /**
  * A period report keeps lengths (meters) and money (Toman) in separate fields:
  * they are different quantities and are never summed into a combined total.
@@ -28,6 +37,7 @@ data class PeriodReport(
     val totalLengthMeters: Int,
     val dailyBreakdown: List<DailyLengthRow>,
     val projectBreakdown: List<ProjectLengthRow>,
+    val cableBreakdown: List<CableLengthRow> = emptyList(),
     val expenseCount: Int,
     val totalExpensesToman: Long,
     val settledToman: Long,

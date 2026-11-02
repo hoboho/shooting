@@ -118,6 +118,7 @@ fun ShootingTextField(
     readOnly: Boolean = false,
     singleLine: Boolean = true,
     minLines: Int = 1,
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     OutlinedTextField(
         value = value,
@@ -132,7 +133,7 @@ fun ShootingTextField(
         readOnly = readOnly,
         singleLine = singleLine,
         minLines = minLines,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = MaterialTheme.shapes.medium,
         colors = fieldColors,
         modifier = modifier.fillMaxWidth(),

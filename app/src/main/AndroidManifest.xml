@@ -8,6 +8,11 @@
         device is the explicit, versioned, user-initiated in-app export.
     -->
 
+    <!-- Legacy public Downloads writes only; Android 10+ uses MediaStore. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <application
         android:name=".ShootingApplication"
         android:allowBackup="false"

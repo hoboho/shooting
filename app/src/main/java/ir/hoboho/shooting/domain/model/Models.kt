@@ -145,7 +145,13 @@ data class AppSettings(
 
 /** Seed values for the two manageable reference tables. */
 object ReferenceData {
-    val DEFAULT_CABLE_CORES: List<Int> = listOf(6, 12, 24, 48, 96, 144)
+    /**
+     * Standard fiber counts used by cable manufacturers and ANSI/TIA-568:
+     * small counts (2/4/6), 12-fibre increments up to 144, and 288 for
+     * high-density backbone cables. Extra counts remain ordinary rows.
+     */
+    val DEFAULT_CABLE_CORES: List<Int> =
+        listOf(2, 4, 6, 12, 24, 36, 48, 72, 96, 144, 288)
 
     val DEFAULT_EXPENSE_CATEGORIES: List<String> = listOf(
         "سوخت خودرو",
@@ -154,7 +160,7 @@ object ReferenceData {
         "مخارج دستگاه",
         "اقلام مصرفی",
         "خورد و خوراک",
-        "هزینههای بدون فاکتور",
+        "هزینه های بدون فاکتور",
     )
 
     /** "۲۴ کور" */
