@@ -11,6 +11,22 @@
 - بدون حساب کاربری، بدون احراز هویت، بدون سرور/فضای ابری، بدون آنالیتیکس، بدون
  مجوز `INTERNET`. پایگاه دادهٔ Room روی خود دستگاه تن ها منبع حقیقت است.
 
+## دانلود آخرین ساخت
+
+لینک های زیر پایدار اند و با هر ساخت تازهٔ CI بهروز می شوند. این فایل ها
+**ساخت دیباگ** اند، نه نسخهٔ امضا شدهٔ انتشار:
+
+| فایل | لینک مستقیم |
+| --- | --- |
+| APK دیباگ | [Shooting-debug.apk](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk) |
+| بستهٔ کامل ZIP (APK، گزارش های آزمون/لینت، اسکیمای Room، نمونه های PDF) | [Shooting-latest.zip](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-latest.zip) |
+
+برگهٔ [پیش انتشار debug-latest](https://github.com/hoboho/shooting/releases/tag/debug-latest)
+و [اجرا های GitHub Actions](https://github.com/hoboho/shooting/actions) نیز در دسترس اند.
+انتشار این دو فایل با کامیت حاوی `[publish-apk]` یا اجرای دستی گردشکار انجام
+می شود؛ داخل فایل ZIP، پروندهٔ `BUILD-INFO.txt` کامیت و اجرای مربوطه را مشخص
+می کند.
+
 ## قابلیت ها
 
 | بخش | توضیح |

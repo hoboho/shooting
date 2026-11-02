@@ -46,6 +46,19 @@ chmod +x gradlew                              # در صورت نیاز
 بهصورت artifact `room-schema` موجود است. پیش از نخستین تغییر اسکیما، همان فایل
 تولیدشده را کامیت کنید تا مبنای `MigrationTestHelper` باشد.
 
+## لینک های دانلود پایدار
+
+گردشکار CI در اجرای دستی یا هنگام کامیتی با برچسب `[publish-apk]` دو فایل
+پیش انتشار `debug-latest` را بهروز می کند:
+
+* APK: <https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk>
+* ZIP کامل همان اجرا (همهٔ artifact ها به همراه `BUILD-INFO.txt`):
+  <https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-latest.zip>
+
+برگهٔ پیش انتشار: <https://github.com/hoboho/shooting/releases/tag/debug-latest>.
+هر دو ساخت دیباگ اند و برای نصب آزمایشی اند؛ نسخهٔ انتشار امضا شده محسوب
+نمی شوند.
+
 ## نسخهٔ ریلیز
 
 ```bash
