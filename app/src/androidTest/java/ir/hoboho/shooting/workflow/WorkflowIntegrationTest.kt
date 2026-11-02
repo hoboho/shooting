@@ -70,6 +70,7 @@ class WorkflowIntegrationTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         File(context.filesDir, "backups").deleteRecursively()
+        File(context.filesDir, "qa").deleteRecursively()
         db = Room.inMemoryDatabaseBuilder(context, ShootingDatabase::class.java)
             .addCallback(SeedCallback)
             .allowMainThreadQueries()
@@ -100,8 +101,8 @@ class WorkflowIntegrationTest {
 
     private fun manager() = BackupManager(context, backups(), settings(), clock)
 
-    private fun outputDir(): File =
-        (context.getExternalFilesDir("qa") ?: File(context.cacheDir, "qa")).apply { mkdirs() }
+    /** App-private but reachable from CI via `run-as`; no storage permission needed. */
+    private fun outputDir(): File = File(context.filesDir, "qa").apply { mkdirs() }
 
     private fun operation(cableId: Long, start: Int, end: Int) = ShootingOperation(
         startType = PointType.ODC,
