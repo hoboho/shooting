@@ -46,6 +46,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.FileInputStream
 
 /**
  * End-to-end on-device verification of the workflows the brief calls out:
@@ -138,6 +139,9 @@ class WorkflowIntegrationTest {
             val output = InstrumentationRegistry.getInstrumentation()
                 .uiAutomation
                 .executeShellCommand(command)
+            // Draining the pipe waits for the shell command to actually finish;
+            // simply closing it can kill the command before the copy completes.
+            FileInputStream(output.fileDescriptor).use { stream -> stream.readBytes() }
             output.close()
         }
     }
