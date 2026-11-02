@@ -43,7 +43,7 @@ class BackupRepositoryImpl @Inject constructor(
     private val settingDao: AppSettingDao,
 ) : BackupRepository {
 
-    override suspend fun snapshot(): BackupData {
+    override suspend fun snapshot(): BackupData = db.withTransaction {
         val projects = projectDao.getAll().map { it.toDomain() }
         val projectNames = projects.associate { it.id to it.name }
         val categories = categoryDao.getAll().map { it.toDomain() }
@@ -76,7 +76,7 @@ class BackupRepositoryImpl @Inject constructor(
                 createdAt = entity.createdAt, updatedAt = entity.updatedAt,
             )
         }
-        return BackupData(
+        BackupData(
             settings = settingDao.getAll().toDomain(),
             projects = projects,
             workdays = workdays,
