@@ -30,30 +30,43 @@ class PublicDownloadSaver @Inject constructor(
     data class SavedFile(val displayPath: String)
 
     fun savePdf(file: File, displayName: String): SavedFile =
-        save(file, displayName, "application/pdf")
+        save(file, displayName, "application/pdf", "reports")
 
     fun saveBackup(file: File, displayName: String): SavedFile =
         save(file, displayName, "application/octet-stream")
 
-    fun save(file: File, displayName: String, mimeType: String): SavedFile {
+    fun save(file: File, displayName: String, mimeType: String): SavedFile =
+        save(file, displayName, mimeType, "")
+
+    private fun save(
+        file: File,
+        displayName: String,
+        mimeType: String,
+        subdirectory: String,
+    ): SavedFile {
         val name = uniqueName(displayName)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveWithMediaStore(file, name, mimeType)
+            saveWithMediaStore(file, name, mimeType, subdirectory)
         } else {
-            saveLegacy(file, name)
+            saveLegacy(file, name, subdirectory)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun saveWithMediaStore(file: File, name: String, mimeType: String): SavedFile {
+    private fun saveWithMediaStore(
+        file: File,
+        name: String,
+        mimeType: String,
+        subdirectory: String,
+    ): SavedFile {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, name)
             put(MediaStore.Downloads.MIME_TYPE, mimeType)
-            put(
-                MediaStore.Downloads.RELATIVE_PATH,
-                "${Environment.DIRECTORY_DOWNLOADS}/Shooting",
-            )
+            val relativePath = listOf(Environment.DIRECTORY_DOWNLOADS, "Shooting", subdirectory)
+                .filter { it.isNotBlank() }
+                .joinToString("/")
+            put(MediaStore.Downloads.RELATIVE_PATH, relativePath)
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
         val uri: Uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
@@ -66,7 +79,10 @@ class PublicDownloadSaver @Inject constructor(
             values.put(MediaStore.Downloads.IS_PENDING, 0)
             val published = resolver.update(uri, values, null, null)
             if (published <= 0) throw IllegalStateException("Could not publish Downloads entry")
-            return SavedFile("${Environment.DIRECTORY_DOWNLOADS}/Shooting/$name")
+            val displayPath = listOf(Environment.DIRECTORY_DOWNLOADS, "Shooting", subdirectory, name)
+                .filter { it.isNotBlank() }
+                .joinToString("/")
+            return SavedFile(displayPath)
         } catch (failure: Throwable) {
             // Remove the pending/partial row so failed exports never leave broken files.
             runCatching { resolver.delete(uri, null, null) }
@@ -75,7 +91,7 @@ class PublicDownloadSaver @Inject constructor(
     }
 
     @Suppress("DEPRECATION")
-    private fun saveLegacy(file: File, name: String): SavedFile {
+    private fun saveLegacy(file: File, name: String, subdirectory: String): SavedFile {
         val granted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -85,11 +101,15 @@ class PublicDownloadSaver @Inject constructor(
         } else {
             context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
         }
-        val dir = File(base, "Shooting").apply { mkdirs() }
+        val shootingDir = File(base, "Shooting")
+        val dir = if (subdirectory.isBlank()) shootingDir else File(shootingDir, subdirectory)
+        dir.mkdirs()
         val target = File(dir, name)
         file.copyTo(target, overwrite = true)
         val display = if (granted) {
-            "${Environment.DIRECTORY_DOWNLOADS}/Shooting/$name"
+            listOf(Environment.DIRECTORY_DOWNLOADS, "Shooting", subdirectory, name)
+                .filter { it.isNotBlank() }
+                .joinToString("/")
         } else {
             target.absolutePath
         }
