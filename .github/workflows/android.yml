@@ -160,22 +160,10 @@ jobs:
           disable-animations: true
           avd-name: shooting-api34
           # Artifacts must be pulled before this action shuts the emulator down.
-          # The debug app is debuggable, so `run-as` can read its private files.
+          # The runner executes each script line in its own `sh -c`, so this is
+          # intentionally one line: it also preserves the Gradle exit status.
           script: |
-            set +e
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
-            STATUS=$?
-            mkdir -p qa-pdf-samples
-            for name in daily-workflow.pdf period-workflow.pdf expenses-workflow.pdf; do
-              for base in /data/data/ir.hoboho.shooting /data/user/0/ir.hoboho.shooting; do
-                adb exec-out run-as ir.hoboho.shooting cat \
-                  "$base/files/qa/$name" > "qa-pdf-samples/$name" || true
-                if [ -s "qa-pdf-samples/$name" ]; then break; fi
-              done
-            done
-            find qa-pdf-samples -type f -size 0 -delete
-            find qa-pdf-samples -type f -printf '%p %s bytes\n' || true
-            exit $STATUS
+            set +e; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; for name in daily-workflow.pdf period-workflow.pdf expenses-workflow.pdf; do for base in /data/data/ir.hoboho.shooting /data/user/0/ir.hoboho.shooting; do adb exec-out run-as ir.hoboho.shooting cat "$base/files/qa/$name" > "qa-pdf-samples/$name" || true; if [ -s "qa-pdf-samples/$name" ]; then break; fi; done; done; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
 
       - name: Print instrumented test XML
         if: always()
