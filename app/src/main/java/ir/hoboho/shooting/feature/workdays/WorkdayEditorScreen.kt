@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package ir.hoboho.shooting.feature.workdays
 
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +53,6 @@ import ir.hoboho.shooting.ui.components.ShootingNumberField
 import ir.hoboho.shooting.ui.components.ShootingTextField
 import ir.hoboho.shooting.ui.components.StatRow
 
-@Composable
 @Composable
 private fun pointTypeLabel(type: PointType): String = stringResource(
     when (type) {
