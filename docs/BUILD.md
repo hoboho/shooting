@@ -27,7 +27,7 @@ chmod +x gradlew                              # در صورت نیاز
 ./gradlew :app:testDebugUnitTest             # ۱۳ فایل آزمون JUnit روی JVM
 ./gradlew :app:lintDebug                     # تحلیل ایستای Android lint
 ./gradlew :app:assembleDebug                 # APK دیباگ
-./gradlew :app:connectedDebugAndroidTest     # آزمونهای Room/اسکیما روی امولاتور
+./gradlew :app:connectedDebugAndroidTest     # آزمونهای Room/اسکیما و جریانهای کاری روی امولاتور
 ```
 
 خروجیها:
@@ -37,10 +37,12 @@ chmod +x gradlew                              # در صورت نیاز
 * `app/build/reports/lint-results-debug.html`
 * `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/1.json`
 * `app/build/reports/androidTests/` و `app/build/outputs/androidTest-results/`
+* artifact CI `qa-pdf-samples/` (سه PDF نمونهٔ تولیدشده توسط `WorkflowIntegrationTest`)
 
 اسکیمای JSON توسط Room/KSP تولید میشود و در مخزن فقط
 [`app/schemas/README.md`](../app/schemas/README.md) کامیت شده است؛ فایل `1.json`
-در [اجرای CI 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+در اجراهای [PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
 بهصورت artifact `room-schema` موجود است. پیش از نخستین تغییر اسکیما، همان فایل
 تولیدشده را کامیت کنید تا مبنای `MigrationTestHelper` باشد.
 
@@ -85,10 +87,13 @@ Room/Hilt/Compose در `app/proguard-rules.pro` آمده است.
 `scripts/check_sources.py` و `scripts/offline-compile-check/` فقط بررسی کمکیاند.
 
 دستورات بالا روی runner دارای Android SDK در
-[GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-اجرا و همگی با موفقیت کامل شدند: `testDebugUnitTest`، `lintDebug`،
-`assembleDebug`، `kspDebugKotlin` و `connectedDebugAndroidTest` (API 34، ۹ آزمون
-بدون شکست). artifactها شامل APK دیباگ، گزارش JUnit/lint/instrumentation و
-اسکیمای Roomاند. جزئیات دقیق و موارد باقیماندهٔ بررسی انسانی در
+[PR run 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push run 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
+اجرا و همگی با موفقیت کامل شدند: `testDebugUnitTest`، `lintDebug`,
+`assembleDebug`، `kspDebugKotlin` و `connectedDebugAndroidTest` (API 34، ۱۲ آزمون
+بدون شکست). artifactها شامل APK دیباگ، گزارش JUnit/lint/instrumentation،
+اسکیمای Room و سه نمونهٔ PDFاند. اجرای قدیمی
+[41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+نخستین ساخت کامل را ثبت میکند. جزئیات دقیق و موارد باقیماندهٔ بررسی انسانی در
 [`QA.md`](QA.md) و [`TESTING.md`](TESTING.md) ثبت شده است؛ عبور CI بهمعنای تأیید
 بصری صفحات/PDF یا آمادگی انتشار نیست.

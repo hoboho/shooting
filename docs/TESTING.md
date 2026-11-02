@@ -8,7 +8,7 @@
 | منابع/ناوبری/قواعد ایستا | `scripts/check_sources.py` | `python3 scripts/check_sources.py` |
 | کامپایل منطق/داده با استاب | `scripts/offline-compile-check/` | `bash scripts/offline-compile-check/run.sh` |
 | Android lint | قواعد `app/lint.xml` | `./gradlew :app:lintDebug` |
-| Room/مخازن/اسکیما روی SQLite | `app/src/androidTest` (۲ فایل) | `./gradlew :app:connectedDebugAndroidTest` |
+| Room/مخازن/اسکیما و جریانهای کاری روی SQLite | `app/src/androidTest` (۳ فایل، ۱۲ آزمون) | `./gradlew :app:connectedDebugAndroidTest` |
 | ساخت | — | `./gradlew :app:assembleDebug` |
 
 ## پوشش آزمونهای JVM
@@ -30,11 +30,19 @@
 ذخیرهٔ گزارش و محاسبهٔ مجدد طولها/جمع، جلوگیری از تکرار پروژه+تاریخ، جلوگیری از
 تسویهٔ بیش از مانده و حذف هزینهٔ دارای تسویه، بازیابی `ADD_ONLY` بدون تکرار/حذف.
 `DatabaseSchemaTest` — هشت جدول، ستونهای عددی تاریخ/مبلغ، ایندکس یکتا و اعمال FK
-روی SQLite واقعی.
+روی SQLite واقعی. `WorkflowIntegrationTest` — گردش روزانه با قرقرهٔ معکوس،
+جلوگیری از گزارش تکراری و PDF روزانه؛ تسویهٔ جزئی/کامل، جلوگیری از بیشبود،
+گزارش دورهای و PDF هزینهها؛ و پیشنمایش پشتیبان، نسخهٔ ایمنی، راهبرد تراکنشی و
+رد دستکاری checksum. هر PDF با `PdfRenderer` بررسی و از طریق
+`MediaStore.Downloads` به artifact `qa-pdf-samples` منتقل میشود؛ این بررسی
+قابلبازشدن و وجود پیکسل متن است، نه بازبینی بصری انسانی.
 
-در [run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)،
+در اجراهای مرجع [PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)،
 job سوم `connectedDebugAndroidTest` را روی امولاتور API 34 اجرا کرد؛ خروجی XML
-چاپشده `tests="9" failures="0" errors="0" skipped="0"` است.
+چاپشده `tests="12" failures="0" errors="0" skipped="0"` است. اجرای قدیمی
+[41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+نخستین ساخت کامل با ۹ آزمون on-device بود.
 
 ## اجرای آفلاین (بدون Gradle/Android SDK)
 
@@ -66,24 +74,25 @@ KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar
 
 گردشکار [`.github/workflows/android.yml`](../.github/workflows/android.yml) روی
 runner دارای Android SDK اجرا شد؛
-[run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-نتیجهٔ `success` برای هر سه job دارد:
+[PR run 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push run 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
+نتیجهٔ `success` برای هر سه job دارند:
 
 1. **Offline source checks**: `check_sources.py`.
 2. **JVM tests, lint & debug APK**: `testDebugUnitTest` با JUnit واقعی،
    `lintDebug`، `assembleDebug` و `kspDebugKotlin` برای تولید اسکیمای Room.
 3. **Room/repository tests (API 34)**: `connectedDebugAndroidTest` و چاپ XML
-   نتایج؛ ۹ آزمون، بدون شکست/خطا/ردشده.
+   نتایج؛ ۱۲ آزمون، بدون شکست/خطا/ردشده.
 
-گزارش JUnit، lint، instrumentation، اسکیمای Room و APK دیباگ بهعنوان artifact
-همان اجرا موجوداند. این اجراها جایگزین ابزارهای آفلاین نیستند؛ ابزارهای آفلاین
+گزارش JUnit، lint، instrumentation، اسکیمای Room، APK دیباگ و سه نمونهٔ PDF
+(`qa-pdf-samples`) بهعنوان artifact همان اجراها موجوداند. این اجراها جایگزین ابزارهای آفلاین نیستند؛ ابزارهای آفلاین
 همچنان برای محیط بدون SDK مفیدند، ولی مرجع تأیید ساخت اندروید، CI است. جزئیات
 وضعیت در [QA.md](QA.md).
 
 ## چکلیست پیش از اعلام آمادگی
 
-مراحل خودکار بالا (کامپایل، JUnit، لینت، APK، آزمون Room/اسکیما) اجرا و عبور
-کردهاند. [docs/QA.md](QA.md) همچنان فهرست موارد **انسانی** انجامنشده را نگه
+مراحل خودکار بالا (کامپایل، JUnit، لینت، APK، آزمون Room/اسکیما و سه آزمون
+جریان کاری شامل رندر PDF) اجرا و عبور کردهاند. [docs/QA.md](QA.md) همچنان فهرست موارد **انسانی** انجامنشده را نگه
 میدارد: نصب/بازبینی بصری صفحات، جریان روزانه، جریان هزینه/تسویه، تولید و
 **بازبینی بصری** PDF، پشتیبان/بازیابی، حالت تاریک/چرخش و آزمون مهاجرت پس از
 نخستین تغییر اسکیما. تا زمان انجام آنها، کیفیت نهایی و آمادگی انتشار تأیید

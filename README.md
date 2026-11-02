@@ -58,16 +58,19 @@ cd shooting
 ./gradlew :app:assembleDebug          # APK: app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:testDebugUnitTest      # ۶۲ آزمون JVM
 ./gradlew :app:lintDebug              # تحلیل ایستا
-./gradlew :app:connectedDebugAndroidTest  # آزمونهای Room روی دستگاه/امولاتور
+./gradlew :app:connectedDebugAndroidTest  # آزمونهای Room و جریانهای کاری روی دستگاه/امولاتور
 ```
 
 `README` و مستندات دقیقتر در [docs/BUILD.md](docs/BUILD.md) و
 [docs/TESTING.md](docs/TESTING.md). گردشکار GitHub Actions در
 [`.github/workflows/android.yml`](.github/workflows/android.yml) همان دستورات را
 اجرا میکند و APK، گزارش آزمون/لینت و اسکیمای Room را بهعنوان artifact بارگذاری
-میکند. [اجرای 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-اجرای مرجع تأیید ساخت این گردشکار است؛ اجراهای بعدی در برگهٔ Actions مخزن و
-جزئیات پایدار در [وضعیت کنترل کیفیت](docs/QA.md) قابل مشاهدهاند.
+میکند و سه نمونهٔ PDF تولیدشده در آزمون جریان کاری را نیز با artifact
+`qa-pdf-samples` بارگذاری مینماید. اجراهای
+[PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402) و
+[push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
+بهعنوان اجراهای مرجع تأیید ساخت، هر سه job را با `success` به پایان رساندند؛ جزئیات پایدار
+در [وضعیت کنترل کیفیت](docs/QA.md) قابل مشاهده است.
 
 ### اجرا بدون Gradle (محیط آفلاین)
 
@@ -86,9 +89,12 @@ KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar
 
 ## وضعیت تأیید (مهم)
 
-اجرای مرجع [GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-روی این شاخه با نتیجهٔ `success` برای هر سه job به پایان رسید؛ کامیتهای بعدی
-نیز همان گردشکار را روی push/PR اجرا میکنند.
+اجراهای مرجع تأییدشدهٔ [PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
+با نتیجهٔ `success` برای هر سه job به پایان رسیدند. اجرای
+قدیمی [41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+همچنان مرجع نخستین ساخت کامل است؛ کامیتهای بعدی همان گردشکار را روی push/PR
+اجرا میکنند.
 
 | مورد | وضعیت |
 | --- | --- |
@@ -96,7 +102,7 @@ KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar
 | بررسیهای ایستای `check_sources.py` | ✅ اجرا و عبور: ۰ خطا (محلی و job نخست CI) |
 | کامپایل ۴۲ فایل `core/domain/data/di` با `kotlinc` واقعی + استاب API | ✅ اجرا و عبور: `exit 0` (کمکی، نه کامپایل اندروید) |
 | کامپایل منابع اندروید/Compose/Room/Hilt/KSP، `lintDebug`، `assembleDebug` و خروجی اسکیمای Room | ✅ اجرا و عبور در job دوم CI؛ APK و گزارشها بهعنوان artifact بارگذاری شدند |
-| آزمونهای instrumentation Room/اسکیما روی امولاتور API 34 | ✅ `connectedDebugAndroidTest` در job سوم CI: `tests="9" failures="0" errors="0" skipped="0"` |
+| آزمونهای instrumentation Room/اسکیما و جریانهای کاری روی امولاتور API 34 | ✅ **۱۲ آزمون** در job سوم CI: `tests="12" failures="0" errors="0" skipped="0"`؛ شامل رندر خودکار هر سه PDF و artifact نمونهها |
 | اسکیمای نسخهٔ ۱ و سیاست مهاجرت | ✅ شکل v1 روی SQLite واقعی بررسی و JSON توسط KSP تولید/بارگذاری شد؛ نسخهٔ فعلی v1 است و مهاجرتی وجود ندارد |
 | بازبینی بصری صفحات و PDF، اجرای دستی جریان روزانه/هزینه/تسویه/پشتیبان، حالت تاریک و چرخش | ⏳ انجام نشده؛ چکلیست دقیق در [QA](docs/QA.md) |
 

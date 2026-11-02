@@ -21,21 +21,24 @@ Android SDK/Gradle/AGP نصب نیست؛ بنابراین `./gradlew` بهصور
 
 ## اجرا شده در GitHub Actions (runner دارای Android SDK)
 
-اجرای مرجع مستندات:
-[run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-روی شاخهٔ `arena/674b93c5-shouting`. نتیجهٔ هر سه job و همهٔ stepها `success`
-است. این run عمداً بهعنوان مرجع پایدار نگه داشته میشود تا هر بهروزرسانی مستندات
-نیازمند تغییر شناسهٔ اجرا نباشد؛ اجراهای بعدی همان گردشکار (push و pull_request)
-در برگهٔ Actions مخزن قابل بررسیاند.
+اجراهای مرجع تأییدشده:
+[PR run 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
+و [push run 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
+روی شاخهٔ `arena/674b93c5-shouting`. نتیجهٔ هر سه job و همهٔ
+stepها در هر دو اجرا `success` است؛ این شناسهها وضعیت کنونی شاخه را ثبت میکنند.
+اجرای قدیمی [41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+نخستین ساخت کامل سهjob است و اجراهای بعدی همان گردشکار در برگهٔ Actions مخزن
+قابل بررسیاند.
 
 | Job | شناسه | فرمانها / بررسیها | نتیجه |
 | --- | --- | --- | --- |
-| Offline source checks | 125112199066 | `python3 scripts/check_sources.py` | `success` |
-| JVM tests, lint & debug APK | 125112285994 | `./gradlew :app:testDebugUnitTest`، `:app:lintDebug`، `:app:assembleDebug`، `:app:kspDebugKotlin` | `success`؛ APK، گزارش JUnit/lint و JSON اسکیمای Room بارگذاری شدند |
-| Room/repository tests (API 34) | 125112804915 | `./gradlew :app:connectedDebugAndroidTest` روی امولاتور API 34 | `success`؛ خروجی XML: `tests="9" failures="0" errors="0" skipped="0"` |
+| Offline source checks | 125396153680 | `python3 scripts/check_sources.py` | `success` |
+| JVM tests, lint & debug APK | 125396334424 | `./gradlew :app:testDebugUnitTest`، `:app:lintDebug`، `:app:assembleDebug`، `:app:kspDebugKotlin` | `success`؛ APK، گزارش JUnit/lint و JSON اسکیمای Room بارگذاری شدند |
+| Room/repository tests (API 34) | 125397529394 | `./gradlew :app:connectedDebugAndroidTest` روی امولاتور API 34 | `success`؛ خروجی XML: `tests="12" failures="0" errors="0" skipped="0"`؛ سه PDF نمونه بارگذاری شدند |
 
 artifactهای همان اجرا: `shooting-debug-apk`، `jvm-unit-test-report`،
-`lint-report`، `room-schema` و `instrumented-test-report`. اسکیمای نسخهٔ ۱ توسط
+`lint-report`، `room-schema`، `instrumented-test-report` و `qa-pdf-samples`
+(سه PDF روزانه/دورهای/هزینهها، حدود ۲۱۴ کیلوبایت هرکدام). اسکیمای نسخهٔ ۱ توسط
 Room/KSP تولید شده و همراه artifact است؛ فایل JSON هنوز به مخزن کامیت نشده است و
 پیش از نخستین تغییر اسکیما باید اضافه شود (به [`app/schemas/README.md`](../app/schemas/README.md)
 مراجعه کنید). نسخهٔ فعلی پایگاه داده v1 و `Migrations.ALL` خالی است، بنابراین
@@ -51,13 +54,16 @@ Room/KSP تولید شده و همراه artifact است؛ فایل JSON هنو�
 - [x] کامپایل همهٔ منابع Kotlin اندروید (Compose/Room/Hilt/KSP) و رفع خطاها
 - [x] `./gradlew :app:lintDebug` و عبور تحلیل ایستا
 - [x] `./gradlew :app:assembleDebug` و تولید APK دیباگ
-- [x] `./gradlew :app:connectedDebugAndroidTest` (دو فایل آزمون Room/اسکیما، ۹ آزمون)
+- [x] `./gradlew :app:connectedDebugAndroidTest` (سه فایل: Room/اسکیما و `WorkflowIntegrationTest`، ۱۲ آزمون)
+- [x] تولید خودکار و بررسی قابلبازشدن/رندر هر سه PDF و بارگذاری نمونهها (`qa-pdf-samples`)
 - [x] تولید اسکیمای JSON نسخهٔ ۱ و بررسی شکل v1 روی SQLite واقعی
 - [ ] نصب و اجرای APK دیباگ روی دستگاه فیزیکی و بررسی رفتار واقعی اپلیکیشن
 
 ## انجامنشده / نیازمند بررسی انسانی
 
-این موارد با عبور CI تأیید نمیشوند و هنوز اجرا نشدهاند:
+این موارد **بازبینی انسانی/اجرای دستی رابط کاربری** را میطلبند و هنوز انجام
+نشدهاند؛ برخی قواعد آنها اکنون در `WorkflowIntegrationTest` بهصورت خودکار بررسی
+میشوند، ولی آن آزمونها جایگزین مشاهدهٔ صفحات و تعامل واقعی نیستند:
 
 - [ ] بازبینی بصری تکتک صفحات: داشبورد، پروژهها، ویرایش پروژه، فهرست/ویرایش/جزئیات
   گزارش روزانه، هزینهها، ویرایش هزینه و تسویهها، گزارشها، تنظیمات، دادههای مرجع،
@@ -66,8 +72,9 @@ Room/KSP تولید شده و همراه artifact است؛ فایل JSON هنو�
   (شامل قرقرهٔ معکوس) → ذخیره → جلوگیری از تکرار همان تاریخ → بازگشایی و ویرایش
 - [ ] جریان هزینه و تسویه: ثبت هزینه، چند تسویهٔ جزئی/کامل، جلوگیری از بیشبود،
   حذف، صحت مانده و خلاصهٔ داشبورد
-- [ ] تولید و **بازبینی بصری** هر سه PDF (روزانه، دورهای، هزینهها) از نظر RTL،
-  شکلگیری حروف، ارقام فارسی، تکرار سرستونها و صفحهبندی
+- [ ] **بازبینی بصری** هر سه PDF (روزانه، دورهای، هزینهها) از نظر RTL،
+  شکلگیری حروف، ارقام فارسی، تکرار سرستونها و صفحهبندی؛ تولید و رندر خودکار
+  آنها انجام شده ولی جایگزین بازبینی انسانی نیست
 - [ ] جریان پشتیبان/بازیابی: ساخت فایل، بررسی checksum، پیشنمایش، سه راهبرد،
   نسخهٔ ایمنی، عدم از دست رفتن داده
 - [ ] بررسی حالت تاریک، چرخش صفحه، اندازههای مختلف و دسترسپذیری
