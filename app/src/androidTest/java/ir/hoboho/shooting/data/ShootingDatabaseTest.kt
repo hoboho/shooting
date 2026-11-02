@@ -65,15 +65,15 @@ class ShootingDatabaseTest {
     @Test
     fun seed_installsExtensibleReferenceData() = runBlocking {
         assertThat(db.cableTypeDao().getAll().map { it.coreCount })
-            .containsExactly(6, 12, 24, 48, 96, 144).inOrder()
+            .containsExactly(2, 4, 6, 12, 24, 36, 48, 72, 96, 144, 288).inOrder()
         assertThat(db.expenseCategoryDao().getAll()).hasSize(7)
         // Adding a new core count is an ordinary insert, not a schema change.
         assertThat(
             ir.hoboho.shooting.data.repository.ReferenceRepositoryImpl(
                 db.cableTypeDao(), db.expenseCategoryDao(),
-            ).addCableType(288),
+            ).addCableType(8),
         ).isGreaterThan(0L)
-        assertThat(db.cableTypeDao().getByCoreCount(288)).isNotNull()
+        assertThat(db.cableTypeDao().getByCoreCount(8)).isNotNull()
     }
 
     @Test
