@@ -58,7 +58,9 @@ PeriodOutstanding     = Σ expense.amountToman - Σ settlements
 هرگز فراخوانی نشده است. اسکیمای JSON با `exportSchema=true` و
 `room.schemaLocation=$projectDir/schemas` در هر اجرای KSP تولید میشود (شامل
 `identityHash` محاسبهشدهٔ Room، بنابراین دستینویس نمیشود)؛ CI آن را بهعنوان
-artifact بارگذاری میکند.
+artifact بارگذاری میکند. فایل نسخهٔ ۱ هنوز در مخزن کامیت نشده است و پیش از
+نخستین تغییر اسکیما باید همان خروجی تولیدشده اضافه شود
+([`app/schemas/README.md`](../app/schemas/README.md)).
 
 سیاست برای نسخههای بعدی:
 

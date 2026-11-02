@@ -65,7 +65,9 @@ cd shooting
 [docs/TESTING.md](docs/TESTING.md). گردشکار GitHub Actions در
 [`.github/workflows/android.yml`](.github/workflows/android.yml) همان دستورات را
 اجرا میکند و APK، گزارش آزمون/لینت و اسکیمای Room را بهعنوان artifact بارگذاری
-میکند.
+میکند. [اجرای 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+آخرین اجرای کامل و موفق این گردشکار است؛ جزئیات در
+[وضعیت کنترل کیفیت](docs/QA.md) ثبت شده است.
 
 ### اجرا بدون Gradle (محیط آفلاین)
 
@@ -84,16 +86,23 @@ KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar
 
 ## وضعیت تأیید (مهم)
 
+آخرین اجرای کامل [GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+روی این شاخه با نتیجهٔ `success` برای هر سه job به پایان رسید.
+
 | مورد | وضعیت |
 | --- | --- |
-| آزمونهای منطق خالص JVM | ✅ اجرا و عبور: **۶۲ از ۶۲** (از طریق harness آفلاین) |
-| بررسیهای ایستای `check_sources.py` | ✅ اجرا و عبور: ۰ خطا |
-| کامپایل ۴۲ فایل `core/domain/data/di` با `kotlinc` واقعی + استاب API | ✅ اجرا و عبور: `exit 0` (نه کامپایل اندروید) |
-| کامپایل منابع اندروید، `testDebugUnitTest` با Gradle، `lintDebug`، `assembleDebug` | ⏳ **اجرا نشده** — در محیط توسعهٔ فعلی Gradle/Google Maven/Maven Central در دسترس نبودند |
-| آزمونهای instrumentation، بررسی مهاجرتها، بازبینی بصری صفحات و PDF، اجرای دستی جریانها | ⏳ انجام نشده؛ گردشکار CI و چکلیست [QA](docs/QA.md) برای این مراحل آمادهاند |
+| آزمونهای منطق خالص JVM | ✅ اجرا و عبور: **۶۲ از ۶۲** (harness آفلاین)؛ `testDebugUnitTest` نیز در CI عبور کرد |
+| بررسیهای ایستای `check_sources.py` | ✅ اجرا و عبور: ۰ خطا (محلی و job نخست CI) |
+| کامپایل ۴۲ فایل `core/domain/data/di` با `kotlinc` واقعی + استاب API | ✅ اجرا و عبور: `exit 0` (کمکی، نه کامپایل اندروید) |
+| کامپایل منابع اندروید/Compose/Room/Hilt/KSP، `lintDebug`، `assembleDebug` و خروجی اسکیمای Room | ✅ اجرا و عبور در job دوم CI؛ APK و گزارشها بهعنوان artifact بارگذاری شدند |
+| آزمونهای instrumentation Room/اسکیما روی امولاتور API 34 | ✅ `connectedDebugAndroidTest` در job سوم CI: `tests="9" failures="0" errors="0" skipped="0"` |
+| اسکیمای نسخهٔ ۱ و سیاست مهاجرت | ✅ شکل v1 روی SQLite واقعی بررسی و JSON توسط KSP تولید/بارگذاری شد؛ نسخهٔ فعلی v1 است و مهاجرتی وجود ندارد |
+| بازبینی بصری صفحات و PDF، اجرای دستی جریان روزانه/هزینه/تسویه/پشتیبان، حالت تاریک و چرخش | ⏳ انجام نشده؛ چکلیست دقیق در [QA](docs/QA.md) |
 
-هیچ ادعایی مبنی بر موفقیت ساخت اندروید یا کیفیت بصری PDF تا زمان اجرای واقعی
-آنها مطرح نمیشود.
+در محیط توسعهٔ محلی همچنان `./gradlew` بهدلیل نبود Android SDK و عدم دسترسی به
+مخازن Gradle قابل اجرا نیست؛ اجراهای اندرویدی فوق روی runner دارای SDK انجام
+شدهاند. این موفقیت فقط **ساخت و آزمونهای خودکار** را اثبات میکند و بهمعنای
+تأیید کیفیت بصری، جریانهای دستی یا «آمادهٔ انتشار» بودن اپلیکیشن نیست.
 
 ## مجوز
 

@@ -36,7 +36,13 @@ chmod +x gradlew                              # در صورت نیاز
 * `app/build/reports/tests/testDebugUnitTest/`
 * `app/build/reports/lint-results-debug.html`
 * `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/1.json`
-* `app/build/reports/androidTests/`
+* `app/build/reports/androidTests/` و `app/build/outputs/androidTest-results/`
+
+اسکیمای JSON توسط Room/KSP تولید میشود و در مخزن فقط
+[`app/schemas/README.md`](../app/schemas/README.md) کامیت شده است؛ فایل `1.json`
+در [اجرای CI 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+بهصورت artifact `room-schema` موجود است. پیش از نخستین تغییر اسکیما، همان فایل
+تولیدشده را کامیت کنید تا مبنای `MigrationTestHelper` باشد.
 
 ## نسخهٔ ریلیز
 
@@ -71,7 +77,18 @@ Room/Hilt/Compose در `app/proguard-rules.pro` آمده است.
   `@AndroidEntryPoint` روی `MainActivity` و `@HiltViewModel` روی ViewModelها لازم
   است.
 
-> وضعیت فعلی: در محیط توسعهای که این مخزن نوشته شد،
-> `services.gradle.org`, `dl.google.com` و `repo.maven.apache.org` در دسترس
-> نبودند؛ بنابراین دستورات بالا در آن محیط **اجرا نشدهاند**. گردشکار
-> `.github/workflows/android.yml` آنها را روی runners دارای SDK اجرا میکند.
+## وضعیت اجرا
+
+در محیط توسعهٔ محلی، `services.gradle.org`، `dl.google.com` و
+`repo.maven.apache.org` در دسترس نبودند و Android SDK/Gradle نصب نیست؛ بنابراین
+`./gradlew` در آن محیط قابل اجرا نیست. ابزارهای `scripts/run-offline-tests.sh`،
+`scripts/check_sources.py` و `scripts/offline-compile-check/` فقط بررسی کمکیاند.
+
+دستورات بالا روی runner دارای Android SDK در
+[GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+اجرا و همگی با موفقیت کامل شدند: `testDebugUnitTest`، `lintDebug`،
+`assembleDebug`، `kspDebugKotlin` و `connectedDebugAndroidTest` (API 34، ۹ آزمون
+بدون شکست). artifactها شامل APK دیباگ، گزارش JUnit/lint/instrumentation و
+اسکیمای Roomاند. جزئیات دقیق و موارد باقیماندهٔ بررسی انسانی در
+[`QA.md`](QA.md) و [`TESTING.md`](TESTING.md) ثبت شده است؛ عبور CI بهمعنای تأیید
+بصری صفحات/PDF یا آمادگی انتشار نیست.
