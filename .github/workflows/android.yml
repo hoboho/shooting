@@ -159,12 +159,12 @@ jobs:
           profile: pixel_5
           disable-animations: true
           avd-name: shooting-api34
-          # Instrumentation copies PDFs to /data/local/tmp while the APKs are
-          # still installed; Gradle uninstalls them after connectedAndroidTest.
+          # Instrumentation publishes PDFs to MediaStore.Downloads before Gradle
+          # uninstalls the APKs; public Downloads survives the uninstall.
           # The runner executes each script line in its own `sh -c`, so this is
           # intentionally one line: it also preserves the Gradle exit status.
           script: |
-            set +e; adb shell rm -rf /data/local/tmp/qa-pdf-samples || true; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; adb shell ls -laR /data/local/tmp/qa-pdf-samples || true; adb pull /data/local/tmp/qa-pdf-samples qa-pdf-samples/ || true; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
+            set +e; adb shell rm -rf /sdcard/Download/ShootingQA || true; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; adb shell ls -laR /sdcard/Download/ShootingQA || true; adb pull /sdcard/Download/ShootingQA qa-pdf-samples/ || true; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
 
       - name: Print instrumented test XML
         if: always()

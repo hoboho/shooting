@@ -1,14 +1,17 @@
 package ir.hoboho.shooting.workflow
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.os.Build
+import android.os.Environment
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import ir.hoboho.shooting.core.backup.AppInfo
 import ir.hoboho.shooting.core.backup.BackupCodec
@@ -46,7 +49,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.io.FileInputStream
 
 /**
  * End-to-end on-device verification of the workflows the brief calls out:
@@ -126,30 +128,32 @@ class WorkflowIntegrationTest {
     }
 
     /**
-     * Gradle uninstalls the APKs after connectedAndroidTest, so app-private files
-     * must be copied to a shell-readable temp directory *while* tests still run.
-     * CI pulls them from /data/local/tmp before shutting the emulator down.
+     * Gradle uninstalls the APKs after connectedAndroidTest, so app-private
+     * files disappear. MediaStore.Downloads is public storage that survives the
+     * uninstall; CI pulls these samples from Download/ShootingQA.
      */
     private fun publishToHost(file: File) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         runCatching {
-            val pkg = context.packageName
-            val dir = "/data/local/tmp/qa-pdf-samples"
-            val destination = "$dir/${file.name}"
-            // UiAutomation executes tokenized commands without shell redirection,
-            // so use a plain `run-as <pkg> cp` into the world-writable tmp dir.
-            runShell("mkdir -p $dir")
-            runShell("rm -rf $destination")
-            runShell("run-as $pkg cp ${file.absolutePath} $destination")
+            val resolver = context.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+                put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                put(
+                    MediaStore.Downloads.RELATIVE_PATH,
+                    "${Environment.DIRECTORY_DOWNLOADS}/ShootingQA",
+                )
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: return@runCatching
+            resolver.openOutputStream(uri)?.use { output ->
+                file.inputStream().use { input -> input.copyTo(output) }
+            }
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
         }
-    }
-
-    private fun runShell(command: String) {
-        val output = InstrumentationRegistry.getInstrumentation()
-            .uiAutomation
-            .executeShellCommand(command)
-        // Draining the pipe waits for the command to actually finish.
-        FileInputStream(output.fileDescriptor).use { stream -> stream.readBytes() }
-        output.close()
     }
 
     /** A PDF that opens in Android's renderer and actually contains dark text. */
