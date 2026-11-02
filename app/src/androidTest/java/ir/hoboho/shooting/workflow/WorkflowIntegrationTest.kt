@@ -8,6 +8,7 @@ import android.os.ParcelFileDescriptor
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import ir.hoboho.shooting.core.backup.AppInfo
 import ir.hoboho.shooting.core.backup.BackupCodec
@@ -119,7 +120,26 @@ class WorkflowIntegrationTest {
         if (file.exists()) file.delete()
         PdfReportEngine(context).render(spec, file)
         assertReadablePdf(file)
+        publishToHost(file)
         return file
+    }
+
+    /**
+     * Gradle uninstalls the APKs after connectedAndroidTest, so app-private files
+     * must be copied to a shell-readable temp directory *while* tests still run.
+     * CI pulls them from /data/local/tmp before shutting the emulator down.
+     */
+    private fun publishToHost(file: File) {
+        runCatching {
+            val pkg = context.packageName
+            val destination = "/data/local/tmp/qa-pdf-samples/${file.name}"
+            val command = "mkdir -p /data/local/tmp/qa-pdf-samples && " +
+                "run-as $pkg cat ${file.absolutePath} 2>/dev/null > $destination"
+            val output = InstrumentationRegistry.getInstrumentation()
+                .uiAutomation
+                .executeShellCommand(command)
+            output.close()
+        }
     }
 
     /** A PDF that opens in Android's renderer and actually contains dark text. */
