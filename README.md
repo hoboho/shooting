@@ -32,4 +32,4 @@
 
 ## دریافت برنامه
 
-[دریافت فایل نصب اندروید (نسخهٔ آزمایشی)](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk)
+[دریافت آخرین فایل نصب اندروید (نسخهٔ آزمایشی و امضاشده برای Debug)](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk)
