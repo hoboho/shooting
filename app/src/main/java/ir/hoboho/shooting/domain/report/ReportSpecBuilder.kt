@@ -8,11 +8,13 @@ import ir.hoboho.shooting.core.pdf.PdfBlock
 import ir.hoboho.shooting.core.pdf.PdfColumn
 import ir.hoboho.shooting.core.pdf.PdfDocumentSpec
 import ir.hoboho.shooting.core.pdf.PdfTextStyle
+import ir.hoboho.shooting.domain.model.CableLengthRow
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
 import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.SettlementStatus
+import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 
 /** One expense with its settlement lines, for the expense PDF. */
@@ -35,6 +37,61 @@ object ReportSpecBuilder {
     private fun meters(value: Int) = NumberFormatter.formatMeters(value)
     private fun toman(value: Long) = NumberFormatter.formatToman(value)
 
+    private data class CableGroup(
+        val id: Long,
+        val operations: List<ShootingOperation>,
+        val totalMeters: Int,
+    )
+
+    /** Rows for a daily report's cable-type (core-count) breakdown. */
+    private fun cableRowsFromOperations(
+        operations: List<ShootingOperation>,
+        cableTypes: List<CableType>,
+    ): List<List<String>> {
+        val labels = cableTypes.associateBy { it.id }
+        return operations.groupBy { it.cableTypeId }
+            .map { (id, ops) -> CableGroup(id, ops, ops.sumOf { it.lengthMeters }) }
+            .sortedByDescending { it.totalMeters }
+            .map { group ->
+                val type = labels[group.id]
+                listOf(
+                    type?.label ?: persianInt(group.id.toInt()),
+                    type?.coreCount?.let { persianInt(it) } ?: NumberFormatter.EM_DASH,
+                    persianInt(group.operations.size),
+                    NumberFormatter.formatMetersValue(group.totalMeters),
+                )
+            }
+    }
+
+    /** Rows for a period report's pre-aggregated cable breakdown. */
+    private fun cableRowsFromReport(breakdown: List<CableLengthRow>): List<List<String>> =
+        breakdown.map { row ->
+            listOf(
+                row.label,
+                if (row.coreCount > 0) persianInt(row.coreCount) else NumberFormatter.EM_DASH,
+                persianInt(row.operationCount),
+                NumberFormatter.formatMetersValue(row.totalLengthMeters),
+            )
+        }
+
+    private fun cableTable(rows: List<List<String>>): PdfBlock.Table = PdfBlock.Table(
+        columns = listOf(
+            PdfColumn(ReportText.CABLE, 1.6f),
+            PdfColumn(ReportText.CORE_COUNT, 1f),
+            PdfColumn(ReportText.OPERATION_COUNT, 1f),
+            PdfColumn(ReportText.LENGTH, 1f),
+        ),
+        header = listOf(
+            ReportText.CABLE,
+            ReportText.CORE_COUNT,
+            ReportText.OPERATION_COUNT,
+            ReportText.LENGTH,
+        ),
+        rows = rows,
+        caption = ReportText.CABLE_BREAKDOWN,
+        aligns = listOf(PdfAlign.START, PdfAlign.CENTER, PdfAlign.CENTER, PdfAlign.CENTER),
+    )
+
     // ------------------------------------------------------------- daily report
 
     fun daily(workday: Workday, cableTypes: List<CableType>): PdfDocumentSpec {
@@ -52,6 +109,7 @@ object ReportSpecBuilder {
                 NumberFormatter.formatMetersValue(op.lengthMeters),
             )
         }
+        val cableRows = cableRowsFromOperations(workday.operations, cableTypes)
         val info = listOf(
             ReportText.PROJECT to workday.projectName,
             ReportText.DATE to DateFormatter.formatLong(workday.dateEpochDay),
@@ -65,37 +123,43 @@ object ReportSpecBuilder {
             title = ReportText.TITLE_DAILY,
             subtitle = "${workday.projectName} — ${DateFormatter.format(workday.dateEpochDay)}",
             headerLines = header(),
-            blocks = listOf(
-                PdfBlock.KeyValueList(info),
-                PdfBlock.Divider(),
-                // The daily summary deliberately focuses on the total length only.
-                PdfBlock.KeyValueList(
-                    listOf(ReportText.DAILY_TOTAL to meters(workday.totalLengthMeters)),
-                    emphasisedLabels = setOf(ReportText.DAILY_TOTAL),
-                ),
-                PdfBlock.Paragraph(ReportText.OPERATIONS, style = PdfTextStyle.SectionHeader),
-                PdfBlock.Table(
-                    columns = listOf(
-                        PdfColumn(ReportText.ROW, 0.5f, 26f),
-                        PdfColumn(ReportText.START_POINT, 0.9f),
-                        PdfColumn(ReportText.START_CODE, 1f),
-                        PdfColumn(ReportText.START_METER, 1f),
-                        PdfColumn(ReportText.END_POINT, 0.9f),
-                        PdfColumn(ReportText.END_CODE, 1f),
-                        PdfColumn(ReportText.END_METER, 1f),
-                        PdfColumn(ReportText.CABLE, 1f),
-                        PdfColumn(ReportText.LENGTH, 1f),
+            blocks = buildList {
+                add(PdfBlock.KeyValueList(info))
+                add(PdfBlock.Divider())
+                // The daily summary still focuses on the total length; cable
+                // breakdown is a separate, explicitly labelled table.
+                add(
+                    PdfBlock.KeyValueList(
+                        listOf(ReportText.DAILY_TOTAL to meters(workday.totalLengthMeters)),
+                        emphasisedLabels = setOf(ReportText.DAILY_TOTAL),
                     ),
-                    header = listOf(
-                        ReportText.ROW, ReportText.START_POINT, ReportText.START_CODE,
-                        ReportText.START_METER, ReportText.END_POINT, ReportText.END_CODE,
-                        ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
+                )
+                if (cableRows.isNotEmpty()) add(cableTable(cableRows))
+                add(PdfBlock.Paragraph(ReportText.OPERATIONS, style = PdfTextStyle.SectionHeader))
+                add(
+                    PdfBlock.Table(
+                        columns = listOf(
+                            PdfColumn(ReportText.ROW, 0.5f, 26f),
+                            PdfColumn(ReportText.START_POINT, 0.9f),
+                            PdfColumn(ReportText.START_CODE, 1f),
+                            PdfColumn(ReportText.START_METER, 1f),
+                            PdfColumn(ReportText.END_POINT, 0.9f),
+                            PdfColumn(ReportText.END_CODE, 1f),
+                            PdfColumn(ReportText.END_METER, 1f),
+                            PdfColumn(ReportText.CABLE, 1f),
+                            PdfColumn(ReportText.LENGTH, 1f),
+                        ),
+                        header = listOf(
+                            ReportText.ROW, ReportText.START_POINT, ReportText.START_CODE,
+                            ReportText.START_METER, ReportText.END_POINT, ReportText.END_CODE,
+                            ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
+                        ),
+                        rows = rows,
+                        aligns = List(9) { PdfAlign.CENTER },
                     ),
-                    rows = rows,
-                    aligns = List(9) { PdfAlign.CENTER },
-                ),
-                PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small),
-            ),
+                )
+                add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
+            },
         )
     }
 
@@ -108,45 +172,55 @@ object ReportSpecBuilder {
         val projectRows = report.projectBreakdown.map { row ->
             listOf(row.projectName, NumberFormatter.formatMetersValue(row.totalLengthMeters))
         }
+        val cableRows = cableRowsFromReport(report.cableBreakdown)
         return PdfDocumentSpec(
             title = ReportText.TITLE_PERIOD,
-            subtitle = "${DateFormatter.formatRange(report.range)} — ${report.projectFilterName ?: "همه پروژهها"}",
+            subtitle = "${DateFormatter.formatRange(report.range)} — ${report.projectFilterName ?: ReportText.ALL_PROJECTS}",
             headerLines = header(),
-            blocks = listOf(
-                PdfBlock.KeyValueList(
-                    listOf(
-                        ReportText.RANGE to DateFormatter.formatRange(report.range),
-                        ReportText.PROJECT to (report.projectFilterName ?: "همه پروژهها"),
-                        ReportText.PERIOD_TOTAL to meters(report.totalLengthMeters),
+            blocks = buildList {
+                add(
+                    PdfBlock.KeyValueList(
+                        listOf(
+                            ReportText.RANGE to DateFormatter.formatRange(report.range),
+                            ReportText.PROJECT to (report.projectFilterName ?: ReportText.ALL_PROJECTS),
+                            ReportText.PERIOD_TOTAL to meters(report.totalLengthMeters),
+                        ),
+                        emphasisedLabels = setOf(ReportText.PERIOD_TOTAL),
                     ),
-                    emphasisedLabels = setOf(ReportText.PERIOD_TOTAL),
-                ),
-                PdfBlock.Table(
-                    columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.LENGTH, 1f)),
-                    header = listOf(ReportText.DATE, ReportText.LENGTH),
-                    rows = dailyRows,
-                    caption = ReportText.DAILY_BREAKDOWN,
-                    aligns = listOf(PdfAlign.START, PdfAlign.CENTER),
-                ),
-                PdfBlock.Table(
-                    columns = listOf(PdfColumn(ReportText.PROJECT, 1.6f), PdfColumn(ReportText.LENGTH, 1f)),
-                    header = listOf(ReportText.PROJECT, ReportText.LENGTH),
-                    rows = projectRows,
-                    caption = ReportText.PROJECT_BREAKDOWN,
-                    aligns = listOf(PdfAlign.START, PdfAlign.CENTER),
-                ),
-                PdfBlock.Paragraph(ReportText.EXPENSE_SUMMARY, style = PdfTextStyle.SectionHeader),
+                )
+                add(
+                    PdfBlock.Table(
+                        columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.LENGTH, 1f)),
+                        header = listOf(ReportText.DATE, ReportText.LENGTH),
+                        rows = dailyRows,
+                        caption = ReportText.DAILY_BREAKDOWN,
+                        aligns = listOf(PdfAlign.START, PdfAlign.CENTER),
+                    ),
+                )
+                add(
+                    PdfBlock.Table(
+                        columns = listOf(PdfColumn(ReportText.PROJECT, 1.6f), PdfColumn(ReportText.LENGTH, 1f)),
+                        header = listOf(ReportText.PROJECT, ReportText.LENGTH),
+                        rows = projectRows,
+                        caption = ReportText.PROJECT_BREAKDOWN,
+                        aligns = listOf(PdfAlign.START, PdfAlign.CENTER),
+                    ),
+                )
+                if (cableRows.isNotEmpty()) add(cableTable(cableRows))
+                add(PdfBlock.Paragraph(ReportText.EXPENSE_SUMMARY, style = PdfTextStyle.SectionHeader))
                 // Money is a separate block, never combined with length values.
-                PdfBlock.KeyValueList(
-                    listOf(
-                        ReportText.TOTAL_EXPENSES to toman(report.totalExpensesToman),
-                        ReportText.TOTAL_SETTLED to toman(report.settledToman),
-                        ReportText.TOTAL_OUTSTANDING to toman(report.outstandingToman),
+                add(
+                    PdfBlock.KeyValueList(
+                        listOf(
+                            ReportText.TOTAL_EXPENSES to toman(report.totalExpensesToman),
+                            ReportText.TOTAL_SETTLED to toman(report.settledToman),
+                            ReportText.TOTAL_OUTSTANDING to toman(report.outstandingToman),
+                        ),
+                        emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
                     ),
-                    emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
-                ),
-                PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small),
-            ),
+                )
+                add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
+            },
         )
     }
 

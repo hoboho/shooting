@@ -21,7 +21,7 @@ object DateFormatter {
         return if (persianDigits) PersianDigits.toPersian(raw) else raw
     }
 
-    /** "سهشنبه ۱۱ آبان ۱۴۰۵" */
+    /** "سه شنبه ۱۱ آبان ۱۴۰۵" */
     fun formatLongWithWeekday(epochDay: Long): String =
         PersianDigits.toPersian("${JalaliCalendar.weekdayName(epochDay)} ${formatLong(epochDay, false)}")
 

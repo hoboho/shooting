@@ -11,13 +11,16 @@ import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.date.JalaliCalendar
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.share.FileSharer
+import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.domain.backup.BackupInspection
 import ir.hoboho.shooting.domain.backup.RestoreStrategy
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class BackupUiState(
@@ -32,6 +35,7 @@ data class BackupUiState(
 class BackupViewModel @Inject constructor(
     private val manager: BackupManager,
     private val sharer: FileSharer,
+    private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
 
@@ -44,8 +48,15 @@ class BackupViewModel @Inject constructor(
             _state.update { it.copy(busy = true) }
             try {
                 val file = manager.createBackup()
+                val saved = withContext(Dispatchers.IO) {
+                    runCatching { saver.saveBackup(file, file.name) }.getOrNull()
+                }
                 sharer.shareBackup(file)
-                show(R.string.backup_created)
+                if (saved != null) {
+                    show(R.string.backup_created, saved.displayPath)
+                } else {
+                    show(R.string.msg_save_failed)
+                }
             } catch (t: Throwable) {
                 show(R.string.msg_backup_failed)
             } finally {
@@ -117,7 +128,8 @@ class BackupViewModel @Inject constructor(
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
 
-    private fun show(resId: Int) = _state.update { it.copy(message = strings.get(resId)) }
+    private fun show(resId: Int, vararg args: Any) =
+        _state.update { it.copy(message = strings.get(resId, *args)) }
 
     private fun formatExportTime(epochMilli: Long): String {
         if (epochMilli <= 0L) return strings.get(R.string.value_not_set)

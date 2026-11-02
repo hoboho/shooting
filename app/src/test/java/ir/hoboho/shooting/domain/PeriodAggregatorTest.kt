@@ -1,7 +1,10 @@
 package ir.hoboho.shooting.domain
 
 import ir.hoboho.shooting.core.date.DateRange
+import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.Expense
+import ir.hoboho.shooting.domain.model.ReferenceData
+import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -9,8 +12,17 @@ import org.junit.Test
 
 class PeriodAggregatorTest {
 
-    private fun workday(id: Long, projectId: Long, name: String, day: Long, meters: Int) =
-        Workday(id = id, projectId = projectId, projectName = name, dateEpochDay = day, totalLengthMeters = meters)
+    private fun workday(
+        id: Long,
+        projectId: Long,
+        name: String,
+        day: Long,
+        meters: Int,
+        operations: List<ShootingOperation> = emptyList(),
+    ) = Workday(
+        id = id, projectId = projectId, projectName = name, dateEpochDay = day,
+        operations = operations, totalLengthMeters = meters,
+    )
 
     private fun expense(id: Long, day: Long, projectId: Long?, amount: Long, settled: Long) = Expense(
         id = id, dateEpochDay = day, categoryId = 1L, amountToman = amount,
@@ -56,6 +68,30 @@ class PeriodAggregatorTest {
         assertEquals(2, report.projectBreakdown.size)
         assertEquals(1700, report.projectBreakdown.first { it.projectId == 10L }.totalLengthMeters)
         assertEquals(700, report.projectBreakdown.first { it.projectId == 20L }.totalLengthMeters)
+    }
+
+    @Test
+    fun cableBreakdown_groupsByStandardCoreCounts() {
+        val cables = ReferenceData.DEFAULT_CABLE_CORES.mapIndexed { i, core ->
+            CableType(id = i + 1L, coreCount = core, label = ReferenceData.cableLabel(core))
+        }
+        fun op(id: Long, length: Int) = ShootingOperation(
+            cableTypeId = id, startMeter = 0, endMeter = length, lengthMeters = length,
+        )
+        val days = listOf(
+            workday(1L, 10L, "پروژه الف", 20_001L, 300, listOf(op(1L, 100), op(1L, 200))),
+            workday(2L, 10L, "پروژه الف", 20_002L, 500, listOf(op(3L, 500))),
+        )
+        val range = DateRange(20_001L, 20_002L)
+        val report = PeriodAggregator.build(
+            range, workdays = days, expenses = expenses, cableTypes = cables,
+        )
+        val twoCore = report.cableBreakdown.single { it.coreCount == 2 }
+        val twelveCore = report.cableBreakdown.single { it.coreCount == 12 }
+        assertEquals(300, twoCore.totalLengthMeters)
+        assertEquals(2, twoCore.operationCount)
+        assertEquals(500, twelveCore.totalLengthMeters)
+        assertEquals(800, report.totalLengthMeters)
     }
 
     @Test

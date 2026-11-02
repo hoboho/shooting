@@ -1,6 +1,9 @@
 package ir.hoboho.shooting.domain
 
 import ir.hoboho.shooting.core.date.DateRange
+import ir.hoboho.shooting.core.format.NumberFormatter
+import ir.hoboho.shooting.domain.model.CableLengthRow
+import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.DailyLengthRow
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
@@ -40,12 +43,37 @@ object PeriodAggregator {
             }
             .sortedByDescending { it.totalLengthMeters }
 
+    /** Length by cable core count; unknown legacy ids still get a readable row. */
+    fun cableBreakdown(
+        workdays: List<Workday>,
+        cableTypes: List<CableType> = emptyList(),
+    ): List<CableLengthRow> {
+        val labels = cableTypes.associateBy { it.id }
+        return workdays.flatMap { it.operations }
+            .groupBy { it.cableTypeId }
+            .map { (id, operations) ->
+                val type = labels[id]
+                CableLengthRow(
+                    cableTypeId = id,
+                    label = type?.label
+                        ?: "نوع کابل ${NumberFormatter.formatInteger(id.toInt())}",
+                    coreCount = type?.coreCount ?: 0,
+                    totalLengthMeters = ShootingCalculator.sumLengths(
+                        operations.map { it.lengthMeters },
+                    ),
+                    operationCount = operations.size,
+                )
+            }
+            .sortedByDescending { it.totalLengthMeters }
+    }
+
     fun build(
         range: DateRange,
         projectFilter: Long? = null,
         projectFilterName: String? = null,
         workdays: List<Workday>,
         expenses: List<Expense>,
+        cableTypes: List<CableType> = emptyList(),
     ): PeriodReport {
         val filteredWorkdays = filterWorkdays(workdays, range, projectFilter)
         val filteredExpenses = filterExpenses(expenses, range, projectFilter)
@@ -60,6 +88,7 @@ object PeriodAggregator {
             ),
             dailyBreakdown = dailyBreakdown(filteredWorkdays),
             projectBreakdown = projectBreakdown(filteredWorkdays),
+            cableBreakdown = cableBreakdown(filteredWorkdays, cableTypes),
             expenseCount = filteredExpenses.size,
             totalExpensesToman = overview.totalExpensesToman,
             settledToman = overview.totalReimbursedToman,

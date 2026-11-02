@@ -33,7 +33,7 @@ data class JalaliDate(val year: Int, val month: Int, val day: Int) : Comparable<
 
         /** Index 0 = شنبه (Saturday). */
         val weekdayNames: List<String> = listOf(
-            "شنبه", "یکشنبه", "دوشنبه", "سهشنبه", "چهارشنبه", "پنجشنبه", "جمعه",
+            "شنبه", "یک شنبه", "دو شنبه", "سه شنبه", "چهار شنبه", "پنج شنبه", "جمعه",
         )
 
         val shortWeekdayNames: List<String> = listOf("ش", "ی", "د", "س", "چ", "پ", "ج")

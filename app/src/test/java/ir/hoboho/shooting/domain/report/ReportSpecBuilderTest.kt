@@ -19,16 +19,25 @@ class ReportSpecBuilderTest {
         CableType(id = i + 1L, coreCount = core, label = ReferenceData.cableLabel(core))
     }
 
+    private fun operation(cableId: Long, length: Int) = ShootingOperation(
+        startType = PointType.ODC,
+        startCode = "ODC-1",
+        startMeter = length + 100,
+        endType = PointType.FAT,
+        endCode = "FAT-2",
+        endMeter = 100,
+        cableTypeId = cableId,
+        lengthMeters = length,
+    )
+
     @Test
-    fun dailyReport_containsProjectInfoAndTotal() {
-        val operations = listOf(
-            ShootingOperation(startType = PointType.ODC, startCode = "ODC-1", startMeter = 900,
-                endType = PointType.FAT, endCode = "FAT-2", endMeter = 100, cableTypeId = 3L),
-        )
+    fun dailyReport_containsProjectInfoTotalAndCableBreakdown() {
         val workday = Workday(
             projectId = 1L, projectName = "پروژه الف", dateEpochDay = 20_759L,
             workArea = "منطقه ۳", employer = "شرکت مخابرات", supervisor = "مهندس رضایی",
-            workerCount = 4, notes = "هوای بارانی", operations = operations, totalLengthMeters = 800,
+            workerCount = 4, notes = "هوای بارانی",
+            operations = listOf(operation(cableId = 3L, length = 800)),
+            totalLengthMeters = 800,
         )
         val spec = ReportSpecBuilder.daily(workday, cableTypes)
         assertEquals(ReportText.TITLE_DAILY, spec.title)
@@ -36,38 +45,52 @@ class ReportSpecBuilderTest {
             .flatMap { it.entries }.any { it.first == ReportText.DAILY_TOTAL && it.second.contains("۸۰۰") })
         assertTrue(spec.blocks.filterIsInstance<PdfBlock.KeyValueList>()
             .flatMap { it.entries }.any { it.first == ReportText.PROJECT && it.second == "پروژه الف" })
-        val table = spec.blocks.filterIsInstance<PdfBlock.Table>().single()
-        assertEquals(9, table.header.size)
-        assertEquals("FAT", table.rows.single()[4])
-        assertEquals("۸۰۰", table.rows.single()[8])
-        assertEquals("۲۴ کور", table.rows.single()[7])
+
+        val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
+        assertTrue(tables.any { it.caption == ReportText.CABLE_BREAKDOWN && it.rows.single()[3] == "۸۰۰" })
+        val operationsTable = tables.single { it.header.size == 9 }
+        assertEquals(9, operationsTable.header.size)
+        assertEquals("FAT", operationsTable.rows.single()[4])
+        assertEquals("۸۰۰", operationsTable.rows.single()[8])
+        assertEquals("۲۴ کور", operationsTable.rows.single()[7])
     }
 
     @Test
-    fun dailySummary_hasNoOperationCountOrCableBreakdown() {
+    fun dailySummary_keepsTotalAndAddsSeparateCableBreakdown() {
         val spec = ReportSpecBuilder.daily(
             Workday(projectId = 1L, projectName = "الف", dateEpochDay = 20_759L, totalLengthMeters = 10),
             cableTypes,
         )
         val labels = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }.map { it.first }
         assertTrue(ReportText.DAILY_TOTAL in labels)
-        assertTrue("تعداد عملیات" !in labels)
-        assertTrue("تفکیک نوع کابل" !in labels)
+        assertTrue(ReportText.OPERATION_COUNT !in labels)
+        assertTrue(ReportText.CABLE_BREAKDOWN !in labels)
+        assertTrue(spec.blocks.filterIsInstance<PdfBlock.Table>().isEmpty())
     }
 
     @Test
     fun periodReport_keepsLengthAndMoneyInSeparateBlocks() {
         val workdays = listOf(
-            Workday(projectId = 1L, projectName = "الف", dateEpochDay = 20_759L, totalLengthMeters = 520),
+            Workday(
+                projectId = 1L, projectName = "الف", dateEpochDay = 20_759L,
+                operations = listOf(operation(cableId = 3L, length = 520)),
+                totalLengthMeters = 520,
+            ),
         )
         val expenses = listOf(
             Expense(dateEpochDay = 20_759L, categoryId = 1L, amountToman = 1_000_000L, settledAmountToman = 250_000L),
         )
-        val report = PeriodAggregator.build(DateRange(20_759L, 20_759L), workdays = workdays, expenses = expenses)
+        val report = PeriodAggregator.build(
+            DateRange(20_759L, 20_759L),
+            workdays = workdays,
+            expenses = expenses,
+            cableTypes = cableTypes,
+        )
         val spec = ReportSpecBuilder.period(report)
         assertEquals(ReportText.TITLE_PERIOD, spec.title)
         val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
-        assertEquals(2, tables.size) // daily + project breakdown
+        assertEquals(3, tables.size) // daily + project + cable breakdown
+        assertTrue(tables.any { it.caption == ReportText.CABLE_BREAKDOWN && it.rows.single()[3] == "۵۲۰" })
         val kvLabels = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
         assertTrue(kvLabels.any { it.first == ReportText.PERIOD_TOTAL && it.second.contains("۵۲۰") })
         assertTrue(kvLabels.any { it.first == ReportText.TOTAL_OUTSTANDING && it.second.contains("تومان") })

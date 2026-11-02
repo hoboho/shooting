@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -222,6 +223,7 @@ private fun OperationEditor(
                 ShootingTextField(
                     draft.startCode, { onChange(draft.copy(startCode = it)) },
                     stringResource(R.string.label_point_code), isError = invalid,
+                    keyboardType = KeyboardType.Number,
                 )
             }
             Box(modifier = Modifier.weight(1f)) {
@@ -245,6 +247,7 @@ private fun OperationEditor(
                 ShootingTextField(
                     draft.endCode, { onChange(draft.copy(endCode = it)) },
                     stringResource(R.string.label_point_code), isError = invalid,
+                    keyboardType = KeyboardType.Number,
                 )
             }
             Box(modifier = Modifier.weight(1f)) {

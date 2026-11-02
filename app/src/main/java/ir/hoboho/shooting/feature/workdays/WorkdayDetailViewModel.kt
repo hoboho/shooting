@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.share.FileSharer
+import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.core.share.ReportFileWriter
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.report.ReportSpecBuilder
@@ -25,6 +26,7 @@ class WorkdayDetailViewModel @Inject constructor(
     private val referenceRepository: ReferenceRepository,
     private val writer: ReportFileWriter,
     private val sharer: FileSharer,
+    private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
 
@@ -46,8 +48,13 @@ class WorkdayDetailViewModel @Inject constructor(
                 val spec = ReportSpecBuilder.daily(report, cables)
                 val name = "daily-${DateFormatter.format(report.dateEpochDay, false).replace('/', '-')}-${report.id}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
+                val saved = withContext(Dispatchers.IO) {
+                    runCatching { saver.savePdf(file, name) }.getOrNull()
+                }
                 sharer.sharePdf(file)
-                _message.value = strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved)
+                _message.value = saved?.let {
+                    strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved, it.displayPath)
+                } ?: strings.get(ir.hoboho.shooting.R.string.msg_save_failed)
             } catch (t: Throwable) {
                 _message.value = strings.get(ir.hoboho.shooting.R.string.msg_pdf_failed)
             }

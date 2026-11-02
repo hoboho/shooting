@@ -18,17 +18,17 @@
     <string name="action_confirm">تأیید</string>
     <string name="action_back">بازگشت</string>
     <string name="action_retry">تلاش دوباره</string>
-    <string name="action_share">اشتراکگذاری</string>
+    <string name="action_share">اشتراک گذاری</string>
     <string name="action_export_pdf">خروجی PDF</string>
     <string name="action_apply">اعمال</string>
     <string name="action_clear">پاک کردن</string>
     <string name="action_today">امروز</string>
     <string name="action_select">انتخاب</string>
-    <string name="action_activate">فعالسازی</string>
+    <string name="action_activate">فعال سازی</string>
     <string name="action_archive">بایگانی</string>
     <string name="action_restore">بازیابی</string>
-    <string name="action_backup">پشتیبانگیری</string>
-    <string name="action_preview">پیشنمایش</string>
+    <string name="action_backup">پشتیبان گیری</string>
+    <string name="action_preview">پیش نمایش</string>
     <string name="action_open">باز کردن</string>
     <string name="optional_label">اختیاری</string>
     <string name="value_not_set">—</string>
@@ -39,10 +39,10 @@
 
     <!-- Navigation -->
     <string name="nav_dashboard">داشبورد</string>
-    <string name="nav_projects">پروژهها</string>
+    <string name="nav_projects">پروژه ها</string>
     <string name="nav_workdays">گزارش روزانه</string>
-    <string name="nav_expenses">هزینهها</string>
-    <string name="nav_reports">گزارشها</string>
+    <string name="nav_expenses">هزینه ها</string>
+    <string name="nav_reports">گزارش ها</string>
     <string name="nav_settings">تنظیمات</string>
 
     <!-- Shared labels -->
@@ -53,10 +53,10 @@
     <string name="label_supervisor">سرپرست</string>
     <string name="label_description">توضیحات</string>
     <string name="label_active">فعال</string>
-    <string name="label_inactive">غیرفعال</string>
+    <string name="label_inactive">غیر فعال</string>
     <string name="label_date">تاریخ</string>
     <string name="label_worker_count">تعداد کارگران</string>
-    <string name="label_notes">یادداشتها</string>
+    <string name="label_notes">یادداشت ها</string>
     <string name="label_total_length">مجموع طول شوتینگ</string>
     <string name="label_daily_total">جمع طول شوتینگ روز</string>
     <string name="label_length">طول</string>
@@ -71,28 +71,30 @@
     <string name="label_start_type">نوع نقطه شروع</string>
     <string name="label_end_type">نوع نقطه پایان</string>
     <string name="label_amount">مبلغ (تومان)</string>
-    <string name="label_category">دستهبندی</string>
+    <string name="label_category">دسته بندی</string>
     <string name="label_receipt_reference">مرجع رسید / فاکتور</string>
     <string name="label_settlement">تسویه</string>
-    <string name="label_settled">تسویهشده</string>
+    <string name="label_settled">تسویه شده</string>
     <string name="label_outstanding">مانده طلب از شرکت</string>
     <string name="label_status">وضعیت</string>
     <string name="label_settlement_date">تاریخ تسویه</string>
     <string name="label_settlement_note">توضیح تسویه</string>
-    <string name="label_amount_reimbursed">مبلغ دریافتشده</string>
-    <string name="label_total_expenses">جمع هزینهها</string>
+    <string name="label_amount_reimbursed">مبلغ دریافت شده</string>
+    <string name="label_total_expenses">جمع هزینه ها</string>
     <string name="label_total_reimbursed">جمع دریافتی</string>
-    <string name="label_outstanding_receivables">مطالبات تسویهنشده</string>
+    <string name="label_outstanding_receivables">مطالبات تسویه نشده</string>
     <string name="label_project_filter">فیلتر پروژه</string>
-    <string name="label_all_projects">همه پروژهها</string>
+    <string name="label_all_projects">همه پروژه ها</string>
     <string name="label_date_range">بازه تاریخ</string>
     <string name="label_from_date">از تاریخ</string>
     <string name="label_to_date">تا تاریخ</string>
     <string name="label_daily_breakdown">تفکیک روزانه</string>
     <string name="label_project_breakdown">تفکیک پروژه</string>
-    <string name="label_expense_summary">خلاصه هزینهها</string>
+    <string name="label_cable_breakdown">تفکیک نوع کابل</string>
+    <string name="label_operation_count">تعداد عملیات</string>
+    <string name="label_expense_summary">خلاصه هزینه ها</string>
     <string name="label_period_total">مجموع طول شوتینگ دوره</string>
-    <string name="label_no_data">دادهای برای نمایش وجود ندارد</string>
+    <string name="label_no_data">داده ای برای نمایش وجود ندارد</string>
     <string name="label_optional">اختیاری</string>
 
     <!-- Point types -->
@@ -102,49 +104,49 @@
     <string name="point_manhole">منهول</string>
 
     <!-- Settlement statuses -->
-    <string name="status_unsettled">تسویهنشده</string>
+    <string name="status_unsettled">تسویه نشده</string>
     <string name="status_partial">تسویه جزئی</string>
-    <string name="status_settled">تسویهشده</string>
+    <string name="status_settled">تسویه شده</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">داشبورد</string>
     <string name="dashboard_today">امروز</string>
     <string name="dashboard_greeting">نمای کلی عملیات شوتینگ</string>
-    <string name="dashboard_active_projects">پروژههای فعال</string>
-    <string name="dashboard_recent_workdays">گزارشهای اخیر</string>
-    <string name="dashboard_recent_operations">آخرین عملیاتها</string>
+    <string name="dashboard_active_projects">پروژه های فعال</string>
+    <string name="dashboard_recent_workdays">گزارش های اخیر</string>
+    <string name="dashboard_recent_operations">آخرین عملیات ها</string>
     <string name="dashboard_period_length">طول شوتینگ بازه</string>
-    <string name="dashboard_outstanding">طلب تسویهنشده از شرکت</string>
+    <string name="dashboard_outstanding">طلب تسویه نشده از شرکت</string>
     <string name="dashboard_quick_workday">ثبت گزارش روزانه</string>
     <string name="dashboard_quick_expense">ثبت هزینه شرکت</string>
-    <string name="dashboard_quick_report">مشاهده گزارشها</string>
+    <string name="dashboard_quick_report">مشاهده گزارش ها</string>
     <string name="dashboard_this_month">ماه جاری</string>
     <string name="dashboard_this_year">سال جاری</string>
     <string name="dashboard_all_time">کل دوره</string>
-    <string name="dashboard_no_projects">هنوز پروژهای ثبت نشده است</string>
+    <string name="dashboard_no_projects">هنوز پروژه ای ثبت نشده است</string>
 
     <!-- Projects -->
-    <string name="projects_title">پروژهها</string>
+    <string name="projects_title">پروژه ها</string>
     <string name="projects_empty">برای شروع یک پروژه ثبت کنید.</string>
     <string name="project_new">پروژه جدید</string>
     <string name="project_edit">ویرایش پروژه</string>
-    <string name="project_workdays">گزارشهای این پروژه</string>
+    <string name="project_workdays">گزارش های این پروژه</string>
     <string name="project_archive">بایگانی پروژه</string>
-    <string name="project_activate">فعالسازی پروژه</string>
+    <string name="project_activate">فعال سازی پروژه</string>
     <string name="project_delete">حذف پروژه</string>
-    <string name="project_delete_message">با حذف پروژه، تمام گزارشها و عملیات آن نیز حذف میشود. ادامه میدهید؟</string>
+    <string name="project_delete_message">با حذف پروژه، تمام گزارش ها و عملیات آن نیز حذف می شود. ادامه می دهید؟</string>
     <string name="msg_project_name_required">نام پروژه را وارد کنید.</string>
-    <string name="msg_project_duplicate">پروژهای با این نام وجود دارد.</string>
+    <string name="msg_project_duplicate">پروژه ای با این نام وجود دارد.</string>
 
     <!-- Workdays -->
-    <string name="workdays_title">گزارشهای روزانه</string>
+    <string name="workdays_title">گزارش های روزانه</string>
     <string name="workdays_empty">هنوز گزارشی ثبت نشده است.</string>
     <string name="workday_new">گزارش روزانه جدید</string>
     <string name="workday_edit">ویرایش گزارش روزانه</string>
     <string name="workday_detail">گزارش روزانه</string>
     <string name="workday_date">تاریخ گزارش</string>
     <string name="workday_inherited_hint">اطلاعات از پروژه تکمیل شده و قابل ویرایش است.</string>
-    <string name="workday_reopen_hint">گزارش ذخیرهشده قابل ویرایش است.</string>
+    <string name="workday_reopen_hint">گزارش ذخیره شده قابل ویرایش است.</string>
     <string name="msg_workday_duplicate">برای این پروژه و تاریخ قبلاً گزارش ثبت شده است. همان گزارش را برای ویرایش باز کنید.</string>
     <string name="msg_workday_no_project">ابتدا یک پروژه ثبت کنید.</string>
     <string name="msg_workday_operations_empty">حداقل یک عملیات شوتینگ اضافه کنید.</string>
@@ -156,7 +158,7 @@
     <string name="operation_new">افزودن عملیات</string>
     <string name="operation_edit">ویرایش عملیات</string>
     <string name="operation_delete">حذف عملیات</string>
-    <string name="operation_length">طول محاسبهشده</string>
+    <string name="operation_length">طول محاسبه شده</string>
     <string name="operation_length_hint">قدر مطلق اختلاف کنتور شروع و پایان</string>
     <string name="operation_section_start">نقطه شروع</string>
     <string name="operation_section_end">نقطه پایان</string>
@@ -164,100 +166,101 @@
     <string name="msg_meter_required">کنتور شروع و پایان را وارد کنید.</string>
     <string name="msg_point_code_required">کد نقطه را وارد کنید.</string>
     <string name="msg_cable_type_required">نوع کابل را انتخاب کنید.</string>
-    <string name="msg_operation_invalid">برخی عملیاتها ناقصاند و ذخیره نشدند.</string>
+    <string name="msg_operation_invalid">برخی عملیات ها ناقصاند و ذخیره نشدند.</string>
 
     <!-- Expenses -->
-    <string name="expenses_title">هزینههای شرکت</string>
-    <string name="expenses_empty">هنوز هزینهای ثبت نشده است.</string>
-    <string name="expenses_hint">این هزینهها از طرف شرکت پرداخت شده و طلب شما از شرکت هستند؛ حقوق یا هزینه شخصی نیستند.</string>
+    <string name="expenses_title">هزینه های شرکت</string>
+    <string name="expenses_empty">هنوز هزینه ای ثبت نشده است.</string>
+    <string name="expenses_hint">این هزینه ها از طرف شرکت پرداخت شده و طلب شما از شرکت هستند؛ حقوق یا هزینه شخصی نیستند.</string>
     <string name="expense_new">هزینه جدید</string>
     <string name="expense_edit">ویرایش هزینه</string>
     <string name="expense_delete">حذف هزینه</string>
-    <string name="expense_settlements">تسویهها</string>
+    <string name="expense_settlements">تسویه ها</string>
     <string name="expense_settlement_new">ثبت تسویه</string>
     <string name="expense_outstanding">مانده طلب</string>
-    <string name="expense_reimbursed">دریافتشده</string>
+    <string name="expense_reimbursed">دریافت شده</string>
     <string name="expense_status">وضعیت تسویه</string>
     <string name="expense_amount">مبلغ</string>
-    <string name="expense_category">دستهبندی</string>
+    <string name="expense_category">دسته بندی</string>
     <string name="expense_date">تاریخ</string>
     <string name="expense_description">شرح هزینه</string>
     <string name="expense_receipt">مرجع رسید / فاکتور</string>
     <string name="expense_project">پروژه</string>
     <string name="expense_workday">گزارش روزانه</string>
-    <string name="expense_overview">نمای کلی هزینهها</string>
+    <string name="expense_overview">نمای کلی هزینه ها</string>
     <string name="msg_expense_amount_required">مبلغ هزینه را وارد کنید.</string>
-    <string name="msg_expense_category_required">دستهبندی را انتخاب کنید.</string>
+    <string name="msg_expense_category_required">دسته بندی را انتخاب کنید.</string>
     <string name="msg_settlement_exceeds">مبلغ تسویه بیشتر از مانده طلب است.</string>
     <string name="msg_settlement_positive">مبلغ تسویه باید بزرگتر از صفر باشد.</string>
-    <string name="msg_expense_has_settlements">ابتدا تسویههای این هزینه را حذف کنید.</string>
+    <string name="msg_expense_has_settlements">ابتدا تسویه های این هزینه را حذف کنید.</string>
     <string name="msg_expense_saved">هزینه ذخیره شد.</string>
-    <string name="expense_delete_message">با حذف هزینه، اطلاعات آن از گزارشها حذف میشود. ادامه میدهید؟</string>
+    <string name="expense_delete_message">با حذف هزینه، اطلاعات آن از گزارش ها حذف می شود. ادامه می دهید؟</string>
 
     <!-- Reports -->
-    <string name="reports_title">گزارشها</string>
+    <string name="reports_title">گزارش ها</string>
     <string name="reports_daily">گزارش روزانه</string>
-    <string name="reports_period">گزارش دورهای</string>
+    <string name="reports_period">گزارش دوره ای</string>
     <string name="reports_expenses">گزارش هزینه و تسویه</string>
     <string name="reports_select_day">انتخاب روز</string>
     <string name="reports_select_project">انتخاب پروژه</string>
     <string name="reports_pdf_daily">خروجی PDF روزانه</string>
-    <string name="reports_pdf_period">خروجی PDF دورهای</string>
-    <string name="reports_pdf_expenses">خروجی PDF هزینهها</string>
+    <string name="reports_pdf_period">خروجی PDF دوره ای</string>
+    <string name="reports_pdf_expenses">خروجی PDF هزینه ها</string>
     <string name="reports_total_length">مجموع طول شوتینگ</string>
-    <string name="reports_expense_totals">جمع هزینهها</string>
-    <string name="reports_settled">تسویهشده</string>
+    <string name="reports_expense_totals">جمع هزینه ها</string>
+    <string name="reports_settled">تسویه شده</string>
     <string name="reports_outstanding">مانده مطالبات</string>
-    <string name="reports_note_length_money">مقادیر طول (متر) و مبالغ (تومان) همواره جداگانه نمایش داده میشوند.</string>
-    <string name="msg_pdf_saved">فایل PDF ساخته شد.</string>
+    <string name="reports_note_length_money">مقادیر طول (متر) و مبالغ (تومان) همواره جداگانه نمایش داده می شوند.</string>
+    <string name="msg_pdf_saved">فایل PDF ساخته و ذخیره شد: %1$s</string>
     <string name="msg_pdf_failed">ساخت PDF ناموفق بود.</string>
-    <string name="msg_no_data_for_pdf">دادهای برای تهیه گزارش وجود ندارد.</string>
-    <string name="msg_invalid_range">تاریخ پایان نمیتواند پیش از تاریخ شروع باشد.</string>
+    <string name="msg_save_failed">ذخیره فایل ناموفق بود؛ فایل همچنان قابل ارسال است.</string>
+    <string name="msg_no_data_for_pdf">داده ای برای تهیه گزارش وجود ندارد.</string>
+    <string name="msg_invalid_range">تاریخ پایان نمی تواند پیش از تاریخ شروع باشد.</string>
 
     <!-- Settings -->
     <string name="settings_title">تنظیمات</string>
     <string name="settings_appearance">نمایش</string>
     <string name="settings_theme">حالت نمایش</string>
-    <string name="theme_system">پیشفرض دستگاه</string>
+    <string name="theme_system">پیش فرض دستگاه</string>
     <string name="theme_light">روشن</string>
     <string name="theme_dark">تاریک</string>
-    <string name="settings_reference_data">دادههای پایه</string>
+    <string name="settings_reference_data">داده های پایه</string>
     <string name="settings_cable_types">انواع کابل</string>
-    <string name="settings_expense_categories">دستهبندی هزینهها</string>
-    <string name="settings_backup">پشتیبانگیری و بازیابی</string>
+    <string name="settings_expense_categories">دسته بندی هزینه ها</string>
+    <string name="settings_backup">پشتیبان گیری و بازیابی</string>
     <string name="settings_about">درباره برنامه</string>
-    <string name="settings_about_text">شوتینگ، برنامهای کاملاً آفلاین برای ثبت عملیات شوتینگ فیبر نوری. همه اطلاعات فقط روی همین دستگاه ذخیره میشود.</string>
+    <string name="settings_about_text">شوتینگ، برنامه ای کاملاً آفلاین برای ثبت عملیات شوتینگ فیبر نوری. همه اطلاعات فقط روی همین دستگاه ذخیره می شود.</string>
     <string name="settings_add_cable">افزودن نوع کابل</string>
-    <string name="settings_add_category">افزودن دستهبندی</string>
+    <string name="settings_add_category">افزودن دسته بندی</string>
     <string name="settings_core_count">تعداد کور</string>
-    <string name="settings_category_name">نام دستهبندی</string>
+    <string name="settings_category_name">نام دسته بندی</string>
     <string name="msg_reference_duplicate">این مورد قبلاً ثبت شده است.</string>
-    <string name="msg_reference_in_use">این مورد در حال استفاده است و فقط غیرفعال میشود.</string>
+    <string name="msg_reference_in_use">این مورد در حال استفاده است و فقط غیر فعال می شود.</string>
 
     <!-- Backup / restore -->
-    <string name="backup_title">پشتیبانگیری و بازیابی</string>
+    <string name="backup_title">پشتیبان گیری و بازیابی</string>
     <string name="backup_create">ساخت فایل پشتیبان</string>
-    <string name="backup_created">فایل پشتیبان ساخته شد.</string>
-    <string name="backup_share">اشتراکگذاری فایل پشتیبان</string>
+    <string name="backup_created">فایل پشتیبان ساخته و ذخیره شد: %1$s</string>
+    <string name="backup_share">اشتراک گذاری فایل پشتیبان</string>
     <string name="backup_pick">انتخاب فایل پشتیبان</string>
-    <string name="backup_preview">پیشنمایش محتوا</string>
+    <string name="backup_preview">پیش نمایش محتوا</string>
     <string name="backup_format_version">نسخه قالب</string>
     <string name="backup_exported_at">تاریخ ایجاد</string>
-    <string name="backup_counts">پروژهها: %1$s | گزارشها: %2$s | عملیاتها: %3$s | هزینهها: %4$s | تسویهها: %5$s</string>
+    <string name="backup_counts">پروژه ها: %1$s | گزارش ها: %2$s | عملیات ها: %3$s | هزینه ها: %4$s | تسویه ها: %5$s</string>
     <string name="backup_strategy">روش بازیابی</string>
-    <string name="backup_strategy_add_only">فقط افزودن (دادههای فعلی تغییر نمیکنند)</string>
-    <string name="backup_strategy_merge">ادغام و بهروزرسانی موارد همسان</string>
+    <string name="backup_strategy_add_only">فقط افزودن (داده های فعلی تغییر نمی کنند)</string>
+    <string name="backup_strategy_merge">ادغام و به روز رسانی موارد همسان</string>
     <string name="backup_strategy_replace">جایگزینی کامل (نیاز به تأیید)</string>
-    <string name="backup_strategy_hint">پیش از هر بازیابی، یک نسخه ایمنی از اطلاعات فعلی ساخته میشود.</string>
+    <string name="backup_strategy_hint">پیش از هر بازیابی، یک نسخه ایمنی از اطلاعات فعلی ساخته می شود.</string>
     <string name="backup_restore">بازیابی</string>
-    <string name="backup_restore_confirm">اطلاعات فعلی با محتوای فایل جایگزین میشود. پیش از بازیابی نسخه ایمنی ذخیره خواهد شد. ادامه میدهید؟</string>
+    <string name="backup_restore_confirm">اطلاعات فعلی با محتوای فایل جایگزین می شود. پیش از بازیابی نسخه ایمنی ذخیره خواهد شد. ادامه می دهید؟</string>
     <string name="backup_restored">بازیابی انجام شد.</string>
     <string name="backup_invalid">فایل پشتیبان معتبر نیست یا آسیب دیده است.</string>
-    <string name="backup_unsupported">نسخه این فایل پشتیبان پشتیبانی نمیشود.</string>
-    <string name="backup_preview_existing">دادههای فعلی</string>
-    <string name="backup_preview_incoming">دادههای ورودی</string>
+    <string name="backup_unsupported">نسخه این فایل پشتیبان پشتیبانی نمی شود.</string>
+    <string name="backup_preview_existing">داده های فعلی</string>
+    <string name="backup_preview_incoming">داده های ورودی</string>
     <string name="backup_magic_hint">فایل پشتیبان شوتینگ با پسوند .shooting-backup</string>
-    <string name="msg_backup_failed">پشتیبانگیری ناموفق بود.</string>
+    <string name="msg_backup_failed">پشتیبان گیری ناموفق بود.</string>
     <string name="msg_restore_failed">بازیابی ناموفق بود.</string>
 
     <!-- Dialogs / pickers / errors -->

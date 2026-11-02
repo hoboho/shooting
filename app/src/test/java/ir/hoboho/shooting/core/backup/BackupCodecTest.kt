@@ -9,7 +9,7 @@ class BackupCodecTest {
     private fun sample() = BackupPayload(
         exportedAtEpochMilli = 1_700_000_000_000L,
         settings = SettingsDto(themeMode = "DARK"),
-        projects = listOf(ProjectDto("p-1", "پروژه \"الف\"", "منطقه ۳\nغرب", "کارفرما",
+        projects = listOf(ProjectDto("p-1", "پروژه \\"الف\\"", "منطقه ۳\nغرب", "کارفرما",
             "سرپرست", "توضیح", true, 1L, 2L)),
         workdays = listOf(WorkdayDto("w-1", "p-1", 20_759L, "منطقه", "کارفرما",
             "سرپرست", 3, "یادداشت", 800, 1L, 2L)),
@@ -31,7 +31,7 @@ class BackupCodecTest {
         assertEquals(1, payload.formatVersion)
         assertEquals("DARK", payload.settings.themeMode)
         assertEquals(1, payload.projects.size)
-        assertEquals("پروژه \"الف\"", payload.projects.single().name)
+        assertEquals("پروژه \\"الف\\"", payload.projects.single().name)
         assertEquals("منطقه ۳\nغرب", payload.projects.single().workArea)
         assertEquals(1, payload.operations.size)
         assertEquals(800, payload.operations.single().lengthMeters)
@@ -41,7 +41,7 @@ class BackupCodecTest {
 
     @Test
     fun tamperedPayload_isRejectedByChecksum() {
-        val text = BackupCodec.encode(sample()).replace("پروژه \\\"الف\\\"", "پروژه تغییرکرده")
+        val text = BackupCodec.encode(sample()).replace("پروژه \\\\"الف\\\\"", "پروژه تغییرکرده")
         assertTrue(BackupCodec.decode(text) is BackupReadResult.ChecksumMismatch)
     }
 

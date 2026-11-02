@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 sealed class BackupException(message: String) : IllegalArgumentException(message) {
     class InvalidFile : BackupException("فایل پشتیبان معتبر نیست")
-    class UnsupportedVersion(val found: Int) : BackupException("نسخه $found پشتیبانی نمیشود")
+    class UnsupportedVersion(val found: Int) : BackupException("نسخه $found پشتیبانی نمی شود")
     class Integrity(val problems: List<String>) : BackupException(problems.joinToString("، "))
 }
 

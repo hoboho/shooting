@@ -29,6 +29,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.format.NumberFormatter
+import ir.hoboho.shooting.domain.PeriodAggregator
+import ir.hoboho.shooting.domain.model.CableLengthRow
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.ui.components.ChoiceChips
@@ -38,9 +40,26 @@ import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.ShootingDropdown
 import ir.hoboho.shooting.ui.components.StatRow
+import ir.hoboho.shooting.ui.components.rememberFileSaveAction
 
 private fun workdayLabel(workday: Workday): String =
     "${workday.projectName} — ${DateFormatter.format(workday.dateEpochDay)}"
+
+@Composable
+private fun CableBreakdownRows(rows: List<CableLengthRow>) {
+    if (rows.isEmpty()) {
+        EmptyState(stringResource(R.string.label_no_data))
+        return
+    }
+    rows.forEach { row ->
+        StatRow(
+            label = row.label,
+            value = NumberFormatter.formatMeters(row.totalLengthMeters),
+            hint = "${stringResource(R.string.settings_core_count)}: ${NumberFormatter.formatInteger(row.coreCount)}" +
+                " | ${stringResource(R.string.label_operation_count)}: ${NumberFormatter.formatInteger(row.operationCount)}",
+        )
+    }
+}
 
 /** Keeps the "all projects" option as a real, labelled, non-null selection. */
 private data class ProjectFilterChoice(val project: Project?)
@@ -50,6 +69,9 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val allProjectsText = stringResource(R.string.label_all_projects)
+    val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
+    val exportPeriod = rememberFileSaveAction(viewModel::exportPeriodPdf)
+    val exportExpenses = rememberFileSaveAction(viewModel::exportExpensesPdf)
 
     LaunchedEffect(state.message) {
         state.message?.let { snackbar.showSnackbar(it); viewModel.consumeMessage() }
@@ -134,9 +156,18 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
+                        SectionCard(title = stringResource(R.string.label_cable_breakdown)) {
+                            val selected = state.workdays.firstOrNull { it.id == state.selectedWorkdayId }
+                            val rows = selected?.let {
+                                PeriodAggregator.cableBreakdown(listOf(it), state.cableTypes)
+                            } ?: emptyList()
+                            CableBreakdownRows(rows)
+                        }
+                    }
+                    item {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_daily),
-                            onClick = viewModel::exportDailyPdf,
+                            onClick = exportDaily,
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }
@@ -183,6 +214,11 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
+                        SectionCard(title = stringResource(R.string.label_cable_breakdown)) {
+                            CableBreakdownRows(state.periodReport.cableBreakdown)
+                        }
+                    }
+                    item {
                         // Money is a separate block; lengths and amounts are never combined.
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
                             StatRow(stringResource(R.string.reports_expense_totals),
@@ -199,7 +235,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     item {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_period),
-                            onClick = viewModel::exportPeriodPdf,
+                            onClick = exportPeriod,
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }
@@ -232,7 +268,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     item {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_expenses),
-                            onClick = viewModel::exportExpensesPdf,
+                            onClick = exportExpenses,
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }
