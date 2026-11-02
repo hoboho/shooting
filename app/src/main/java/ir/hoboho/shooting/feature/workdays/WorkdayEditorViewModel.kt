@@ -111,6 +111,11 @@ class WorkdayEditorViewModel @Inject constructor(
             } else {
                 val projectId = initialProjectId.takeIf { it > 0L }
                     ?: _state.value.projects.firstOrNull()?.id ?: 0L
+                _state.value = WorkdayEditorState(
+                    projects = _state.value.projects,
+                    cableTypes = _state.value.cableTypes,
+                    projectId = projectId,
+                )
                 applyProjectDefaults(projectId)
             }
         }
@@ -133,7 +138,7 @@ class WorkdayEditorViewModel @Inject constructor(
     }
 
     fun setProject(projectId: Long) {
-        if (_state.value.workdayId > 0L) return // changing the project of a saved report is not allowed here
+        if (_state.value.workdayId > 0L || _state.value.saving) return // changing the project of a saved report is not allowed here
         viewModelScope.launch { applyProjectDefaults(projectId) }
     }
 
