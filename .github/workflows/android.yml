@@ -112,10 +112,15 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Manual dispatch publishes a stable, directly downloadable .apk URL.
-      # This is a debug-signed build, not a production release.
+      # Manual dispatch or a [publish-apk] push publishes a stable, directly
+      # downloadable .apk URL. This is a debug-signed build, not a release.
       - name: Publish debug APK as a prerelease asset
-        if: github.event_name == 'workflow_dispatch' && success()
+        if: >-
+          success() && (
+            github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'push' &&
+             contains(github.event.head_commit.message, '[publish-apk]'))
+          )
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
