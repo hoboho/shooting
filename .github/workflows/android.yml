@@ -259,4 +259,7 @@ jobs:
       - name: Publish ZIP as a prerelease asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job does not check out the repository, so gh cannot infer it
+          # from a git remote; specify it explicitly.
+          GH_REPO: ${{ github.repository }}
         run: gh release upload debug-latest Shooting-latest.zip --clobber
