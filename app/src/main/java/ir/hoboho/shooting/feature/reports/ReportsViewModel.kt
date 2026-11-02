@@ -7,7 +7,6 @@ import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.date.DateRange
 import ir.hoboho.shooting.core.format.DateFormatter
-import ir.hoboho.shooting.core.share.FileSharer
 import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.core.share.ReportFileWriter
 import ir.hoboho.shooting.domain.PeriodAggregator
@@ -58,7 +57,6 @@ class ReportsViewModel @Inject constructor(
     private val projectRepository: ProjectRepository,
     private val referenceRepository: ReferenceRepository,
     private val writer: ReportFileWriter,
-    private val sharer: FileSharer,
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
@@ -140,7 +138,6 @@ class ReportsViewModel @Inject constructor(
                 val name = "daily-${DateFormatter.format(workday.dateEpochDay, false).replace('/', '-')}-${workday.id}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
-                sharer.sharePdf(file)
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -159,7 +156,6 @@ class ReportsViewModel @Inject constructor(
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
-                sharer.sharePdf(file)
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -178,7 +174,6 @@ class ReportsViewModel @Inject constructor(
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
-                sharer.sharePdf(file)
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -190,7 +185,7 @@ class ReportsViewModel @Inject constructor(
 
     private suspend fun persistPdf(file: File, name: String): PublicDownloadSaver.SavedFile? =
         withContext(Dispatchers.IO) {
-            runCatching { saver.savePdf(file, name) }.getOrNull()
+            runCatching { saver.save(file, name, "application/pdf") }.getOrNull()
         }
 
     private fun pdfSavedMessage(saved: PublicDownloadSaver.SavedFile?): String =
