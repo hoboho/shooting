@@ -163,7 +163,7 @@ jobs:
           # The runner executes each script line in its own `sh -c`, so this is
           # intentionally one line: it also preserves the Gradle exit status.
           script: |
-            set +e; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; for name in daily-workflow.pdf period-workflow.pdf expenses-workflow.pdf; do for base in /data/data/ir.hoboho.shooting /data/user/0/ir.hoboho.shooting; do adb exec-out run-as ir.hoboho.shooting cat "$base/files/qa/$name" > "qa-pdf-samples/$name" || true; if [ -s "qa-pdf-samples/$name" ]; then break; fi; done; done; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
+            set +e; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; for pkg in ir.hoboho.shooting ir.hoboho.shooting.test; do adb shell run-as $pkg sh -c 'ls -la /data/data/$0/files/qa /data/user/0/$0/files/qa 2>&1' $pkg || true; done; for name in daily-workflow.pdf period-workflow.pdf expenses-workflow.pdf; do for pkg in ir.hoboho.shooting ir.hoboho.shooting.test; do for base in /data/data/$pkg /data/user/0/$pkg; do adb exec-out run-as $pkg cat "$base/files/qa/$name" > "qa-pdf-samples/$name.tmp" || true; if [ $(wc -c < "qa-pdf-samples/$name.tmp") -gt 1000 ]; then cp "qa-pdf-samples/$name.tmp" "qa-pdf-samples/$name"; break 2; fi; done; done; done; rm -f qa-pdf-samples/*.tmp; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
 
       - name: Print instrumented test XML
         if: always()
