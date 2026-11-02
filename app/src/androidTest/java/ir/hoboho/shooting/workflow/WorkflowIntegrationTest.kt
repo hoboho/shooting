@@ -133,17 +133,23 @@ class WorkflowIntegrationTest {
     private fun publishToHost(file: File) {
         runCatching {
             val pkg = context.packageName
-            val destination = "/data/local/tmp/qa-pdf-samples/${file.name}"
-            val command = "mkdir -p /data/local/tmp/qa-pdf-samples && " +
-                "run-as $pkg cat ${file.absolutePath} 2>/dev/null > $destination"
-            val output = InstrumentationRegistry.getInstrumentation()
-                .uiAutomation
-                .executeShellCommand(command)
-            // Draining the pipe waits for the shell command to actually finish;
-            // simply closing it can kill the command before the copy completes.
-            FileInputStream(output.fileDescriptor).use { stream -> stream.readBytes() }
-            output.close()
+            val dir = "/data/local/tmp/qa-pdf-samples"
+            val destination = "$dir/${file.name}"
+            // UiAutomation executes tokenized commands without shell redirection,
+            // so use a plain `run-as <pkg> cp` into the world-writable tmp dir.
+            runShell("mkdir -p $dir")
+            runShell("rm -rf $destination")
+            runShell("run-as $pkg cp ${file.absolutePath} $destination")
         }
+    }
+
+    private fun runShell(command: String) {
+        val output = InstrumentationRegistry.getInstrumentation()
+            .uiAutomation
+            .executeShellCommand(command)
+        // Draining the pipe waits for the command to actually finish.
+        FileInputStream(output.fileDescriptor).use { stream -> stream.readBytes() }
+        output.close()
     }
 
     /** A PDF that opens in Android's renderer and actually contains dark text. */
