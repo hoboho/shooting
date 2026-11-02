@@ -159,14 +159,14 @@
     <string name="operation_edit">ویرایش عملیات</string>
     <string name="operation_delete">حذف عملیات</string>
     <string name="operation_length">طول محاسبه شده</string>
-    <string name="operation_length_hint">قدر مطلق اختلاف کنتور شروع و پایان</string>
+    <string name="operation_length_hint">قدر مطلق اختلاف بین کنتور شروع و کنتور پایان</string>
     <string name="operation_section_start">نقطه شروع</string>
     <string name="operation_section_end">نقطه پایان</string>
     <string name="operation_section_cable">کابل</string>
     <string name="msg_meter_required">کنتور شروع و کنتور پایان را وارد کنید.</string>
     <string name="msg_point_code_required">کد نقطه را وارد کنید.</string>
     <string name="msg_cable_type_required">نوع کابل را انتخاب کنید.</string>
-    <string name="msg_operation_invalid">برخی عملیات‌ها ناقصاند و ذخیره نشدند.</string>
+    <string name="msg_operation_invalid">برخی از عملیات‌ها ناقص‌اند و ذخیره نشدند.</string>
 
     <!-- Expenses -->
     <string name="expenses_title">هزینه‌های شرکت</string>
