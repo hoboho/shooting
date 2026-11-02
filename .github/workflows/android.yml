@@ -45,6 +45,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default packages include the retired "tools" package,
+          # which makes sdkmanager fail on current runners. AGP downloads the
+          # required platform/build-tools itself once licences are accepted.
+          packages: 'platform-tools'
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -121,6 +126,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default packages include the retired "tools" package,
+          # which makes sdkmanager fail on current runners. AGP downloads the
+          # required platform/build-tools itself once licences are accepted.
+          packages: 'platform-tools'
 
       - name: Enable KVM
         run: |
