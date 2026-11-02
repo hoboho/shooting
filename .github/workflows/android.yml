@@ -166,6 +166,21 @@ jobs:
         run: |
           find app/build/outputs/androidTest-results -name '*.xml' -print -exec cat {} \; || true
 
+      - name: Collect generated PDF samples
+        if: always()
+        run: |
+          mkdir -p qa-pdf-samples
+          adb pull /sdcard/Android/data/ir.hoboho.shooting/files/qa qa-pdf-samples/ || true
+          find qa-pdf-samples -type f -printf '%p %s bytes\n' || true
+
+      - name: Upload PDF samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-pdf-samples
+          path: qa-pdf-samples/
+          if-no-files-found: warn
+
       - name: Upload instrumented test report
         if: always()
         uses: actions/upload-artifact@v4
