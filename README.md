@@ -66,8 +66,8 @@ cd shooting
 [`.github/workflows/android.yml`](.github/workflows/android.yml) همان دستورات را
 اجرا میکند و APK، گزارش آزمون/لینت و اسکیمای Room را بهعنوان artifact بارگذاری
 میکند. [اجرای 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-آخرین اجرای کامل و موفق این گردشکار است؛ جزئیات در
-[وضعیت کنترل کیفیت](docs/QA.md) ثبت شده است.
+اجرای مرجع تأیید ساخت این گردشکار است؛ اجراهای بعدی در برگهٔ Actions مخزن و
+جزئیات پایدار در [وضعیت کنترل کیفیت](docs/QA.md) قابل مشاهدهاند.
 
 ### اجرا بدون Gradle (محیط آفلاین)
 
@@ -86,8 +86,9 @@ KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar
 
 ## وضعیت تأیید (مهم)
 
-آخرین اجرای کامل [GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-روی این شاخه با نتیجهٔ `success` برای هر سه job به پایان رسید.
+اجرای مرجع [GitHub Actions run 41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
+روی این شاخه با نتیجهٔ `success` برای هر سه job به پایان رسید؛ کامیتهای بعدی
+نیز همان گردشکار را روی push/PR اجرا میکنند.
 
 | مورد | وضعیت |
 | --- | --- |
