@@ -185,7 +185,7 @@ class ReportsViewModel @Inject constructor(
 
     private suspend fun persistPdf(file: File, name: String): PublicDownloadSaver.SavedFile? =
         withContext(Dispatchers.IO) {
-            runCatching { saver.save(file, name, "application/pdf") }.getOrNull()
+            runCatching { saver.savePdf(file, name) }.getOrNull()
         }
 
     private fun pdfSavedMessage(saved: PublicDownloadSaver.SavedFile?): String =
