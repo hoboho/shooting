@@ -27,6 +27,8 @@ interface ProjectRepository {
 
 interface WorkdayRepository {
     fun observeWorkdays(): Flow<List<Workday>>
+    /** Like [observeWorkdays], but each workday includes its operations (needed for cable breakdowns). */
+    fun observeWorkdaysWithOperations(): Flow<List<Workday>>
     fun observeWorkdaysInRange(start: Long, end: Long): Flow<List<Workday>>
     fun observeWorkdaysByProject(projectId: Long): Flow<List<Workday>>
     fun observeWorkday(id: Long): Flow<Workday?>

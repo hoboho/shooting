@@ -37,6 +37,9 @@ class WorkdayRepositoryImpl @Inject constructor(
     override fun observeWorkdays(): Flow<List<Workday>> =
         dao.observeAll().map { rows -> rows.map { it.toDomain() } }
 
+    override fun observeWorkdaysWithOperations(): Flow<List<Workday>> =
+        dao.observeAllDetailed().map { rows -> rows.map { it.toDomain() } }
+
     override fun observeWorkdaysInRange(start: Long, end: Long): Flow<List<Workday>> =
         dao.observeInRange(start, end).map { rows -> rows.map { it.toDomain() } }
 

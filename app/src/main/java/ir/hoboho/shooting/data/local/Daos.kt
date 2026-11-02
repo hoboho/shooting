@@ -95,6 +95,15 @@ interface WorkdayDao {
     )
     fun observeAll(): Flow<List<WorkdayRow>>
 
+    /** Same order as [observeAll], but every workday carries its operations. */
+    @Transaction
+    @Query(
+        """SELECT w.*, p.name AS projectName FROM workdays w
+           INNER JOIN projects p ON w.projectId = p.id
+           ORDER BY w.dateEpochDay DESC, w.id DESC"""
+    )
+    fun observeAllDetailed(): Flow<List<WorkdayDetailRow>>
+
     @Query(
         """SELECT w.*, p.name AS projectName FROM workdays w
            INNER JOIN projects p ON w.projectId = p.id

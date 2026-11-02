@@ -72,7 +72,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 projectRepository.observeProjects(),
-                workdayRepository.observeWorkdays(),
+                workdayRepository.observeWorkdaysWithOperations(),
                 expenseRepository.observeExpenses(),
                 expenseRepository.observeAllSettlements(),
                 combine(
