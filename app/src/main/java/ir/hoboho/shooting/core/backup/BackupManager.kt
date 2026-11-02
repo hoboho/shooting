@@ -106,8 +106,10 @@ class BackupManager @Inject constructor(
 
     suspend fun restore(text: String, strategy: RestoreStrategy): RestoreOutcome {
         val payload = requirePayload(text)
-        val problems = BackupMapper.validate(payload)
-        if (problems.isNotEmpty()) throw BackupException.Integrity(problems)
+        val inspection = inspect(text, strategy)
+        if (inspection.warnings.isNotEmpty()) {
+            throw BackupException.Integrity(inspection.warnings)
+        }
         val data = BackupMapper.toData(payload)
         // Safety snapshot first: even a failed restore leaves the old data intact
         // and gives the user a file to recover from.
