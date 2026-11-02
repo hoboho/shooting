@@ -43,6 +43,7 @@ data class WorkdayEditorState(
     val cableTypes: List<CableType> = emptyList(),
     val inherited: Boolean = false,
     val saved: Boolean = false,
+    val saving: Boolean = false,
     val error: String? = null,
     val invalidRows: Set<Long> = emptySet(),
 ) {
@@ -136,15 +137,16 @@ class WorkdayEditorViewModel @Inject constructor(
         viewModelScope.launch { applyProjectDefaults(projectId) }
     }
 
-    fun setDate(epochDay: Long) = _state.update { it.copy(dateEpochDay = epochDay, error = null) }
-    fun setWorkArea(value: String) = _state.update { it.copy(workArea = value, inherited = false) }
-    fun setEmployer(value: String) = _state.update { it.copy(employer = value, inherited = false) }
-    fun setSupervisor(value: String) = _state.update { it.copy(supervisor = value, inherited = false) }
-    fun setWorkerCount(value: String) = _state.update { it.copy(workerCount = value, inherited = false) }
-    fun setNotes(value: String) = _state.update { it.copy(notes = value) }
+    fun setDate(epochDay: Long) = _state.update { if (it.saving) it else it.copy(dateEpochDay = epochDay, error = null) }
+    fun setWorkArea(value: String) = _state.update { if (it.saving) it else it.copy(workArea = value, inherited = false) }
+    fun setEmployer(value: String) = _state.update { if (it.saving) it else it.copy(employer = value, inherited = false) }
+    fun setSupervisor(value: String) = _state.update { if (it.saving) it else it.copy(supervisor = value, inherited = false) }
+    fun setWorkerCount(value: String) = _state.update { if (it.saving) it else it.copy(workerCount = value, inherited = false) }
+    fun setNotes(value: String) = _state.update { if (it.saving) it else it.copy(notes = value) }
 
     fun addOperation() {
         _state.update { state ->
+            if (state.saving) return@update state
             val draft = OperationDraft(
                 key = nextKey++,
                 cableTypeId = state.cableTypes.firstOrNull()?.id,
@@ -154,10 +156,11 @@ class WorkdayEditorViewModel @Inject constructor(
     }
 
     fun removeOperation(key: Long) =
-        _state.update { it.copy(operations = it.operations.filterNot { draft -> draft.key == key }) }
+        _state.update { if (it.saving) it else it.copy(operations = it.operations.filterNot { draft -> draft.key == key }) }
 
     fun updateOperation(key: Long, transform: (OperationDraft) -> OperationDraft) =
         _state.update { state ->
+            if (state.saving) return@update state
             state.copy(
                 operations = state.operations.map { draft ->
                     if (draft.key == key) transform(draft) else draft
@@ -168,7 +171,11 @@ class WorkdayEditorViewModel @Inject constructor(
 
     fun save() {
         val current = _state.value
+        if (current.saving || current.saved) return
+        _state.update { if (it.saving || it.saved) it else it.copy(saving = true, error = null) }
+        if (!_state.value.saving) return
         viewModelScope.launch {
+            try {
             val cableIds = current.cableTypes.map { it.id }.toSet()
             val operationIssues = Validator.operations(current.operations, cableIds)
             val projectExists = projectRepository.getProject(current.projectId) != null
@@ -194,7 +201,6 @@ class WorkdayEditorViewModel @Inject constructor(
                 }
                 return@launch
             }
-            try {
                 val now = clock.nowEpochMilli()
                 val operations = current.operations.mapNotNull { it.toOperation(current.workdayId, now) }
                 val workday = Workday(
@@ -217,6 +223,8 @@ class WorkdayEditorViewModel @Inject constructor(
                 _state.update { it.copy(error = strings.validationMessage(e.issues.first().field)) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = strings.get(ir.hoboho.shooting.R.string.error_generic)) }
+            } finally {
+                _state.update { it.copy(saving = false) }
             }
         }
     }
