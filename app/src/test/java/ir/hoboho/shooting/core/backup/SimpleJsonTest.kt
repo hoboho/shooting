@@ -8,9 +8,9 @@ class SimpleJsonTest {
 
     @Test
     fun parsesAndWritesObjectsArraysAndEscapes() {
-        val text = """{"a":"سلام \"دنیا\\"\n","b":[1,-2,true,false,null,{"c":3.5}],"d":"\u0641"}"""
+        val text = """{"a":"سلام \"دنیا\"\n","b":[1,-2,true,false,null,{"c":3.5}],"d":"\u0641"}"""
         val parsed = SimpleJson.parse(text).asObj()!!
-        assertEquals("سلام \\"دنیا\\"\n", parsed.string("a"))
+        assertEquals("سلام \"دنیا\"\n", parsed.string("a"))
         assertEquals(6, parsed.field("b").asArr()!!.values.size)
         assertEquals(-2L, parsed.field("b").asArr()!!.values[1].asLong())
         assertEquals(true, parsed.field("b").asArr()!!.values[2].asBoolean())
