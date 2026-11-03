@@ -23,7 +23,7 @@ OUT="${OUT:-/tmp/shooting-offline-tests}"
 # harness only compiles the platform-independent core/domain logic.
 MAIN="$(find app/src/main/java/ir/hoboho/shooting/core \
              app/src/main/java/ir/hoboho/shooting/domain -name '*.kt' \
-        | grep -v -E 'StringProvider|BackupManager|PdfReportEngine|FileSharer|domain/repository/Repositories.kt' \
+        | grep -v -E 'StringProvider|BackupManager|PdfReportEngine|FileSharer|PublicDownloadSaver|domain/repository/Repositories.kt' \
         | sort | tr '\n' ' ')"
 TESTS="$(find app/src/test -name '*.kt' | sort | tr '\n' ' ')"
 CLASSES="$(find app/src/test -name '*Test.kt' \
@@ -35,6 +35,7 @@ echo "Compiling pure-Kotlin sources + tests ..."
 # shellcheck disable=SC2086
 "$KOTLINC" $MAIN $TESTS \
   scripts/offline-test-harness/JUnitStubs.kt \
+  scripts/offline-test-harness/BuildConfigStub.kt \
   scripts/offline-test-harness/TestRunner.kt -d "$OUT"
 echo "Running unit tests ..."
 # shellcheck disable=SC2086

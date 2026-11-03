@@ -33,3 +33,9 @@
 ## دریافت برنامه
 
 [دریافت آخرین فایل نصب اندروید (نسخهٔ آزمایشی و امضاشده برای Debug)](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk)
+
+همچنین [بستهٔ ZIP کامل همان ساخت](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-latest.zip)
+و [فهرست release های نسخه دار ساخته شده از شاخهٔ اصلی](https://github.com/hoboho/shooting/releases)
+در دسترس اند. هر پوش به شاخهٔ اصلی، release تازه ای با برچسب `v<versionName>`
+منتشر می کند؛ شمارهٔ نسخه به طور خودکار در CI تغییر می کند و تنها منبع آن
+`gradle.properties` است (توضیح در [docs/BUILD.md](docs/BUILD.md)).

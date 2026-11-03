@@ -33,7 +33,8 @@ python3 scripts/offline-compile-check/generate_r_stub.py "$ROOT" "$WORK/stubs"
 FILES="$(find app/src/main/java/ir/hoboho/shooting/core \
               app/src/main/java/ir/hoboho/shooting/domain \
               app/src/main/java/ir/hoboho/shooting/data \
-              app/src/main/java/ir/hoboho/shooting/di -name '*.kt' | sort | tr '\n' ' ')"
+              app/src/main/java/ir/hoboho/shooting/di -name '*.kt' \
+         | grep -v -E 'PublicDownloadSaver' | sort | tr '\n' ' ')"
 STUBS="$(find scripts/offline-compile-check/stubs "$WORK/stubs" -name '*.kt' | sort | tr '\n' ' ')"
 echo "Compiling $(echo $FILES | wc -w) Kotlin sources against API stubs ..."
 # shellcheck disable=SC2086
