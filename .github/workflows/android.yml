@@ -13,6 +13,9 @@ concurrency:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
+  # Overrides shooting.versionBuild in gradle.properties, so every CI build has
+  # a distinct versionName and a monotonically increasing versionCode.
+  SHOOTING_VERSION_BUILD: ${{ github.run_number }}
 
 permissions:
   contents: read
@@ -39,8 +42,18 @@ jobs:
     needs: static
     permissions:
       contents: write
+    outputs:
+      version_name: ${{ steps.version.outputs.name }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve app version
+        id: version
+        run: |
+          BASE="$(sed -n 's/^shooting\.versionBase=//p' gradle.properties | tr -d '\r')"
+          NAME="${BASE}.${SHOOTING_VERSION_BUILD}"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "App version for this run: ${NAME}"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -69,13 +82,13 @@ jobs:
         run: chmod +x gradlew
 
       - name: JVM unit tests
-        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
+        run: ./gradlew :app:testDebugUnitTest -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon --stacktrace
 
       - name: Static analysis (Android lint)
-        run: ./gradlew :app:lintDebug --no-daemon
+        run: ./gradlew :app:lintDebug -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon
 
       - name: Compile debug sources and build APK
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: ./gradlew :app:assembleDebug -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon --stacktrace
 
       - name: Upload unit test report
         if: always()
@@ -94,7 +107,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Export Room schema JSON
-        run: ./gradlew :app:kspDebugKotlin --no-daemon
+        run: ./gradlew :app:kspDebugKotlin -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon
 
       - name: Upload Room schema
         if: always()
@@ -112,28 +125,32 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Manual dispatch or a [publish-apk] push publishes a stable, directly
-      # downloadable .apk URL. This is a debug-signed build, not a release.
+      # Every main push (plus manual dispatch or a [publish-apk] push) refreshes
+      # the stable debug-latest APK. This is a debug-signed build, not a release.
       - name: Publish debug APK as a prerelease asset
         if: >-
           success() && (
             github.event_name == 'workflow_dispatch' ||
             (github.event_name == 'push' &&
-             contains(github.event.head_commit.message, '[publish-apk]'))
+             (github.ref == 'refs/heads/main' ||
+              contains(github.event.head_commit.message, '[publish-apk]')))
           )
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
         run: |
           TAG=debug-latest
           ASSET=Shooting-debug.apk
+          NOTES="Debug build ${VERSION_NAME} from ${GITHUB_SHA}. Debug-signed; not a production-signed release."
           cp app/build/outputs/apk/debug/app-debug.apk "$ASSET"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$ASSET" --clobber
+            gh release edit "$TAG" --notes "$NOTES"
           else
             gh release create "$TAG" "$ASSET" \
               --prerelease \
               --title "Shooting debug APK" \
-              --notes "Automated debug build from ${GITHUB_SHA}. Debug-signed, not a production release."
+              --notes "$NOTES"
           fi
 
   # ------------------------------------------------------------ on-device DB
@@ -193,7 +210,7 @@ jobs:
           # The runner executes each script line in its own `sh -c`, so this is
           # intentionally one line: it also preserves the Gradle exit status.
           script: |
-            set +e; adb shell rm -rf /sdcard/Download/ShootingQA || true; ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; adb shell ls -laR /sdcard/Download/ShootingQA || true; adb pull /sdcard/Download/ShootingQA qa-pdf-samples/ || true; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
+            set +e; adb shell rm -rf /sdcard/Download/ShootingQA || true; ./gradlew :app:connectedDebugAndroidTest -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon --stacktrace; STATUS=$?; mkdir -p qa-pdf-samples; adb shell ls -laR /sdcard/Download/ShootingQA || true; adb pull /sdcard/Download/ShootingQA qa-pdf-samples/ || true; find qa-pdf-samples -type f -size 0 -delete; find qa-pdf-samples -type f -printf '%p %s bytes\n' || true; exit $STATUS
 
       - name: Print instrumented test XML
         if: always()
@@ -219,8 +236,8 @@ jobs:
           if-no-files-found: ignore
 
   # ------------------------------------------------ permanent download links
-  # Manual dispatch or a [publish-apk] push refreshes both stable assets:
-  # the APK and a ZIP holding every artifact of the same CI run.
+  # Refreshes the rolling debug-latest assets on manual dispatch / [publish-apk],
+  # and always publishes a versioned release when main is pushed.
   bundle:
     name: Publish download bundle
     runs-on: ubuntu-latest
@@ -230,7 +247,8 @@ jobs:
       success() && (
         github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'push' &&
-         contains(github.event.head_commit.message, '[publish-apk]'))
+         (github.ref == 'refs/heads/main' ||
+          contains(github.event.head_commit.message, '[publish-apk]')))
       )
     permissions:
       contents: write
@@ -263,3 +281,27 @@ jobs:
           # from a git remote; specify it explicitly.
           GH_REPO: ${{ github.repository }}
         run: gh release upload debug-latest Shooting-latest.zip --clobber
+
+      # The latest build of main gets its own versioned, permanent release. It
+      # is still a debug-signed test build, which the notes state explicitly.
+      - name: Publish versioned release from main
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION_NAME: ${{ needs.unit.outputs.version_name }}
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_RUN: ${{ github.run_id }}
+        run: |
+          TAG="v${VERSION_NAME}"
+          APK="Shooting-debug.apk"
+          NOTES="Built from main (${BUILD_SHA}), workflow run ${BUILD_RUN}. Version ${VERSION_NAME}. Debug-signed APK; not a production-signed release."
+          cp bundle/shooting-debug-apk/app-debug.apk "$APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" Shooting-latest.zip --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            gh release create "$TAG" "$APK" Shooting-latest.zip \
+              --title "Shooting ${VERSION_NAME}" \
+              --notes "$NOTES"
+          fi

@@ -11,6 +11,14 @@ import ir.hoboho.shooting.domain.model.ThemeMode
 import ir.hoboho.shooting.domain.model.Workday
 
 /**
+ * Fallbacks only: real v1 backups always carry their app version fields. These
+ * two constants describe the first released format, not the current app version
+ * (which comes from AppInfo / gradle.properties).
+ */
+private const val LEGACY_APP_VERSION_NAME = "1.0.0"
+private const val LEGACY_APP_VERSION_CODE = 1
+
+/**
  * Versioned on-disk shape of a Shooting backup.
  *
  * Local database ids are never trusted across installations. Every row carries a
@@ -19,8 +27,8 @@ import ir.hoboho.shooting.domain.model.Workday
  */
 data class BackupPayload(
     val formatVersion: Int = BackupCodec.FORMAT_VERSION,
-    val appVersionName: String = "1.0.0",
-    val appVersionCode: Int = 1,
+    val appVersionName: String = LEGACY_APP_VERSION_NAME,
+    val appVersionCode: Int = LEGACY_APP_VERSION_CODE,
     val exportedAtEpochMilli: Long,
     val settings: SettingsDto,
     val projects: List<ProjectDto> = emptyList(),

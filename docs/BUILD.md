@@ -46,10 +46,41 @@ chmod +x gradlew                              # در صورت نیاز
 بهصورت artifact `room-schema` موجود است. پیش از نخستین تغییر اسکیما، همان فایل
 تولیدشده را کامیت کنید تا مبنای `MigrationTestHelper` باشد.
 
+## نسخه گذاری
+
+همهٔ مقادیر نسخه فقط در `gradle.properties` تعریف می شوند:
+
+```properties
+shooting.versionBase=1.0
+shooting.versionCodeBase=1000
+shooting.versionBuild=1
+```
+
+`app/build.gradle.kts` از روی آن ها حساب می کند:
+
+* `versionName = <shooting.versionBase>.<shooting.versionBuild>`
+* `versionCode = <shooting.versionCodeBase> + <shooting.versionBuild>`
+
+همان دو مقدار از طریق فیلد های تولید شدهٔ `BuildConfig` به `AppInfo` می رسند؛
+صفحهٔ تنظیمات و metadata فایل پشتیبان دقیقاً نسخهٔ همان APK را نشان می دهند و
+دیگر نیازی به هماهنگ کردن دستی چند فایل نیست. مقادیر پیش فرض فیلد های نسخه در
+`BackupPayload` فقط مربوط به فایل های قدیمی/ناقص اند و نسخهٔ جاری برنامه
+نیستند. نسخهٔ قالب پشتیبان (`BackupCodec.FORMAT_VERSION`) و نسخهٔ پایگاه داده
+(`ShootingDatabase` v1) اعداد جداگانه ای هستند و ربطی به نسخهٔ APK ندارند.
+
+گردشکار CI پارامتر `-Pshooting.versionBuild=<github.run_number>` را به تمام
+دستورات Gradle می دهد؛ بنابراین هر ساخت، نام نسخهٔ تازه و `versionCode` ای
+بزرگ تر از ساخت قبل دارد. ساخت محلی بدون آن پارامتر `1.0.1 (1001)` می سازد.
+برای تغییر خط نسخه (مثلاً به `1.1`) فقط `shooting.versionBase` را عوض کنید.
+
+هر پوش به `main`، افزون بر `debug-latest`، یک release نسخه دار با برچسب
+`v<versionName>` شامل APK و ZIP همان اجرا منتشر می کند. این ساخت دیباگ امضا
+شده است، نه نسخهٔ انتشار امضا شده برای استور.
+
 ## لینک های دانلود پایدار
 
-گردشکار CI در اجرای دستی یا هنگام کامیتی با برچسب `[publish-apk]` دو فایل
-پیش انتشار `debug-latest` را بهروز می کند:
+گردشکار CI در هر پوش به `main` (و نیز در اجرای دستی یا کامیتی با برچسب
+`[publish-apk]`) دو فایل پیش انتشار `debug-latest` را بهروز می کند:
 
 * APK: <https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk>
 * ZIP کامل همان اجرا (همهٔ artifact ها به همراه `BUILD-INFO.txt`):
@@ -58,6 +89,10 @@ chmod +x gradlew                              # در صورت نیاز
 برگهٔ پیش انتشار: <https://github.com/hoboho/shooting/releases/tag/debug-latest>.
 هر دو ساخت دیباگ اند و برای نصب آزمایشی اند؛ نسخهٔ انتشار امضا شده محسوب
 نمی شوند.
+
+آخرین ساخت `main` همچنین به صورت release نسخه دار منتشر می شود:
+<https://github.com/hoboho/shooting/releases>. برچسب آن `v<versionName>` است و
+یادداشت release کامیت و شمارهٔ اجرای مربوطه را مشخص می کند.
 
 ## نسخهٔ ریلیز
 

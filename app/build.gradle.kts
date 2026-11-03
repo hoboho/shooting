@@ -7,6 +7,14 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// All version values come from gradle.properties, so the APK, the UI and the
+// backup metadata can never disagree. CI passes -Pshooting.versionBuild=<run>.
+val versionBase = findProperty("shooting.versionBase")?.toString() ?: "1.0"
+val versionCodeBase = findProperty("shooting.versionCodeBase")?.toString()?.toIntOrNull() ?: 1000
+val versionBuild = findProperty("shooting.versionBuild")?.toString()?.toIntOrNull() ?: 1
+val shootingVersionName = "$versionBase.$versionBuild"
+val shootingVersionCode = versionCodeBase + versionBuild
+
 android {
     namespace = "ir.hoboho.shooting"
     compileSdk = 37
@@ -15,8 +23,12 @@ android {
         applicationId = "ir.hoboho.shooting"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = shootingVersionCode
+        versionName = shootingVersionName
+
+        // Exposes the same version to Kotlin (settings screen and backup files).
+        buildConfigField("String", "APP_VERSION_NAME", "\"$shootingVersionName\"")
+        buildConfigField("int", "APP_VERSION_CODE", "$shootingVersionCode")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -47,7 +59,10 @@ android {
         }
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     androidResources { localeFilters += listOf("fa") }
 

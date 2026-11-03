@@ -78,6 +78,8 @@ for p, text in texts.items():
         name = m.group(1)
         if name.startswith("ir.hoboho.shooting.R"):
             continue  # generated R class
+        if name.startswith("ir.hoboho.shooting.BuildConfig"):
+            continue  # generated BuildConfig class (AGP buildFeatures.buildConfig)
         if name not in declared:
             errors.append(f"unresolved local import {name} in {rel(p)}")
 
