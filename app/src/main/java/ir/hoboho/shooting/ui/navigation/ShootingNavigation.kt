@@ -3,19 +3,8 @@ package ir.hoboho.shooting.ui.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Cable
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Insights
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.SpaceDashboard
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Cable as CableOutlined
-import androidx.compose.material.icons.outlined.EditNote as EditNoteOutlined
-import androidx.compose.material.icons.outlined.Insights as InsightsOutlined
-import androidx.compose.material.icons.outlined.Payments as PaymentsOutlined
-import androidx.compose.material.icons.outlined.SpaceDashboard as SpaceDashboardOutlined
-import androidx.compose.material.icons.outlined.Tune as TuneOutlined
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -84,12 +73,12 @@ enum class TopLevelDestination(
     val icon: ImageVector,
     val selectedIcon: ImageVector,
 ) {
-    Dashboard(Routes.DASHBOARD, R.string.nav_dashboard, SpaceDashboardOutlined, Icons.Filled.SpaceDashboard),
-    Projects(Routes.PROJECTS, R.string.nav_projects, CableOutlined, Icons.Filled.Cable),
-    Workdays(Routes.WORKDAYS, R.string.nav_workdays, EditNoteOutlined, Icons.Filled.EditNote),
-    Expenses(Routes.EXPENSES, R.string.nav_expenses, PaymentsOutlined, Icons.Filled.Payments),
-    Reports(Routes.REPORTS, R.string.nav_reports, InsightsOutlined, Icons.Filled.Insights),
-    Settings(Routes.SETTINGS, R.string.nav_settings, TuneOutlined, Icons.Filled.Tune),
+    Dashboard(Routes.DASHBOARD, R.string.nav_dashboard, Icons.Outlined.SpaceDashboard, Icons.Filled.SpaceDashboard),
+    Projects(Routes.PROJECTS, R.string.nav_projects, Icons.Outlined.Cable, Icons.Filled.Cable),
+    Workdays(Routes.WORKDAYS, R.string.nav_workdays, Icons.Outlined.EditNote, Icons.Filled.EditNote),
+    Expenses(Routes.EXPENSES, R.string.nav_expenses, Icons.Outlined.Payments, Icons.Filled.Payments),
+    Reports(Routes.REPORTS, R.string.nav_reports, Icons.Outlined.Insights, Icons.Filled.Insights),
+    Settings(Routes.SETTINGS, R.string.nav_settings, Icons.Outlined.Tune, Icons.Filled.Tune),
 }
 
 private val longArg = { name: String -> navArgument(name) { type = NavType.LongType } }
