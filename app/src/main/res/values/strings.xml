@@ -40,7 +40,7 @@
     <!-- Navigation -->
     <string name="nav_dashboard">داشبورد</string>
     <string name="nav_projects">پروژه‌ها</string>
-    <string name="nav_workdays">گزارش روزانه</string>
+    <string name="nav_workdays">روزانه</string>
     <string name="nav_expenses">هزینه‌ها</string>
     <string name="nav_reports">گزارش‌ها</string>
     <string name="nav_settings">تنظیمات</string>

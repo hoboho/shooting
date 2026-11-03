@@ -4,12 +4,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Cable
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.SpaceDashboard
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Cable as CableOutlined
+import androidx.compose.material.icons.outlined.EditNote as EditNoteOutlined
+import androidx.compose.material.icons.outlined.Insights as InsightsOutlined
+import androidx.compose.material.icons.outlined.Payments as PaymentsOutlined
+import androidx.compose.material.icons.outlined.SpaceDashboard as SpaceDashboardOutlined
+import androidx.compose.material.icons.outlined.Tune as TuneOutlined
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -75,13 +82,14 @@ enum class TopLevelDestination(
     val route: String,
     val labelRes: Int,
     val icon: ImageVector,
+    val selectedIcon: ImageVector,
 ) {
-    Dashboard(Routes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Home),
-    Projects(Routes.PROJECTS, R.string.nav_projects, Icons.Filled.Business),
-    Workdays(Routes.WORKDAYS, R.string.nav_workdays, Icons.Filled.ListAlt),
-    Expenses(Routes.EXPENSES, R.string.nav_expenses, Icons.Filled.Receipt),
-    Reports(Routes.REPORTS, R.string.nav_reports, Icons.Filled.Assessment),
-    Settings(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
+    Dashboard(Routes.DASHBOARD, R.string.nav_dashboard, SpaceDashboardOutlined, Icons.Filled.SpaceDashboard),
+    Projects(Routes.PROJECTS, R.string.nav_projects, CableOutlined, Icons.Filled.Cable),
+    Workdays(Routes.WORKDAYS, R.string.nav_workdays, EditNoteOutlined, Icons.Filled.EditNote),
+    Expenses(Routes.EXPENSES, R.string.nav_expenses, PaymentsOutlined, Icons.Filled.Payments),
+    Reports(Routes.REPORTS, R.string.nav_reports, InsightsOutlined, Icons.Filled.Insights),
+    Settings(Routes.SETTINGS, R.string.nav_settings, TuneOutlined, Icons.Filled.Tune),
 }
 
 private val longArg = { name: String -> navArgument(name) { type = NavType.LongType } }
@@ -117,8 +125,19 @@ fun ShootingApp(
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(destination.icon, contentDescription = null) },
-                            label = { Text(stringResource(destination.labelRes)) },
+                            icon = {
+                                Icon(
+                                    if (selected) destination.selectedIcon else destination.icon,
+                                    contentDescription = null,
+                                )
+                            },
+                            label = {
+                                Text(
+                                    stringResource(destination.labelRes),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                 selectedTextColor = MaterialTheme.colorScheme.primary,
