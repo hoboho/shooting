@@ -73,9 +73,11 @@ shooting.versionBuild=1
 بزرگ تر از ساخت قبل دارد. ساخت محلی بدون آن پارامتر `1.0.1 (1001)` می سازد.
 برای تغییر خط نسخه (مثلاً به `1.1`) فقط `shooting.versionBase` را عوض کنید.
 
-هر پوش به `main`، افزون بر `debug-latest`، یک release نسخه دار با برچسب
-`v<versionName>` شامل APK و ZIP همان اجرا منتشر می کند. این ساخت دیباگ امضا
-شده است، نه نسخهٔ انتشار امضا شده برای استور.
+پیش انتشار `debug-latest` همواره حاوی APK **دیباگ** است. نسخهٔ Release امضا
+شده مسیر جداگانه ای دارد: job `release` در CI آن را می سازد و با `apksigner`
+اعتبارسنجی می کند، و job `publish_release` تنها با تأیید مالک مخزن آن را در
+Release نسخهدار `v<versionName>-release` قرار می دهد. جزئیات و نام Secrets در
+[`RELEASE_SIGNING.md`](RELEASE_SIGNING.md).
 
 ## لینک های دانلود پایدار
 
@@ -90,20 +92,28 @@ shooting.versionBuild=1
 هر دو ساخت دیباگ اند و برای نصب آزمایشی اند؛ نسخهٔ انتشار امضا شده محسوب
 نمی شوند.
 
-آخرین ساخت `main` همچنین به صورت release نسخه دار منتشر می شود:
-<https://github.com/hoboho/shooting/releases>. برچسب آن `v<versionName>` است و
-یادداشت release کامیت و شمارهٔ اجرای مربوطه را مشخص می کند.
+فهرست Release ها: <https://github.com/hoboho/shooting/releases>. Release نسخهدار
+حاوی APK **امضا شده** تنها پس از تأیید مالک ساخته می شود؛ APK دیباگ هرگز به
+عنوان Release منتشر نمی شود.
 
-## نسخهٔ ریلیز
+## نسخهٔ ریلیز (امضا شده)
 
 ```bash
+set -a
+source ~/.shooting-signing/credentials.env
+set +a
+export RELEASE_KEYSTORE_FILE="$HOME/.shooting-signing/shooting-release.jks"
 ./gradlew :app:assembleRelease
 ```
 
-هیچ کلید امضایی در مخزن نیست. `release` با `proguard-android-optimize.txt` و
-`app/proguard-rules.pro` کوچک/فشرده می شود و APK امضانشده تحویل می دهد؛ امضا را
-بهصورت محلی با `apksigner` یا Play App Signing انجام دهید. قوانین نگهداری
-Room/Hilt/Compose در `app/proguard-rules.pro` آمده است.
+`release` با `proguard-android-optimize.txt` و `app/proguard-rules.pro`
+کوچک/فشرده می شود. `app/build.gradle.kts` پیکربندی Signing را فقط از چهار
+متغیر محیطی `RELEASE_KEYSTORE_FILE`، `RELEASE_KEYSTORE_PASSWORD`،
+`RELEASE_KEY_ALIAS` و `RELEASE_KEY_PASSWORD` می خواند؛ هیچ کلید یا رمزی در مخزن
+نیست. بدون این متغیرها APK ریلیز بدون امضا می ماند و CI از انتشار آن جلوگیری
+می کند. در CI همان مقادیر از Secrets می آیند و APK حتماً با `apksigner verify`
+بررسی می شود. قوانین نگهداری Room/Hilt/Compose در `app/proguard-rules.pro` و
+همهٔ جزئیات امنیتی در [`RELEASE_SIGNING.md`](RELEASE_SIGNING.md) آمده است.
 
 ## پیکربندی های قابل توجه
 
