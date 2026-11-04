@@ -65,6 +65,7 @@
     <string name="label_start_point">نقطه شروع</string>
     <string name="label_end_point">نقطه پایان</string>
     <string name="label_point_code">کد / شناسهٔ نقطه</string>
+    <string name="label_fat_suffix">پسوند شماره FAT</string>
     <string name="label_start_meter">کنتور شروع</string>
     <string name="label_end_meter">کنتور پایان</string>
     <string name="label_cable_type">نوع کابل</string>
@@ -100,8 +101,8 @@
     <!-- Point types -->
     <string name="point_odc">ODC</string>
     <string name="point_fat">FAT</string>
-    <string name="point_handhole">حوضچه</string>
-    <string name="point_manhole">منهول</string>
+    <string name="point_handhole">Handhole (HH)</string>
+    <string name="point_manhole">Manhole (MH)</string>
 
     <!-- Settlement statuses -->
     <string name="status_unsettled">تسویه نشده</string>
