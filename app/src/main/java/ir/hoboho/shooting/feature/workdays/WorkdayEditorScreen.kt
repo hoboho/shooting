@@ -246,8 +246,16 @@ private fun OperationEditor(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.weight(1f)) {
                 ShootingTextField(
-                    draft.endCode, { onChange(draft.copy(endCode = it)) },
-                    stringResource(R.string.label_point_code), isError = invalid,
+                    value = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                        draft.endCode.removePrefix(draft.startCode) else draft.endCode,
+                    onValueChange = {
+                        val fullCode = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                            draft.startCode + it else it
+                        onChange(draft.copy(endCode = fullCode))
+                    },
+                    label = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                        stringResource(R.string.label_fat_suffix) else stringResource(R.string.label_point_code),
+                    isError = invalid,
                     keyboardType = KeyboardType.Number,
                 )
             }
