@@ -176,9 +176,19 @@ class WorkdayEditorViewModel @Inject constructor(
         _state.update { state ->
             if (state.saving) return@update state
             state.copy(
-                operations = state.operations.map { draft ->
+                operations = state.operations.mapIndexed { index, draft ->
                     if (draft.key != key) draft else {
-                        val updated = transform(draft)
+                        var updated = transform(draft)
+                        // If the cable changes, discard only the automatically suggested
+                        // reverse-pass meter; never overwrite a manually entered value.
+                        val previous = state.operations.getOrNull(index - 1)
+                        if (updated.cableTypeId != draft.cableTypeId &&
+                            previous?.cableTypeId != updated.cableTypeId &&
+                            previous?.startMeter?.isNotBlank() == true &&
+                            updated.endMeter == previous.startMeter
+                        ) {
+                            updated = updated.copy(endMeter = "")
+                        }
                         val startChanged = updated.startCode != draft.startCode
                         if (startChanged && updated.startType == PointType.ODC &&
                             updated.endType == PointType.FAT && updated.endCode.startsWith(draft.startCode)
