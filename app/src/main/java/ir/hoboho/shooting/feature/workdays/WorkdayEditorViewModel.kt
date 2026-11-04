@@ -13,6 +13,7 @@ import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.OperationDraft
+import ir.hoboho.shooting.domain.model.PointType
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.repository.ProjectRepository
