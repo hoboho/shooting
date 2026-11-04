@@ -13,6 +13,7 @@ import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.OperationDraft
+import ir.hoboho.shooting.domain.model.PointType
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.repository.ProjectRepository
@@ -109,7 +110,11 @@ class WorkdayEditorViewModel @Inject constructor(
                     }
                 }
             } else {
-                val projectId = initialProjectId.takeIf { it > 0L }
+                val previousProjectId = workdayRepository.getAllWorkdaysWithOperations()
+                    .maxByOrNull { it.dateEpochDay }?.projectId
+                val projectId = previousProjectId?.takeIf { id ->
+                    _state.value.projects.any { it.id == id }
+                } ?: initialProjectId.takeIf { it > 0L }
                     ?: _state.value.projects.firstOrNull()?.id ?: 0L
                 _state.value = WorkdayEditorState(
                     projects = _state.value.projects,
@@ -152,9 +157,14 @@ class WorkdayEditorViewModel @Inject constructor(
     fun addOperation() {
         _state.update { state ->
             if (state.saving) return@update state
+            val previous = state.operations.lastOrNull()
+            val selectedCableId = previous?.cableTypeId ?: state.cableTypes.firstOrNull()?.id
             val draft = OperationDraft(
                 key = nextKey++,
-                cableTypeId = state.cableTypes.firstOrNull()?.id,
+                cableTypeId = selectedCableId,
+                // The next pass is commonly shot back along the same cable:
+                // suggest the prior operation's start reading as this end reading.
+                endMeter = previous?.takeIf { it.cableTypeId == selectedCableId }?.startMeter.orEmpty(),
             )
             state.copy(operations = state.operations + draft)
         }
@@ -167,8 +177,26 @@ class WorkdayEditorViewModel @Inject constructor(
         _state.update { state ->
             if (state.saving) return@update state
             state.copy(
-                operations = state.operations.map { draft ->
-                    if (draft.key == key) transform(draft) else draft
+                operations = state.operations.mapIndexed { index, draft ->
+                    if (draft.key != key) draft else {
+                        var updated = transform(draft)
+                        // If the cable changes, discard only the automatically suggested
+                        // reverse-pass meter; never overwrite a manually entered value.
+                        val previous = state.operations.getOrNull(index - 1)
+                        if (updated.cableTypeId != draft.cableTypeId &&
+                            previous?.cableTypeId != updated.cableTypeId &&
+                            previous?.startMeter?.isNotBlank() == true &&
+                            updated.endMeter == previous.startMeter
+                        ) {
+                            updated = updated.copy(endMeter = "")
+                        }
+                        val startChanged = updated.startCode != draft.startCode
+                        if (startChanged && updated.startType == PointType.ODC &&
+                            updated.endType == PointType.FAT && updated.endCode.startsWith(draft.startCode)
+                        ) {
+                            updated.copy(endCode = updated.startCode + updated.endCode.removePrefix(draft.startCode))
+                        } else updated
+                    }
                 },
                 invalidRows = state.invalidRows - key,
             )

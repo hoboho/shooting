@@ -65,6 +65,7 @@
     <string name="label_start_point">نقطه شروع</string>
     <string name="label_end_point">نقطه پایان</string>
     <string name="label_point_code">کد / شناسهٔ نقطه</string>
+    <string name="label_fat_suffix">پسوند شماره FAT</string>
     <string name="label_start_meter">کنتور شروع</string>
     <string name="label_end_meter">کنتور پایان</string>
     <string name="label_cable_type">نوع کابل</string>
@@ -84,6 +85,12 @@
     <string name="label_total_reimbursed">جمع دریافتی</string>
     <string name="label_outstanding_receivables">مطالبات تسویه نشده</string>
     <string name="label_project_filter">فیلتر پروژه</string>
+    <string name="search_and_filter">جست‌وجو و فیلتر</string>
+    <string name="search_reports_hint">جست‌وجو در پروژه، محدوده کار، کارفرما و توضیحات</string>
+    <string name="search_operations_hint">جست‌وجو با کد ODC یا FAT</string>
+    <string name="search_result_count">تعداد نتایج: %1$s</string>
+    <string name="search_no_results">موردی با این معیارها پیدا نشد.</string>
+    <string name="filter_all">همه</string>
     <string name="label_all_projects">همه پروژه‌ها</string>
     <string name="label_date_range">بازهٔ تاریخ</string>
     <string name="label_from_date">از تاریخ</string>
@@ -100,8 +107,8 @@
     <!-- Point types -->
     <string name="point_odc">ODC</string>
     <string name="point_fat">FAT</string>
-    <string name="point_handhole">حوضچه</string>
-    <string name="point_manhole">منهول</string>
+    <string name="point_handhole">Handhole (HH)</string>
+    <string name="point_manhole">Manhole (MH)</string>
 
     <!-- Settlement statuses -->
     <string name="status_unsettled">تسویه نشده</string>

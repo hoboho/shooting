@@ -46,6 +46,7 @@ import ir.hoboho.shooting.domain.model.PointType
 import ir.hoboho.shooting.ui.components.ButtonLevel
 import ir.hoboho.shooting.ui.components.ChoiceChips
 import ir.hoboho.shooting.ui.components.ClickableField
+import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.JalaliDatePickerDialog
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
@@ -74,6 +75,9 @@ fun WorkdayEditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
+    var operationQuery by remember { mutableStateOf("") }
+    var operationCableFilter by remember { mutableStateOf<Long?>(null) }
+    var operationPointFilter by remember { mutableStateOf<PointType?>(null) }
 
     LaunchedEffect(workdayId, initialProjectId) { viewModel.load(workdayId, initialProjectId) }
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
@@ -153,9 +157,42 @@ fun WorkdayEditorScreen(
                     Text(stringResource(R.string.msg_workday_operations_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    ShootingTextField(
+                        value = operationQuery,
+                        onValueChange = { operationQuery = it },
+                        label = stringResource(R.string.search_operations_hint),
+                    )
+                    Text(stringResource(R.string.label_cable_type), style = MaterialTheme.typography.labelMedium)
+                    ChoiceChips(
+                        options = listOf<Long?>(null) + state.cableTypes.map { it.id },
+                        selected = operationCableFilter,
+                        onSelected = { operationCableFilter = it },
+                        labelOf = { id -> id?.let { selectedId -> state.cableTypes.firstOrNull { it.id == selectedId }?.label }
+                            ?: stringResource(R.string.filter_all) },
+                    )
+                    Text(stringResource(R.string.label_start_type), style = MaterialTheme.typography.labelMedium)
+                    ChoiceChips(
+                        options = listOf<PointType?>(null) + PointType.entries,
+                        selected = operationPointFilter,
+                        onSelected = { operationPointFilter = it },
+                        labelOf = { it?.let { type -> pointTypeLabel(type) } ?: stringResource(R.string.filter_all) },
+                    )
                 }
-                state.operations.forEachIndexed { index, draft ->
-                    if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+                val visibleOperations = state.operations.withIndex().filter { (_, draft) ->
+                    val queryMatches = operationQuery.isBlank() ||
+                        draft.startCode.contains(operationQuery.trim(), ignoreCase = true) ||
+                        draft.endCode.contains(operationQuery.trim(), ignoreCase = true)
+                    queryMatches &&
+                        (operationCableFilter == null || draft.cableTypeId == operationCableFilter) &&
+                        (operationPointFilter == null ||
+                            draft.startType == operationPointFilter || draft.endType == operationPointFilter)
+                }
+                if (state.operations.isNotEmpty() && visibleOperations.isEmpty()) {
+                    EmptyState(stringResource(R.string.search_no_results))
+                }
+                visibleOperations.forEach { (index, draft) ->
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                     OperationEditor(
                         index = index + 1,
                         draft = draft,
@@ -246,8 +283,16 @@ private fun OperationEditor(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.weight(1f)) {
                 ShootingTextField(
-                    draft.endCode, { onChange(draft.copy(endCode = it)) },
-                    stringResource(R.string.label_point_code), isError = invalid,
+                    value = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                        draft.endCode.removePrefix(draft.startCode) else draft.endCode,
+                    onValueChange = {
+                        val fullCode = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                            draft.startCode + it else it
+                        onChange(draft.copy(endCode = fullCode))
+                    },
+                    label = if (draft.startType == PointType.ODC && draft.endType == PointType.FAT)
+                        stringResource(R.string.label_fat_suffix) else stringResource(R.string.label_point_code),
+                    isError = invalid,
                     keyboardType = KeyboardType.Number,
                 )
             }
