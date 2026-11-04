@@ -15,6 +15,19 @@ val versionBuild = findProperty("shooting.versionBuild")?.toString()?.toIntOrNul
 val shootingVersionName = "$versionBase.$versionBuild"
 val shootingVersionCode = versionCodeBase + versionBuild
 
+// Release signing material is NEVER stored in this repository. All four values
+// come from the environment (GitHub Actions Secrets in CI, an exported shell
+// locally). When any of them is absent the release build stays unsigned, and
+// the workflow refuses to publish it instead of silently using a debug APK.
+val releaseKeystoreFile = System.getenv("RELEASE_KEYSTORE_FILE")
+val releaseKeystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+val releaseSigningReady =
+    listOf(releaseKeystoreFile, releaseKeystorePassword, releaseKeyAlias, releaseKeyPassword)
+        .all { !it.isNullOrBlank() } &&
+        releaseKeystoreFile?.let { file(it).isFile } == true
+
 android {
     namespace = "ir.hoboho.shooting"
     compileSdk = 37
@@ -34,8 +47,20 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
-    // No signing keys are committed. Release APKs are left unsigned; sign
-    // offline with apksigner / Play App Signing (see docs/BUILD.md).
+    signingConfigs {
+        if (releaseSigningReady) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
+    // No signing keys are committed. Without the four environment values the
+    // release variant stays unsigned and CI must not publish it
+    // (see docs/RELEASE_SIGNING.md).
     buildTypes {
         debug { isMinifyEnabled = false }
         release {
@@ -45,6 +70,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

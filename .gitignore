@@ -10,5 +10,11 @@ build/
 keystore.properties
 *.jks
 *.keystore
+*.p12
+*.pfx
+*.base64
+credentials.env
+.shooting-signing/
+signing/
 .kotlin/
 app/build/

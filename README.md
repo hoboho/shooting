@@ -35,7 +35,10 @@
 [دریافت آخرین فایل نصب اندروید (نسخهٔ آزمایشی و امضاشده برای Debug)](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-debug.apk)
 
 همچنین [بستهٔ ZIP کامل همان ساخت](https://github.com/hoboho/shooting/releases/download/debug-latest/Shooting-latest.zip)
-و [فهرست release های نسخه دار ساخته شده از شاخهٔ اصلی](https://github.com/hoboho/shooting/releases)
-در دسترس اند. هر پوش به شاخهٔ اصلی، release تازه ای با برچسب `v<versionName>`
-منتشر می کند؛ شمارهٔ نسخه به طور خودکار در CI تغییر می کند و تنها منبع آن
-`gradle.properties` است (توضیح در [docs/BUILD.md](docs/BUILD.md)).
+و [فهرست Release ها](https://github.com/hoboho/shooting/releases) در دسترس اند.
+این لینک ها **پیش انتشار دیباگ** اند. نسخهٔ Release امضا شده مسیر جداگانه ای
+دارد: CI آن را می سازد، با `apksigner verify` اعتبارسنجی می کند و تنها با تأیید
+مالک مخزن در Release نسخهدار `v<versionName>-release` منتشر می کند. APK دیباگ
+هرگز به عنوان Release عرضه نمی شود. شمارهٔ نسخه به طور خودکار در CI تغییر می کند
+و تنها منبع آن `gradle.properties` است ([docs/BUILD.md](docs/BUILD.md) و
+[docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md)).

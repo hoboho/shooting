@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish the signed release APK to a GitHub Release (owner action only; off by default)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -235,9 +240,9 @@ jobs:
             app/build/outputs/androidTest-results/
           if-no-files-found: ignore
 
-  # ------------------------------------------------ permanent download links
-  # Refreshes the rolling debug-latest assets on manual dispatch / [publish-apk],
-  # and always publishes a versioned release when main is pushed.
+  # ------------------------------------------------ rolling debug prerelease
+  # Refreshes the debug-latest PRERELEASE assets only. Debug APKs are never
+  # published as a versioned release; that is the signed release job's task.
   bundle:
     name: Publish download bundle
     runs-on: ubuntu-latest
@@ -282,26 +287,166 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release upload debug-latest Shooting-latest.zip --clobber
 
-      # The latest build of main gets its own versioned, permanent release. It
-      # is still a debug-signed test build, which the notes state explicitly.
-      - name: Publish versioned release from main
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      # NOTE: no versioned release is created from the debug APK here. The
+      # versioned GitHub Release is produced by the "Signed release APK" job
+      # below, and only after the repository owner explicitly requests it.
+
+  # ------------------------------------------------------ signed release APK
+  # Builds a REAL release variant, signs it with the long-lived key held in
+  # repository Secrets, verifies it with apksigner, and publishes it only on an
+  # explicitly approved workflow_dispatch from main. No debug APK is ever
+  # published as a release, and no keystore/password is written to the repo,
+  # logs or artifacts.
+  release:
+    name: Signed release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: unit
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Lint the release variant
+        run: ./gradlew :app:lintRelease -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon
+
+      - name: Locate apksigner (tooling check)
+        run: |
+          find_apksigner() {
+            find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner 2>/dev/null \
+              | sort -V | tail -n 1
+          }
+          APKSIGNER="$(find_apksigner)"
+          if [ -z "$APKSIGNER" ] && command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager --licenses > /dev/null 2>&1 || true
+            sdkmanager --install "build-tools;37.0.0" > /dev/null 2>&1 || true
+            APKSIGNER="$(find_apksigner)"
+          fi
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner was not found in the Android build-tools"
+            exit 1
+          fi
+          "$APKSIGNER" version
+
+      - name: Check release signing secrets
+        id: signing
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_KEYSTORE_PASSWORD" ] \
+             && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Release signing secrets are not configured. Building/verifying/publishing the signed release APK is skipped. See docs/RELEASE_SIGNING.md."
+          fi
+
+      - name: Decode release keystore into runner temp
+        if: steps.signing.outputs.available == 'true'
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          KS="$RUNNER_TEMP/shooting-release.jks"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$KS"
+          chmod 600 "$KS"
+          echo "RELEASE_KEYSTORE_FILE=$KS" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        if: steps.signing.outputs.available == 'true'
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease -Pshooting.versionBuild="$SHOOTING_VERSION_BUILD" --no-daemon --stacktrace
+
+      - name: Verify signature with apksigner
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          APK="$(find app/build/outputs/apk/release -name '*.apk' -type f | head -n 1)"
+          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$APK" ]; then echo "::error::no release APK was produced"; exit 1; fi
+          if [ -z "$APKSIGNER" ]; then echo "::error::apksigner was not found"; exit 1; fi
+          case "$APK" in
+            *debug*) echo "::error::a debug APK must never be used as the release APK"; exit 1 ;;
+          esac
+          "$APKSIGNER" verify --verbose --min-sdk-version 26 "$APK"
+          echo "apksigner verify: OK"
+          echo "Release APK verified: $(basename "$APK")" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload signed release APK
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shooting-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  # ------------------------------------------------- owner-approved publish
+  # A separate job so the repository owner's approval (environment reviewers
+  # and/or the explicit dispatch flag) is required before anything is released.
+  publish_release:
+    name: Publish signed release (owner approval)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [ release, unit ]
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch'
+          && github.event.inputs.publish_release == 'true'
+          && github.ref == 'refs/heads/main' }}
+    environment: release-approval
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download verified signed release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: shooting-release-apk
+          path: release-apk
+
+      - name: Create the versioned GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           VERSION_NAME: ${{ needs.unit.outputs.version_name }}
           BUILD_SHA: ${{ github.sha }}
-          BUILD_RUN: ${{ github.run_id }}
         run: |
-          TAG="v${VERSION_NAME}"
-          APK="Shooting-debug.apk"
-          NOTES="Built from main (${BUILD_SHA}), workflow run ${BUILD_RUN}. Version ${VERSION_NAME}. Debug-signed APK; not a production-signed release."
-          cp bundle/shooting-debug-apk/app-debug.apk "$APK"
+          TAG="v${VERSION_NAME}-release"
+          APK="Shooting-release.apk"
+          cp "$(find release-apk -name '*.apk' -type f | head -n 1)" "$APK"
+          NOTES="Signed release APK ${VERSION_NAME}, built from main (${BUILD_SHA}). apksigner verification passed in CI. This is not a debug APK."
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$APK" Shooting-latest.zip --clobber
+            gh release upload "$TAG" "$APK" --clobber
             gh release edit "$TAG" --notes "$NOTES"
           else
-            gh release create "$TAG" "$APK" Shooting-latest.zip \
-              --title "Shooting ${VERSION_NAME}" \
+            gh release create "$TAG" "$APK" \
+              --title "Shooting ${VERSION_NAME} (signed)" \
               --notes "$NOTES"
           fi
