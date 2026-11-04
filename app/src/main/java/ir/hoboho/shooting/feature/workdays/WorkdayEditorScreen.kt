@@ -46,6 +46,7 @@ import ir.hoboho.shooting.domain.model.PointType
 import ir.hoboho.shooting.ui.components.ButtonLevel
 import ir.hoboho.shooting.ui.components.ChoiceChips
 import ir.hoboho.shooting.ui.components.ClickableField
+import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.JalaliDatePickerDialog
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
