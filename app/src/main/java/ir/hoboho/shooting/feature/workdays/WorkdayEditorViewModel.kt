@@ -109,7 +109,11 @@ class WorkdayEditorViewModel @Inject constructor(
                     }
                 }
             } else {
-                val projectId = initialProjectId.takeIf { it > 0L }
+                val previousProjectId = workdayRepository.getAllWorkdaysWithOperations()
+                    .maxByOrNull { it.dateEpochDay }?.projectId
+                val projectId = previousProjectId?.takeIf { id ->
+                    _state.value.projects.any { it.id == id }
+                } ?: initialProjectId.takeIf { it > 0L }
                     ?: _state.value.projects.firstOrNull()?.id ?: 0L
                 _state.value = WorkdayEditorState(
                     projects = _state.value.projects,
@@ -152,9 +156,14 @@ class WorkdayEditorViewModel @Inject constructor(
     fun addOperation() {
         _state.update { state ->
             if (state.saving) return@update state
+            val previous = state.operations.lastOrNull()
+            val selectedCableId = previous?.cableTypeId ?: state.cableTypes.firstOrNull()?.id
             val draft = OperationDraft(
                 key = nextKey++,
-                cableTypeId = state.cableTypes.firstOrNull()?.id,
+                cableTypeId = selectedCableId,
+                // The next pass is commonly shot back along the same cable:
+                // suggest the prior operation's start reading as this end reading.
+                endMeter = previous?.takeIf { it.cableTypeId == selectedCableId }?.startMeter.orEmpty(),
             )
             state.copy(operations = state.operations + draft)
         }
@@ -168,7 +177,15 @@ class WorkdayEditorViewModel @Inject constructor(
             if (state.saving) return@update state
             state.copy(
                 operations = state.operations.map { draft ->
-                    if (draft.key == key) transform(draft) else draft
+                    if (draft.key != key) draft else {
+                        val updated = transform(draft)
+                        val startChanged = updated.startCode != draft.startCode
+                        if (startChanged && updated.startType == PointType.ODC &&
+                            updated.endType == PointType.FAT && updated.endCode.startsWith(draft.startCode)
+                        ) {
+                            updated.copy(endCode = updated.startCode + updated.endCode.removePrefix(draft.startCode))
+                        } else updated
+                    }
                 },
                 invalidRows = state.invalidRows - key,
             )
