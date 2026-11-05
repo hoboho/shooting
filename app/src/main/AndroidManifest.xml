@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-        Shooting is fully offline. No INTERNET permission is declared, so the
-        app cannot reach the network at all. No accounts, analytics or telemetry.
-        OS cloud auto-backup is disabled too: the only way data leaves the
-        device is the explicit, versioned, user-initiated in-app export.
-    -->
+    <!-- Network access is used only after the user taps Check for updates. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- No accounts, analytics or telemetry. OS cloud auto-backup stays disabled. -->
 
     <!-- Legacy public Downloads writes only; Android 10+ uses MediaStore. -->
     <uses-permission
