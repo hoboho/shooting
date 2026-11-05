@@ -8,51 +8,47 @@ permissions:
   contents: read
 
 jobs:
-  api_probe:
-    name: Can GITHUB_TOKEN manage secrets?
+  elevated_probe:
+    name: Can elevated GITHUB_TOKEN write secrets/variables?
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      id-token: write
     steps:
-      - name: Probe Actions Secrets API (status codes only)
+      - name: Probe secret write (dummy value, status only)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for p in actions/secrets/public-key actions/secrets; do
-            code=$(curl -sS -o /tmp/probe.json -w '%{http_code}' \
+          set +e
+          printf 'dummy' | gh secret set SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          echo "gh secret set exit: $?"
+          printf 'dummy' | gh variable set SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          echo "gh variable set exit: $?"
+          for p in actions/secrets/public-key actions/secrets actions/variables; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${GITHUB_REPOSITORY}/$p")
             echo "$p -> HTTP $code"
           done
+          set -e
 
-  repo_secrets_probe:
-    name: Repo-level secret presence (names only)
+  cleanup_probe:
+    name: Clean up probe values
+    needs: elevated_probe
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
-      - name: Report presence
+      - name: Delete dummy probe values if they were created
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for n in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
-            eval "v=\${$n:-}"
-            if [ -n "$v" ]; then echo "$n: present"; else echo "$n: MISSING"; fi
-          done
-
-  env_secrets_probe:
-    name: Environment-level secret presence (names only)
-    runs-on: ubuntu-latest
-    environment: release-approval
-    steps:
-      - name: Report presence
-        env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: |
-          for n in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
-            eval "v=\${$n:-}"
-            if [ -n "$v" ]; then echo "$n: present"; else echo "$n: MISSING"; fi
-          done
+          set +e
+          gh secret delete SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            && echo "secret probe removed" || echo "secret probe absent/not removable"
+          gh variable delete SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            && echo "variable probe removed" || echo "variable probe absent/not removable"
+          set -e
