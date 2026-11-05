@@ -235,6 +235,10 @@
     <string name="settings_cable_types">انواع کابل</string>
     <string name="settings_expense_categories">دسته‌بندی هزینه‌ها</string>
     <string name="settings_backup">پشتیبان‌گیری و بازیابی</string>
+    <string name="settings_updates">به‌روزرسانی برنامه</string>
+    <string name="settings_current_version">نسخهٔ نصب‌شده: %1$s</string>
+    <string name="settings_check_updates">بررسی به‌روزرسانی</string>
+    <string name="settings_install_update">نصب نسخهٔ جدید</string>
     <string name="settings_about">درباره برنامه</string>
     <string name="settings_about_text">شوتینگ، برنامه ای کاملاً آفلاین برای ثبت عملیات شوتینگ فیبر نوری. همه اطلاعات فقط روی همین دستگاه ذخیره می شود.</string>
     <string name="settings_add_cable">افزودن نوع کابل</string>
