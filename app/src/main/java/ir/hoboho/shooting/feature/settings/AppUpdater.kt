@@ -65,7 +65,12 @@ class AppUpdater @javax.inject.Inject constructor(
             apk.delete()
             throw IllegalStateException("این فایل متعلق به برنامهٔ شوتینگ نیست.")
         }
-        if (packageInfo.longVersionCode <= BuildConfig.APP_VERSION_CODE.toLong()) {
+        val downloadedVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode
+        } else {
+            @Suppress("DEPRECATION") packageInfo.versionCode.toLong()
+        }
+        if (downloadedVersionCode <= BuildConfig.APP_VERSION_CODE.toLong()) {
             apk.delete()
             throw IllegalStateException("نسخهٔ APK با نسخهٔ اعلام‌شده در انتشار GitHub مطابقت ندارد.")
         }
