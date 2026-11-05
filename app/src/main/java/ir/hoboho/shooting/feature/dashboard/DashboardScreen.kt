@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,7 +35,6 @@ import ir.hoboho.shooting.ui.components.TagChip
 fun DashboardScreen(
     onNewWorkday: () -> Unit,
     onOpenWorkday: (Long) -> Unit,
-    onNewExpense: () -> Unit,
     onOpenReports: () -> Unit,
     onOpenProjects: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
@@ -108,15 +106,6 @@ fun DashboardScreen(
                     value = NumberFormatter.formatInteger(state.activeProjects),
                 )
             }
-        }
-
-        item {
-            ShootingButton(
-                text = stringResource(R.string.dashboard_quick_expense),
-                onClick = onNewExpense,
-                icon = Icons.Filled.Receipt,
-                level = ButtonLevel.Outline,
-            )
         }
 
         item {
