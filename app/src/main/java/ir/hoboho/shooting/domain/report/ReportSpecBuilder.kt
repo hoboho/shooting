@@ -12,6 +12,7 @@ import ir.hoboho.shooting.domain.model.CableLengthRow
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
+import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.SettlementStatus
 import ir.hoboho.shooting.domain.model.ShootingOperation
@@ -219,6 +220,66 @@ object ReportSpecBuilder {
                         emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
                     ),
                 )
+                add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
+            },
+        )
+    }
+
+    /** Detailed project-wide operation ledger; each operation carries its own work date. */
+    fun projectOperations(
+        workdays: List<Workday>,
+        project: Project,
+        cableTypes: List<CableType>,
+        range: DateRange,
+    ): PdfDocumentSpec {
+        val cableLabels = cableTypes.associateBy { it.id }
+        val rows = workdays.sortedBy { it.dateEpochDay }.flatMap { workday ->
+            workday.operations.mapIndexed { index, operation ->
+                listOf(
+                    DateFormatter.format(workday.dateEpochDay),
+                    persianInt(index + 1),
+                    operation.startType.label,
+                    operation.startCode,
+                    persianInt(operation.startMeter),
+                    operation.endType.label,
+                    operation.endCode,
+                    persianInt(operation.endMeter),
+                    cableLabels[operation.cableTypeId]?.label ?: persianInt(operation.cableTypeId.toInt()),
+                    NumberFormatter.formatMetersValue(operation.lengthMeters),
+                )
+            }
+        }
+        val first = workdays.minByOrNull { it.dateEpochDay }
+        return PdfDocumentSpec(
+            title = "ریز کارکرد پروژه",
+            subtitle = "${project.name} — ${DateFormatter.formatRange(range)}",
+            headerLines = header(),
+            blocks = buildList {
+                add(PdfBlock.KeyValueList(listOf(
+                    ReportText.PROJECT to project.name,
+                    ReportText.WORK_AREA to (first?.workArea?.takeIf { it.isNotBlank() } ?: NumberFormatter.EM_DASH),
+                    ReportText.EMPLOYER to (project.employer.ifBlank { first?.employer ?: NumberFormatter.EM_DASH }),
+                    ReportText.SUPERVISOR to (project.supervisor.ifBlank { first?.supervisor ?: NumberFormatter.EM_DASH }),
+                    ReportText.RANGE to DateFormatter.formatRange(range),
+                )))
+                add(PdfBlock.Table(
+                    columns = listOf(
+                        PdfColumn(ReportText.DATE, 1.1f),
+                        PdfColumn(ReportText.ROW, 0.45f, 24f),
+                        PdfColumn(ReportText.START_POINT, 0.75f),
+                        PdfColumn(ReportText.START_CODE, 0.9f),
+                        PdfColumn(ReportText.START_METER, 0.7f),
+                        PdfColumn(ReportText.END_POINT, 0.75f),
+                        PdfColumn(ReportText.END_CODE, 0.9f),
+                        PdfColumn(ReportText.END_METER, 0.7f),
+                        PdfColumn(ReportText.CABLE, 0.9f),
+                        PdfColumn(ReportText.LENGTH, 0.8f),
+                    ),
+                    header = listOf(ReportText.DATE, ReportText.ROW, ReportText.START_POINT, ReportText.START_CODE, ReportText.START_METER, ReportText.END_POINT, ReportText.END_CODE, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH),
+                    rows = rows,
+                    caption = ReportText.OPERATIONS,
+                    aligns = List(10) { PdfAlign.CENTER },
+                ))
                 add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
             },
         )
