@@ -65,10 +65,11 @@ class AppUpdater @javax.inject.Inject constructor(
             apk.delete()
             throw IllegalStateException("این فایل متعلق به برنامهٔ شوتینگ نیست.")
         }
+        @Suppress("DEPRECATION")
         val downloadedVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             packageInfo.longVersionCode
         } else {
-            @Suppress("DEPRECATION") packageInfo.versionCode.toLong()
+            packageInfo.versionCode.toLong()
         }
         if (downloadedVersionCode <= BuildConfig.APP_VERSION_CODE.toLong()) {
             apk.delete()
