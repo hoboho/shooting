@@ -207,6 +207,9 @@
     <string name="reports_title">گزارش‌ها</string>
     <string name="reports_daily">گزارش روزانه</string>
     <string name="reports_period">گزارش دوره ای</string>
+    <string name="reports_project_detail">ریز کارکرد پروژه</string>
+    <string name="reports_select_project_detail">برای مشاهده ریز کارکرد، یک پروژه را از فیلتر پروژه انتخاب کنید.</string>
+    <string name="reports_pdf_project_detail">خروجی PDF ریز کارکرد پروژه</string>
     <string name="reports_expenses">گزارش هزینه و تسویه</string>
     <string name="reports_select_day">انتخاب روز</string>
     <string name="reports_select_project">انتخاب پروژه</string>
