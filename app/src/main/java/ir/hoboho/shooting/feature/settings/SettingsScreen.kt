@@ -32,6 +32,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) },
@@ -80,6 +81,31 @@ fun SettingsScreen(
                         onClick = onOpenBackup,
                         level = ButtonLevel.Secondary,
                     )
+                }
+            }
+            item {
+                SectionCard(title = stringResource(R.string.settings_updates)) {
+                    Text(stringResource(R.string.settings_current_version, ir.hoboho.shooting.BuildConfig.APP_VERSION_NAME),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+                    ShootingButton(
+                        text = stringResource(R.string.settings_check_updates),
+                        onClick = viewModel::checkForUpdates,
+                        level = ButtonLevel.Secondary,
+                        loading = updateState.isChecking,
+                        enabled = !updateState.isChecking,
+                    )
+                    if (updateState.message != null) {
+                        Text(updateState.message!!,
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (updateState.updateAvailable) {
+                        ShootingButton(
+                            text = stringResource(R.string.settings_install_update),
+                            onClick = viewModel::installUpdate,
+                            level = ButtonLevel.Primary,
+                        )
+                    }
                 }
             }
             item {
