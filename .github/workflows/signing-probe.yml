@@ -3,30 +3,27 @@ name: Signing capability probe
 on:
   push:
     branches: [ 'arena/9d82cc5a-shouting' ]
-  repository_dispatch:
-    types: [ shooting-probe ]
 
 permissions:
   contents: read
 
 jobs:
-  write_all_probe:
-    name: Can GITHUB_TOKEN with write-all manage secrets?
+  secrets_write_probe:
+    name: Explicit secrets:write permission
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      contents: write
+      actions: write
+      secrets: write
     steps:
-      - name: Probe secret write then remove it (dummy value, status only)
+      - name: Try to create then delete a dummy secret
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          printf 'dummy' | gh secret set SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>/tmp/e1
-          echo "gh secret set exit: $?"
+          printf 'dummy' | gh secret set SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>/tmp/e
+          rc=$?
+          echo "secret set exit: $rc"
+          head -2 /tmp/e
           gh secret delete SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1
-          echo "cleanup exit: $?"
-          code=$(curl -sS -o /dev/null -w '%{http_code}' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/secrets/public-key")
-          echo "public-key HTTP: $code"
           set -e
