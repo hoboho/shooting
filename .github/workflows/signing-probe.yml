@@ -4,26 +4,47 @@ on:
   push:
     branches: [ 'arena/9d82cc5a-shouting' ]
 
-permissions:
-  contents: read
+permissions: write-all
 
 jobs:
-  secrets_write_probe:
-    name: Explicit secrets:write permission
+  probe:
+    name: Capability probe
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-      secrets: write
     steps:
-      - name: Try to create then delete a dummy secret
+      - name: Create a DRAFT release with a dummy asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf 'dummy-vault-probe' > /tmp/vault-probe.bin
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.tag_name=="__vault_probe__") | .id] | first // empty')
+          if [ -n "$ID" ]; then gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$ID" >/dev/null 2>&1 || true; fi
+          gh release create '__vault_probe__' /tmp/vault-probe.bin \
+            --draft --title 'vault probe' --notes 'temporary capability probe' >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.tag_name=="__vault_probe__") | {id, draft, tag_name, url: .assets[0].browser_download_url}'
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.tag_name=="__vault_probe__") | .assets[0].browser_download_url] | first' > /tmp/asset_url
+          echo "ASSET_URL=$(cat /tmp/asset_url)" >> "$GITHUB_ENV"
+
+      - name: Probe environment secret public key with GITHUB_TOKEN write-all
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          printf 'dummy' | gh secret set SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>/tmp/e
-          rc=$?
-          echo "secret set exit: $rc"
-          head -2 /tmp/e
-          gh secret delete SHOOTING_CAPABILITY_PROBE -R "$GITHUB_REPOSITORY" >/dev/null 2>&1
+          code=$(curl -sS -o /tmp/epk.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/environments/release-approval/secrets/public-key")
+          echo "env public-key HTTP: $code"
+          printf 'dummy' | gh secret set SHOOTING_CAPABILITY_PROBE --env release-approval --repo "$GITHUB_REPOSITORY" >/dev/null 2>/tmp/eset.err
+          echo "env secret set exit: $?"
+          head -2 /tmp/eset.err
           set -e
+
+      - name: Report draft asset URL for external access test
+        run: echo "asset_url=$ASSET_URL"
+
+      - name: Clean up dummy secret if it was created
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh secret delete SHOOTING_CAPABILITY_PROBE --env release-approval --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || true
