@@ -174,7 +174,6 @@ fun ShootingNavHost(
             DashboardScreen(
                 onNewWorkday = { navController.navigate(Routes.workdayEditor(0L)) },
                 onOpenWorkday = { id -> navController.navigate(Routes.workdayDetail(id)) },
-                onNewExpense = { navController.navigate(Routes.expenseEditor(0L)) },
                 onOpenReports = { navController.navigate(Routes.REPORTS) },
                 onOpenProjects = { navController.navigate(Routes.PROJECTS) },
             )
