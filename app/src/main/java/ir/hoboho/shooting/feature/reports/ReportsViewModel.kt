@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
-enum class ReportTab { DAILY, PERIOD, EXPENSES }
+enum class ReportTab { DAILY, PERIOD, PROJECT, EXPENSES }
 
 data class ReportsUiState(
     val tab: ReportTab = ReportTab.DAILY,
@@ -154,6 +154,26 @@ class ReportsViewModel @Inject constructor(
             try {
                 val spec = ReportSpecBuilder.period(report)
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
+                val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
+                val saved = persistPdf(file, name)
+                showMessage(pdfSavedMessage(saved))
+            } catch (t: Throwable) {
+                showMessage(strings.get(R.string.msg_pdf_failed))
+            }
+        }
+    }
+
+    fun exportProjectPdf() {
+        val current = _state.value
+        val projectId = current.projectFilter
+        val project = current.projects.firstOrNull { it.id == projectId }
+        if (project == null || current.workdays.isEmpty()) {
+            showMessage(strings.get(R.string.msg_no_data_for_pdf)); return
+        }
+        viewModelScope.launch {
+            try {
+                val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range)
+                val name = "project-${project.id}-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
                 showMessage(pdfSavedMessage(saved))
