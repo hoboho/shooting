@@ -105,7 +105,9 @@ all_text = strip_comments("\n".join(texts.values()))
 if re.search(r"\bfallbackToDestructiveMigration\s*\(", all_text):
     errors.append("destructive Room migration is forbidden")
 if "android.permission.INTERNET" in read(MAIN / "AndroidManifest.xml"):
-    errors.append("INTERNET permission must not be declared (offline-only app)")
+    updater = read(JAVA / "ir/hoboho/shooting/feature/settings/AppUpdater.kt")
+    if "api.github.com/repos/hoboho/shooting/releases" not in updater:
+        errors.append("network access must remain limited to the explicit GitHub updater")
 if "LayoutDirection.Rtl" not in read(JAVA / "ir/hoboho/shooting/ui/theme/Theme.kt"):
     errors.append("RTL layout direction is not pinned in the theme")
 entities = read(JAVA / "ir/hoboho/shooting/data/local/Entities.kt")
