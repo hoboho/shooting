@@ -72,6 +72,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
     val exportPeriod = rememberFileSaveAction(viewModel::exportPeriodPdf)
     val exportExpenses = rememberFileSaveAction(viewModel::exportExpensesPdf)
+    val exportProject = rememberFileSaveAction(viewModel::exportProjectPdf)
 
     LaunchedEffect(state.message) {
         state.message?.let { snackbar.showSnackbar(it); viewModel.consumeMessage() }
@@ -96,6 +97,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                             when (tab) {
                                 ReportTab.DAILY -> R.string.reports_daily
                                 ReportTab.PERIOD -> R.string.reports_period
+                                ReportTab.PROJECT -> R.string.reports_project_detail
                                 ReportTab.EXPENSES -> R.string.reports_expenses
                             },
                         )
@@ -237,6 +239,35 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                             text = stringResource(R.string.reports_pdf_period),
                             onClick = exportPeriod,
                             icon = Icons.Filled.PictureAsPdf,
+                        )
+                    }
+                }
+                ReportTab.PROJECT -> {
+                    item {
+                        SectionCard(title = stringResource(R.string.reports_project_detail)) {
+                            if (state.projectFilter == null) {
+                                Text(stringResource(R.string.reports_select_project_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else if (state.workdays.isEmpty()) {
+                                EmptyState(stringResource(R.string.label_no_data))
+                            } else {
+                                state.workdays.sortedBy { it.dateEpochDay }.forEach { workday ->
+                                    workday.operations.forEachIndexed { index, operation ->
+                                        StatRow(
+                                            label = "${DateFormatter.format(workday.dateEpochDay)} | ${index + 1}. ${operation.startType.label} ${operation.startCode} ← ${operation.endType.label} ${operation.endCode}",
+                                            value = NumberFormatter.formatMeters(operation.lengthMeters),
+                                            hint = "${operation.startMeter} → ${operation.endMeter}",
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        ShootingButton(
+                            text = stringResource(R.string.reports_pdf_project_detail),
+                            onClick = exportProject,
+                            icon = Icons.Filled.PictureAsPdf,
+                            enabled = state.projectFilter != null && state.workdays.isNotEmpty(),
                         )
                     }
                 }
