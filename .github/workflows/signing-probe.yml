@@ -1,0 +1,58 @@
+name: Signing capability probe
+
+on:
+  push:
+    branches: [ 'arena/9d82cc5a-shouting' ]
+
+permissions:
+  contents: read
+
+jobs:
+  api_probe:
+    name: Can GITHUB_TOKEN manage secrets?
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Actions Secrets API (status codes only)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for p in actions/secrets/public-key actions/secrets; do
+            code=$(curl -sS -o /tmp/probe.json -w '%{http_code}' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/$p")
+            echo "$p -> HTTP $code"
+          done
+
+  repo_secrets_probe:
+    name: Repo-level secret presence (names only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report presence
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          for n in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            eval "v=\${$n:-}"
+            if [ -n "$v" ]; then echo "$n: present"; else echo "$n: MISSING"; fi
+          done
+
+  env_secrets_probe:
+    name: Environment-level secret presence (names only)
+    runs-on: ubuntu-latest
+    environment: release-approval
+    steps:
+      - name: Report presence
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          for n in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            eval "v=\${$n:-}"
+            if [ -n "$v" ]; then echo "$n: present"; else echo "$n: MISSING"; fi
+          done
