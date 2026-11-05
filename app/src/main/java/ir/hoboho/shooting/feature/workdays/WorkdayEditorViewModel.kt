@@ -7,6 +7,7 @@ import ir.hoboho.shooting.core.common.Clock
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.common.ValidationException
 import ir.hoboho.shooting.core.date.JalaliCalendar
+import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.domain.ShootingCalculator
 import ir.hoboho.shooting.domain.ValidationIssue
@@ -202,6 +203,40 @@ class WorkdayEditorViewModel @Inject constructor(
             )
         }
 
+    private suspend fun findDuplicateLineMessage(current: WorkdayEditorState): String? {
+        fun normal(value: String) = value.trim().uppercase()
+        val candidates = current.operations.withIndex().filter {
+            it.value.startCode.isNotBlank() && it.value.endCode.isNotBlank()
+        }
+        val previousWorkdays = workdayRepository.getAllWorkdaysWithOperations()
+            .filter { it.projectId == current.projectId && it.id != current.workdayId }
+        for ((position, indexed) in candidates.withIndex()) {
+            val draft = indexed.value
+            val earlier = candidates.take(position).firstOrNull { prior ->
+                prior.value.startType == draft.startType &&
+                    normal(prior.value.startCode) == normal(draft.startCode) &&
+                    prior.value.endType == draft.endType &&
+                    normal(prior.value.endCode) == normal(draft.endCode)
+            }
+            if (earlier != null) {
+                return "این لاین در همین گزارش تکرار شده است؛ ردیف‌های ${earlier.index + 1} و ${indexed.index + 1}: ${draft.startCode} ← ${draft.endCode}"
+            }
+            val previous = previousWorkdays.firstNotNullOfOrNull { day ->
+                val operationIndex = day.operations.indexOfFirst { operation ->
+                    operation.startType == draft.startType &&
+                        normal(operation.startCode) == normal(draft.startCode) &&
+                        operation.endType == draft.endType &&
+                        normal(operation.endCode) == normal(draft.endCode)
+                }
+                if (operationIndex >= 0) day to (operationIndex + 1) else null
+            }
+            if (previous != null) {
+                return "این لاین قبلاً در تاریخ ${DateFormatter.format(previous.first.dateEpochDay)}، ردیف ${previous.second} ثبت شده است: ${draft.startCode} ← ${draft.endCode}"
+            }
+        }
+        return null
+    }
+
     fun save() {
         val current = _state.value
         if (current.saving || current.saved) return
@@ -211,6 +246,11 @@ class WorkdayEditorViewModel @Inject constructor(
             try {
             val cableIds = current.cableTypes.map { it.id }.toSet()
             val operationIssues = Validator.operations(current.operations, cableIds)
+            val duplicateLineMessage = findDuplicateLineMessage(current)
+            if (duplicateLineMessage != null) {
+                _state.update { it.copy(error = duplicateLineMessage) }
+                return@launch
+            }
             val projectExists = projectRepository.getProject(current.projectId) != null
             val duplicate = workdayRepository.duplicateExists(
                 current.projectId, current.dateEpochDay, current.workdayId,
