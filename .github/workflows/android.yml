@@ -20,7 +20,7 @@ env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
   # Overrides shooting.versionBuild in gradle.properties, so every CI build has
   # a distinct versionName and a monotonically increasing versionCode.
-  SHOOTING_VERSION_BUILD: ${{ github.run_number }}
+  SHOOTING_VERSION_BUILD: 0
 
 permissions:
   contents: read
@@ -364,7 +364,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Release signing secrets are not configured. Building/verifying/publishing the signed release APK is skipped. See docs/RELEASE_SIGNING.md."
+            echo "::error::Release signing secrets are not configured. See docs/RELEASE_SIGNING.md."\n    exit 1
           fi
 
       - name: Decode release keystore into runner temp
