@@ -364,7 +364,8 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::error::Release signing secrets are not configured. See docs/RELEASE_SIGNING.md."\n    exit 1
+            echo "::error::Release signing secrets are not configured. See docs/RELEASE_SIGNING.md."
+            exit 1
           fi
 
       - name: Decode release keystore into runner temp
