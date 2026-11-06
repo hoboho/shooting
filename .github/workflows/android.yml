@@ -18,8 +18,7 @@ concurrency:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
-  # Overrides shooting.versionBuild in gradle.properties, so every CI build has
-  # a distinct versionName and a monotonically increasing versionCode.
+  # Pins the 2.0.0 release version across all CI jobs.
   SHOOTING_VERSION_BUILD: 0
 
 permissions:
