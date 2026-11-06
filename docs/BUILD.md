@@ -51,15 +51,15 @@ chmod +x gradlew                              # در صورت نیاز
 همهٔ مقادیر نسخه فقط در `gradle.properties` تعریف می شوند:
 
 ```properties
-shooting.versionBase=1.0
-shooting.versionCodeBase=1000
-shooting.versionBuild=1
+shooting.versionBase=2.0
+shooting.versionCodeBase=2000000
+shooting.versionBuild=0
 ```
 
 `app/build.gradle.kts` از روی آن ها حساب می کند:
 
-* `versionName = <shooting.versionBase>.<shooting.versionBuild>`
-* `versionCode = <shooting.versionCodeBase> + <shooting.versionBuild>`
+* `versionName = 2.0.0 (release baseline; CI build number fixed to 0)`
+* `versionCode = 2000000`
 
 همان دو مقدار از طریق فیلد های تولید شدهٔ `BuildConfig` به `AppInfo` می رسند؛
 صفحهٔ تنظیمات و metadata فایل پشتیبان دقیقاً نسخهٔ همان APK را نشان می دهند و
@@ -68,12 +68,9 @@ shooting.versionBuild=1
 نیستند. نسخهٔ قالب پشتیبان (`BackupCodec.FORMAT_VERSION`) و نسخهٔ پایگاه داده
 (`ShootingDatabase` v1) اعداد جداگانه ای هستند و ربطی به نسخهٔ APK ندارند.
 
-گردشکار CI پارامتر `-Pshooting.versionBuild=<github.run_number>` را به تمام
-دستورات Gradle می دهد؛ بنابراین هر ساخت، نام نسخهٔ تازه و `versionCode` ای
-بزرگ تر از ساخت قبل دارد. ساخت محلی بدون آن پارامتر `1.0.1 (1001)` می سازد.
-برای تغییر خط نسخه (مثلاً به `1.1`) فقط `shooting.versionBase` را عوض کنید.
+نسخهٔ جاری برنامه `2.0.0` با `versionCode=2000000` است. گردشکار CI مقدار build را روی صفر ثابت نگه می دارد تا نام نسخه در تمام jobها دقیقاً `2.0.0` بماند. نسخهٔ قالب پشتیبان و نسخهٔ پایگاه داده مستقل از شمارهٔ APK هستند.
 
-پیش انتشار `debug-latest` همواره حاوی APK **دیباگ** است. نسخهٔ Release امضا
+پیش انتشار `debug-latest` همواره حاوی APK **دیباگ** است و نباید به عنوان نصب نهایی استفاده شود. نسخهٔ Release امضا
 شده مسیر جداگانه ای دارد: job `release` در CI آن را می سازد و با `apksigner`
 اعتبارسنجی می کند، و job `publish_release` تنها با تأیید مالک مخزن آن را در
 Release نسخهدار `v<versionName>-release` قرار می دهد. جزئیات و نام Secrets در
