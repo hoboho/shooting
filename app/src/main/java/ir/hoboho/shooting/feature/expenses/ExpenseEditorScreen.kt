@@ -3,6 +3,7 @@
 package ir.hoboho.shooting.feature.expenses
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -143,6 +147,10 @@ fun ExpenseEditorScreen(
                     stringResource(R.string.expense_description), singleLine = false, minLines = 2)
                 ShootingTextField(state.receiptReference, viewModel::setReceipt,
                     stringResource(R.string.expense_receipt))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = state.companyApproved, onCheckedChange = viewModel::setCompanyApproved)
+                    Text(stringResource(R.string.expense_company_approved))
+                }
                 ShootingDropdown(
                     label = "${stringResource(R.string.expense_project)} (${stringResource(R.string.label_optional)})",
                     options = listOf(OptionalRef<Project>(null)) +
@@ -176,6 +184,9 @@ fun ExpenseEditorScreen(
                                 NumberFormatter.formatToman(settlement.amountToman),
                             modifier = Modifier.weight(1f),
                         )
+                        IconButton(onClick = { viewModel.editSettlement(settlement.id) }) {
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
+                        }
                         IconButton(onClick = { viewModel.deleteSettlement(settlement.id) }) {
                             Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
                         }
@@ -199,11 +210,16 @@ fun ExpenseEditorScreen(
                 ShootingTextField(state.settlementNote, viewModel::setSettlementNote,
                     stringResource(R.string.label_settlement_note))
                 ShootingButton(
-                    text = stringResource(R.string.expense_settlement_new),
+                    text = stringResource(if (state.editingSettlementId == null) R.string.expense_settlement_new else R.string.expense_settlement_update),
                     onClick = viewModel::addSettlement,
                     level = ButtonLevel.Secondary,
-                    enabled = state.id != 0L,
+                    enabled = state.id != 0L && state.companyApproved,
                 )
+                if (state.editingSettlementId != null) {
+                    TextButton(onClick = viewModel::cancelSettlementEdit) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
             }
 
             ShootingButton(

@@ -10,6 +10,7 @@ import ir.hoboho.shooting.data.local.SettlementDao
 import ir.hoboho.shooting.data.local.ShootingDatabase
 import ir.hoboho.shooting.data.mapper.toDomain
 import ir.hoboho.shooting.data.mapper.toEntity
+import ir.hoboho.shooting.domain.ExpenseCalculator
 import ir.hoboho.shooting.domain.ValidationField
 import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
@@ -60,6 +61,15 @@ class ExpenseRepositoryImpl @Inject constructor(
             throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_CATEGORY)))
         }
         if (issues.isNotEmpty()) throw ValidationException(issues)
+        if (expense.id > 0L) {
+            val settled = settlementDao.totalForExpense(expense.id)
+            if (settled > 0L && !expense.companyApproved) {
+                throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
+            }
+            if (settled > expense.amountToman) {
+                throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_EXCEEDS_OUTSTANDING)))
+            }
+        }
         val now = clock.nowEpochMilli()
         val entity = expense.copy(
             uuid = expense.uuid.ifBlank { UUID.randomUUID().toString() },
@@ -91,6 +101,9 @@ class ExpenseRepositoryImpl @Inject constructor(
     override suspend fun addSettlement(settlement: Settlement): Long = db.withTransaction {
         val expense = dao.getById(settlement.expenseId)
             ?: throw NotFoundException("expense ${settlement.expenseId}")
+        if (!expense.expense.companyApproved) {
+            throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
+        }
         val alreadySettled = settlementDao.totalForExpense(settlement.expenseId)
         val issues = Validator.settlement(
             additionalToman = settlement.amountToman,
@@ -104,6 +117,55 @@ class ExpenseRepositoryImpl @Inject constructor(
             createdAt = if (settlement.createdAt == 0L) clock.nowEpochMilli() else settlement.createdAt,
         ).toEntity()
         settlementDao.upsert(entity)
+    }
+
+    override suspend fun updateSettlement(settlement: Settlement) = db.withTransaction {
+        val existing = settlementDao.getById(settlement.id)
+            ?: throw NotFoundException("settlement " + settlement.id)
+        val expense = dao.getById(existing.expenseId)
+            ?: throw NotFoundException("expense " + existing.expenseId)
+        if (!expense.expense.companyApproved) {
+            throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
+        }
+        val alreadySettled = settlementDao.totalForExpense(existing.expenseId) - existing.amountToman
+        val issues = Validator.settlement(
+            additionalToman = settlement.amountToman,
+            amountToman = expense.expense.amountToman,
+            alreadySettledToman = alreadySettled,
+        )
+        if (issues.isNotEmpty()) throw ValidationException(issues)
+        settlementDao.upsert(
+            settlement.copy(expenseId = existing.expenseId, uuid = existing.uuid, createdAt = existing.createdAt)
+                .toEntity(),
+        )
+        Unit
+    }
+
+    override suspend fun allocateCompanyPayment(
+        amountToman: Long,
+        dateEpochDay: Long,
+        note: String,
+    ): Long = db.withTransaction {
+        val approved = dao.getApprovedOldest().map { it.toDomain() }
+        val allocations = try {
+            ExpenseCalculator.fifoAllocations(approved, amountToman)
+        } catch (error: IllegalArgumentException) {
+            throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_EXCEEDS_OUTSTANDING)))
+        }
+        val now = clock.nowEpochMilli()
+        allocations.forEach { allocation ->
+            settlementDao.upsert(
+                Settlement(
+                    uuid = UUID.randomUUID().toString(),
+                    expenseId = allocation.expenseId,
+                    amountToman = allocation.amountToman,
+                    dateEpochDay = dateEpochDay,
+                    note = note,
+                    createdAt = now,
+                ).toEntity(),
+            )
+        }
+        amountToman
     }
 
     override suspend fun deleteSettlement(id: Long) = settlementDao.deleteById(id)

@@ -4,9 +4,8 @@ import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.SettlementStatus
 
-/** All money is integer Toman. No floating point anywhere in this file. */
+/** All money is integer Toman. */
 object ExpenseCalculator {
-
     fun totalSettled(settlements: List<Settlement>): Long {
         var total = 0L
         for (settlement in settlements) {
@@ -16,13 +15,10 @@ object ExpenseCalculator {
         return total
     }
 
-    /** Outstanding balance = expense amount - total settlements. */
     fun outstanding(amountToman: Long, settledToman: Long): Long {
         require(amountToman >= 0) { "Expense amount must be non-negative" }
         require(settledToman >= 0) { "Settled amount must be non-negative" }
-        require(settledToman <= amountToman) {
-            "Settlements ($settledToman) exceed the expense ($amountToman)"
-        }
+        require(settledToman <= amountToman) { "Settlements exceed the expense" }
         return amountToman - settledToman
     }
 
@@ -32,9 +28,30 @@ object ExpenseCalculator {
         else -> SettlementStatus.PARTIAL
     }
 
-    /** True only when the additional settlement fits inside the outstanding balance. */
     fun canAddSettlement(amountToman: Long, settledToman: Long, additionalToman: Long): Boolean =
         additionalToman > 0L && additionalToman <= outstanding(amountToman, settledToman)
+
+    /** FIFO: oldest approved expense first; the final allocation may be partial. */
+    fun fifoAllocations(expenses: List<Expense>, paymentToman: Long): List<SettlementAllocation> {
+        require(paymentToman > 0L) { "Company payment must be positive" }
+        val eligible = expenses.asSequence()
+            .filter { it.companyApproved && it.outstandingToman > 0L }
+            .sortedWith(compareBy<Expense> { it.dateEpochDay }.thenBy { it.id })
+            .toList()
+        val totalOutstanding = eligible.fold(0L) { total, expense ->
+            Math.addExact(total, expense.outstandingToman)
+        }
+        require(paymentToman <= totalOutstanding) { "Company payment exceeds approved receivables" }
+        var remaining = paymentToman
+        return buildList {
+            for (expense in eligible) {
+                if (remaining == 0L) break
+                val allocation = minOf(remaining, expense.outstandingToman)
+                add(SettlementAllocation(expense.id, allocation))
+                remaining -= allocation
+            }
+        }
+    }
 
     fun overview(expenses: List<Expense>): ExpenseOverview {
         var total = 0L
@@ -45,24 +62,21 @@ object ExpenseCalculator {
         var settledCount = 0
         for (expense in expenses) {
             total = Math.addExact(total, expense.amountToman)
-            reimbursed = Math.addExact(reimbursed, expense.settledAmountToman)
-            outstanding = Math.addExact(outstanding, expense.outstandingToman)
-            when (expense.status) {
-                SettlementStatus.UNSETTLED -> unsettled++
-                SettlementStatus.PARTIAL -> partial++
-                SettlementStatus.SETTLED -> settledCount++
+            if (expense.companyApproved) {
+                reimbursed = Math.addExact(reimbursed, expense.settledAmountToman)
+                outstanding = Math.addExact(outstanding, expense.outstandingToman)
+                when (expense.status) {
+                    SettlementStatus.UNSETTLED -> unsettled++
+                    SettlementStatus.PARTIAL -> partial++
+                    SettlementStatus.SETTLED -> settledCount++
+                }
             }
         }
-        return ExpenseOverview(
-            totalExpensesToman = total,
-            totalReimbursedToman = reimbursed,
-            outstandingToman = outstanding,
-            unsettledCount = unsettled,
-            partiallySettledCount = partial,
-            fullySettledCount = settledCount,
-        )
+        return ExpenseOverview(total, reimbursed, outstanding, unsettled, partial, settledCount)
     }
 }
+
+data class SettlementAllocation(val expenseId: Long, val amountToman: Long)
 
 data class ExpenseOverview(
     val totalExpensesToman: Long = 0L,

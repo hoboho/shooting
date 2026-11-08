@@ -184,6 +184,12 @@
     <string name="expense_delete">حذف هزینه</string>
     <string name="expense_settlements">تسویه‌ها</string>
     <string name="expense_settlement_new">ثبت تسویه</string>
+    <string name="expense_settlement_update">ذخیره تغییرات تسویه</string>
+    <string name="expense_company_approved">شرکت این هزینه را تأیید کرده است</string>
+    <string name="expense_approved">تأییدشده</string>
+    <string name="expense_not_approved">تأییدنشده</string>
+    <string name="expense_company_payment">ثبت دریافتی از شرکت</string>
+    <string name="expense_company_payment_note">پرداخت شرکت — تخصیص خودکار FIFO</string>
     <string name="expense_outstanding">مانده طلب</string>
     <string name="expense_reimbursed">دریافت شده</string>
     <string name="expense_status">وضعیت تسویه</string>

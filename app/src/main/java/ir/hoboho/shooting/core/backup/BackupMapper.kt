@@ -68,7 +68,7 @@ object BackupMapper {
                     it.amountToman, it.description, it.receiptReference,
                     it.projectId?.let { id -> projectUuid[id] }.orEmpty(),
                     it.workdayId?.let { id -> workdayUuid[id] }.orEmpty(),
-                    it.createdAt, it.updatedAt)
+                    it.createdAt, it.updatedAt, it.companyApproved)
             },
             settlements = data.settlements.map {
                 SettlementDto(it.uuid, expenseUuid[it.expenseId].orEmpty(), it.amountToman,
@@ -132,6 +132,7 @@ object BackupMapper {
                 projectId = resolve(projectIds, e.projectUuid, "project", allowBlank = true),
                 projectName = projectNames[e.projectUuid],
                 workdayId = resolve(workdayIds, e.workdayUuid, "workday", allowBlank = true),
+                companyApproved = e.companyApproved,
                 createdAt = e.createdAt, updatedAt = e.updatedAt,
             )
         }
@@ -204,6 +205,9 @@ object BackupMapper {
             .forEach { add("هزینه با گزارش نامعتبر: ${it.uuid}") }
         payload.settlements.filter { it.expenseUuid !in expenseUuids }
             .forEach { add("تسویه بدون هزینه: ${it.uuid}") }
+        val approvedExpenseUuids = payload.expenses.filter { it.companyApproved }.map { it.uuid }.toSet()
+        payload.settlements.filter { it.expenseUuid !in approvedExpenseUuids }
+            .forEach { add("تسویه برای هزینه تأییدنشده: ${it.uuid}") }
         payload.settlements.filter { it.amountToman <= 0 }.forEach { add("مبلغ تسویه نامعتبر: ${it.uuid}") }
         payload.expenses.filter { it.amountToman < 0 }.forEach { add("مبلغ هزینه نامعتبر: ${it.uuid}") }
         val settledByExpense = payload.settlements.groupBy { it.expenseUuid }
@@ -229,6 +233,7 @@ object BackupMapper {
         return payload.expenses.map {
             Expense(
                 amountToman = it.amountToman,
+                companyApproved = it.companyApproved,
                 settledAmountToman = settled[it.uuid] ?: 0L,
                 dateEpochDay = it.dateEpochDay,
                 categoryId = 0L,

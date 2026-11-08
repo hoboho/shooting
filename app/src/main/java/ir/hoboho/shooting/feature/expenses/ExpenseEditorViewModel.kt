@@ -35,6 +35,7 @@ data class ExpenseEditorState(
     val amount: String = "",
     val description: String = "",
     val receiptReference: String = "",
+    val companyApproved: Boolean = false,
     val projectId: Long? = null,
     val workdayId: Long? = null,
     val categories: List<ExpenseCategory> = emptyList(),
@@ -46,6 +47,7 @@ data class ExpenseEditorState(
     val settlementAmount: String = "",
     val settlementDate: Long = JalaliCalendar.todayEpochDay(),
     val settlementNote: String = "",
+    val editingSettlementId: Long? = null,
     val saved: Boolean = false,
     val deleted: Boolean = false,
     val error: String? = null,
@@ -96,6 +98,7 @@ class ExpenseEditorViewModel @Inject constructor(
                         dateEpochDay = expense.dateEpochDay, categoryId = expense.categoryId,
                         amount = expense.amountToman.toString(), description = expense.description,
                         receiptReference = expense.receiptReference,
+                        companyApproved = expense.companyApproved,
                         projectId = expense.projectId, workdayId = expense.workdayId,
                         amountToman = expense.amountToman,
                         settledAmountToman = expense.settledAmountToman,
@@ -118,6 +121,11 @@ class ExpenseEditorViewModel @Inject constructor(
     fun setAmount(value: String) = _state.update { it.copy(amount = value, error = null) }
     fun setDescription(value: String) = _state.update { it.copy(description = value) }
     fun setReceipt(value: String) = _state.update { it.copy(receiptReference = value) }
+    fun setCompanyApproved(value: Boolean) = _state.update { state ->
+        if (!value && state.settledAmountToman > 0L) state.copy(
+            error = strings.get(ir.hoboho.shooting.R.string.msg_expense_has_settlements),
+        ) else state.copy(companyApproved = value, error = null)
+    }
     fun setProject(value: Long?) = _state.update { it.copy(projectId = value) }
     fun setWorkday(value: Long?) = _state.update { it.copy(workdayId = value) }
     fun setSettlementAmount(value: String) = _state.update { it.copy(settlementAmount = value, error = null) }
@@ -140,6 +148,7 @@ class ExpenseEditorViewModel @Inject constructor(
                         categoryId = current.categoryId!!, amountToman = amount!!,
                         description = current.description.trim(),
                         receiptReference = current.receiptReference.trim(),
+                        companyApproved = current.companyApproved,
                         projectId = current.projectId, workdayId = current.workdayId,
                         createdAt = current.createdAt,
                     ),
@@ -155,6 +164,21 @@ class ExpenseEditorViewModel @Inject constructor(
         }
     }
 
+    fun editSettlement(id: Long) {
+        val settlement = _state.value.settlements.firstOrNull { it.id == id } ?: return
+        _state.update { it.copy(
+            editingSettlementId = id,
+            settlementAmount = settlement.amountToman.toString(),
+            settlementDate = settlement.dateEpochDay,
+            settlementNote = settlement.note,
+            error = null,
+        ) }
+    }
+
+    fun cancelSettlementEdit() = _state.update {
+        it.copy(editingSettlementId = null, settlementAmount = "", settlementNote = "", error = null)
+    }
+
     fun addSettlement() {
         val current = _state.value
         if (current.id == 0L) {
@@ -162,23 +186,28 @@ class ExpenseEditorViewModel @Inject constructor(
             return
         }
         val amount = NumberFormatter.parseToman(current.settlementAmount)
-        val issues = Validator.settlement(amount, current.amountToman, current.settledAmountToman)
+        val oldSettlement = current.settlements.firstOrNull { it.id == current.editingSettlementId }
+        val alreadySettled = current.settledAmountToman - (oldSettlement?.amountToman ?: 0L)
+        val issues = Validator.settlement(amount, current.amountToman, alreadySettled)
         if (issues.isNotEmpty()) {
             _state.update { it.copy(error = strings.validationMessage(issues.first().field)) }
             return
         }
         viewModelScope.launch {
             try {
-                expenseRepository.addSettlement(
-                    Settlement(
-                        expenseId = current.id,
-                        amountToman = amount!!,
-                        dateEpochDay = current.settlementDate,
-                        note = current.settlementNote.trim(),
-                        createdAt = clock.nowEpochMilli(),
-                    ),
+                val settlement = Settlement(
+                    id = current.editingSettlementId ?: 0L,
+                    expenseId = current.id,
+                    amountToman = amount!!,
+                    dateEpochDay = current.settlementDate,
+                    note = current.settlementNote.trim(),
+                    createdAt = clock.nowEpochMilli(),
                 )
-                _state.update { it.copy(settlementAmount = "", settlementNote = "", error = null) }
+                if (current.editingSettlementId == null) expenseRepository.addSettlement(settlement)
+                else expenseRepository.updateSettlement(settlement)
+                _state.update { it.copy(
+                    editingSettlementId = null, settlementAmount = "", settlementNote = "", error = null,
+                ) }
             } catch (e: ValidationException) {
                 _state.update { it.copy(error = strings.validationMessage(e.issues.first().field)) }
             } catch (e: Exception) {
@@ -189,6 +218,7 @@ class ExpenseEditorViewModel @Inject constructor(
 
     fun deleteSettlement(id: Long) = viewModelScope.launch {
         expenseRepository.deleteSettlement(id)
+        if (_state.value.editingSettlementId == id) cancelSettlementEdit()
     }
 
     fun consumeSaved() = _state.update { it.copy(saved = false) }

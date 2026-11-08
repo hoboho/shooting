@@ -1,5 +1,6 @@
 package ir.hoboho.shooting.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -153,6 +154,8 @@ data class ExpenseEntity(
     val receiptReference: String = "",
     val projectId: Long? = null,
     val workdayId: Long? = null,
+    @ColumnInfo(defaultValue = "0")
+    val companyApproved: Boolean = false,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
 )

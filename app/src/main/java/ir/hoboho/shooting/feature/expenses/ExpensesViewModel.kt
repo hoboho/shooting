@@ -7,6 +7,8 @@ import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.common.ValidationException
 import ir.hoboho.shooting.domain.ExpenseCalculator
 import ir.hoboho.shooting.domain.ExpenseOverview
+import ir.hoboho.shooting.core.date.JalaliCalendar
+import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,25 @@ class ExpensesViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun allocateCompanyPayment(amountText: String) = viewModelScope.launch {
+        val amount = NumberFormatter.parseToman(amountText)
+        if (amount == null || amount <= 0L) {
+            _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_positive)
+            return@launch
+        }
+        try {
+            repository.allocateCompanyPayment(
+                amountToman = amount,
+                dateEpochDay = JalaliCalendar.todayEpochDay(),
+                note = strings.get(ir.hoboho.shooting.R.string.expense_company_payment_note),
+            )
+        } catch (e: ValidationException) {
+            _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_exceeds)
+        } catch (e: Exception) {
+            _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
+        }
+    }
 
     fun delete(id: Long) = viewModelScope.launch {
         try {

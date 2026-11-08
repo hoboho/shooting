@@ -53,6 +53,8 @@ interface ExpenseRepository {
     suspend fun getAllSettlements(): List<Settlement>
     /** Validates against the outstanding balance inside a transaction. */
     suspend fun addSettlement(settlement: Settlement): Long
+    suspend fun updateSettlement(settlement: Settlement)
+    suspend fun allocateCompanyPayment(amountToman: Long, dateEpochDay: Long, note: String): Long
     suspend fun deleteSettlement(id: Long)
 }
 

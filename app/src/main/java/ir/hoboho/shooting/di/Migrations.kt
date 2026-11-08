@@ -1,18 +1,16 @@
 package ir.hoboho.shooting.di
 
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
-/**
- * Registered Room migrations.
- *
- * Version 1 is the initial release, so there is nothing to migrate yet. From
- * here on **every** schema change must add an explicit, additive migration
- * (typically `ALTER TABLE ... ADD COLUMN ... NOT NULL DEFAULT ...`) to [ALL].
- *
- * `fallbackToDestructiveMigration()` is deliberately never used: a missing
- * migration must fail loudly rather than silently wipe a user's shooting history.
- * Exported schema JSON (app/schemas) lets CI validate every version.
- */
+/** Additive migration; old expenses remain approved to preserve existing receivables. */
 object Migrations {
-    val ALL: Array<Migration> = emptyArray()
+    val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE expenses ADD COLUMN companyApproved INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("UPDATE expenses SET companyApproved = 1")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
 }

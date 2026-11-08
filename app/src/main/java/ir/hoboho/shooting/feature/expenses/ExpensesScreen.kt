@@ -3,6 +3,8 @@
 package ir.hoboho.shooting.feature.expenses
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -65,8 +67,37 @@ fun ExpensesScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Long?>(null) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var paymentAmount by remember { mutableStateOf("") }
 
     LaunchedEffect(error) { error?.let { snackbar.showSnackbar(it); viewModel.consumeError() } }
+    if (showPaymentDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaymentDialog = false },
+            title = { Text(stringResource(R.string.expense_company_payment)) },
+            text = {
+                OutlinedTextField(
+                    value = paymentAmount,
+                    onValueChange = { paymentAmount = it },
+                    label = { Text(stringResource(R.string.label_amount)) },
+                    suffix = { Text(stringResource(R.string.toman)) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.allocateCompanyPayment(paymentAmount)
+                    paymentAmount = ""
+                    showPaymentDialog = false
+                }) { Text(stringResource(R.string.action_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaymentDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
     if (pendingDelete != null) {
         ConfirmDialog(
             title = stringResource(R.string.action_delete),
@@ -94,6 +125,13 @@ fun ExpensesScreen(
                 )
             }
             item {
+                ShootingButton(
+                    text = stringResource(R.string.expense_company_payment),
+                    onClick = { showPaymentDialog = true },
+                    level = ir.hoboho.shooting.ui.components.ButtonLevel.Secondary,
+                )
+            }
+            item {
                 SectionCard(
                     title = stringResource(R.string.expense_overview),
                     subtitle = stringResource(R.string.expenses_hint),
@@ -113,7 +151,12 @@ fun ExpensesScreen(
                 SectionCard(
                     title = expense.categoryName,
                     subtitle = "${DateFormatter.format(expense.dateEpochDay)} — ${expense.description}",
-                    trailing = { TagChip(statusLabel(expense.status)) },
+                    trailing = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TagChip(stringResource(if (expense.companyApproved) R.string.expense_approved else R.string.expense_not_approved))
+                            TagChip(statusLabel(expense.status))
+                        }
+                    },
                 ) {
                     StatRow(stringResource(R.string.expense_amount),
                         NumberFormatter.formatToman(expense.amountToman))

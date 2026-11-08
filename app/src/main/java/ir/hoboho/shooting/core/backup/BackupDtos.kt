@@ -101,6 +101,7 @@ data class ExpenseDto(
     val workdayUuid: String = "",
     val createdAt: Long,
     val updatedAt: Long,
+    val companyApproved: Boolean = true,
 )
 
 data class SettlementDto(

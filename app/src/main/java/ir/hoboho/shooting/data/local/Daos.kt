@@ -274,6 +274,9 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE uuid = :uuid LIMIT 1")
     suspend fun getByUuid(uuid: String): ExpenseEntity?
 
+    @Query("$EXPENSE_SELECT WHERE e.companyApproved = 1 ORDER BY e.dateEpochDay ASC, e.id ASC")
+    suspend fun getApprovedOldest(): List<ExpenseRow>
+
     @Upsert
     suspend fun upsert(expense: ExpenseEntity): Long
 
@@ -303,6 +306,9 @@ interface SettlementDao {
 
     @Query("SELECT * FROM settlements WHERE uuid = :uuid LIMIT 1")
     suspend fun getByUuid(uuid: String): SettlementEntity?
+
+    @Query("SELECT * FROM settlements WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): SettlementEntity?
 
     @Query("SELECT COALESCE(SUM(amountToman), 0) FROM settlements WHERE expenseId = :expenseId")
     suspend fun totalForExpense(expenseId: Long): Long

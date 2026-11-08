@@ -14,6 +14,7 @@ class ExpenseCalculatorTest {
     private fun expense(amount: Long, settled: Long) = Expense(
         dateEpochDay = 20_000L, categoryId = 1L, amountToman = amount,
         settledAmountToman = settled,
+        companyApproved = true,
     )
 
     @Test
@@ -58,6 +59,33 @@ class ExpenseCalculatorTest {
             fail("expected IllegalArgumentException")
         } catch (expected: IllegalArgumentException) {
             assertTrue(expected.message!!.contains("exceed"))
+        }
+    }
+
+    @Test
+    fun fifoAllocations_useOldestApprovedExpensesAndAllowPartialAllocation() {
+        val expenses = listOf(
+            Expense(id = 3L, dateEpochDay = 30L, categoryId = 1L, amountToman = 900L, companyApproved = true),
+            Expense(id = 1L, dateEpochDay = 10L, categoryId = 1L, amountToman = 1_500L, companyApproved = true),
+            Expense(id = 2L, dateEpochDay = 20L, categoryId = 1L, amountToman = 1_000L, companyApproved = false),
+        )
+        assertEquals(
+            listOf(SettlementAllocation(1L, 1_500L), SettlementAllocation(3L, 500L)),
+            ExpenseCalculator.fifoAllocations(expenses, 2_000L),
+        )
+    }
+
+    @Test
+    fun fifoAllocations_rejectPaymentAboveApprovedOutstanding() {
+        val expenses = listOf(
+            Expense(id = 1L, dateEpochDay = 10L, categoryId = 1L, amountToman = 500L, companyApproved = true),
+            Expense(id = 2L, dateEpochDay = 20L, categoryId = 1L, amountToman = 1_000L, companyApproved = false),
+        )
+        try {
+            ExpenseCalculator.fifoAllocations(expenses, 501L)
+            fail("expected IllegalArgumentException")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message!!.contains("exceeds"))
         }
     }
 

@@ -139,6 +139,7 @@ fun ExpenseRow.toDomain() = Expense(
     projectId = expense.projectId,
     projectName = projectName,
     workdayId = expense.workdayId,
+    companyApproved = expense.companyApproved,
     settledAmountToman = settledAmountToman,
     settlementCount = settlementCount,
     createdAt = expense.createdAt,
@@ -155,6 +156,7 @@ fun Expense.toEntity() = ExpenseEntity(
     receiptReference = receiptReference,
     projectId = projectId,
     workdayId = workdayId,
+    companyApproved = companyApproved,
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
