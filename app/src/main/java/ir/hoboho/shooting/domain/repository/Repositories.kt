@@ -5,6 +5,7 @@ import ir.hoboho.shooting.core.backup.BackupData
 import ir.hoboho.shooting.domain.backup.RestoreStrategy
 import ir.hoboho.shooting.domain.model.AppSettings
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.ExpenseCategory
 import ir.hoboho.shooting.domain.model.Project
@@ -51,10 +52,12 @@ interface ExpenseRepository {
     fun observeSettlements(expenseId: Long): Flow<List<Settlement>>
     fun observeAllSettlements(): Flow<List<Settlement>>
     suspend fun getAllSettlements(): List<Settlement>
+    fun observeCompanyPayments(): Flow<List<CompanyPayment>>
+    suspend fun getAllCompanyPayments(): List<CompanyPayment>
     /** Validates against the outstanding balance inside a transaction. */
     suspend fun addSettlement(settlement: Settlement): Long
     suspend fun updateSettlement(settlement: Settlement)
-    suspend fun allocateCompanyPayment(amountToman: Long, dateEpochDay: Long, note: String): Long
+    suspend fun allocateCompanyPayment(amountToman: Long, dateEpochDay: Long, receiptReference: String, note: String): Long
     suspend fun deleteSettlement(id: Long)
 }
 

@@ -2,6 +2,7 @@ package ir.hoboho.shooting.core.backup
 
 import ir.hoboho.shooting.domain.model.AppSettings
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.ExpenseCategory
 import ir.hoboho.shooting.domain.model.Project
@@ -38,6 +39,7 @@ data class BackupPayload(
     val categories: List<CategoryDto> = emptyList(),
     val expenses: List<ExpenseDto> = emptyList(),
     val settlements: List<SettlementDto> = emptyList(),
+    val companyPayments: List<CompanyPaymentDto> = emptyList(),
 )
 
 data class SettingsDto(
@@ -104,6 +106,15 @@ data class ExpenseDto(
     val companyApproved: Boolean = true,
 )
 
+data class CompanyPaymentDto(
+    val uuid: String,
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val receiptReference: String,
+    val note: String,
+    val createdAt: Long,
+)
+
 data class SettlementDto(
     val uuid: String,
     val expenseUuid: String,
@@ -123,6 +134,7 @@ data class BackupData(
     val categories: List<ExpenseCategory> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val settlements: List<Settlement> = emptyList(),
+    val companyPayments: List<CompanyPayment> = emptyList(),
 )
 
 data class BackupCounts(
@@ -133,8 +145,9 @@ data class BackupCounts(
     val categories: Int = 0,
     val expenses: Int = 0,
     val settlements: Int = 0,
+    val companyPayments: Int = 0,
 ) {
-    val total: Int get() = projects + workdays + operations + cableTypes + categories + expenses + settlements
+    val total: Int get() = projects + workdays + operations + cableTypes + categories + expenses + settlements + companyPayments
 
     companion object {
         fun from(payload: BackupPayload) = BackupCounts(
@@ -145,6 +158,7 @@ data class BackupCounts(
             categories = payload.categories.size,
             expenses = payload.expenses.size,
             settlements = payload.settlements.size,
+            companyPayments = payload.companyPayments.size,
         )
 
         fun from(data: BackupData) = BackupCounts(
@@ -155,6 +169,7 @@ data class BackupCounts(
             categories = data.categories.size,
             expenses = data.expenses.size,
             settlements = data.settlements.size,
+            companyPayments = data.companyPayments.size,
         )
     }
 }

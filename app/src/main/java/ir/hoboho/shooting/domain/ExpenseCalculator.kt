@@ -38,10 +38,7 @@ object ExpenseCalculator {
             .filter { it.companyApproved && it.outstandingToman > 0L }
             .sortedWith(compareBy<Expense> { it.dateEpochDay }.thenBy { it.id })
             .toList()
-        val totalOutstanding = eligible.fold(0L) { total, expense ->
-            Math.addExact(total, expense.outstandingToman)
-        }
-        require(paymentToman <= totalOutstanding) { "Company payment exceeds approved receivables" }
+        // The full cash receipt is recorded separately. Allocate only what is owed.
         var remaining = paymentToman
         return buildList {
             for (expense in eligible) {

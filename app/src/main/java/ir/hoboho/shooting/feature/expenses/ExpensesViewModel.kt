@@ -7,9 +7,9 @@ import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.common.ValidationException
 import ir.hoboho.shooting.domain.ExpenseCalculator
 import ir.hoboho.shooting.domain.ExpenseOverview
-import ir.hoboho.shooting.core.date.JalaliCalendar
 import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.domain.model.Expense
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +29,9 @@ class ExpensesViewModel @Inject constructor(
     val expenses: StateFlow<List<Expense>> = repository.observeExpenses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val companyPayments: StateFlow<List<CompanyPayment>> = repository.observeCompanyPayments()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val overview: StateFlow<ExpenseOverview> = expenses
         .map { ExpenseCalculator.overview(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpenseOverview())
@@ -36,7 +39,7 @@ class ExpensesViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    fun allocateCompanyPayment(amountText: String) = viewModelScope.launch {
+    fun allocateCompanyPayment(amountText: String, dateEpochDay: Long, receiptReference: String) = viewModelScope.launch {
         val amount = NumberFormatter.parseToman(amountText)
         if (amount == null || amount <= 0L) {
             _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_positive)
@@ -45,11 +48,10 @@ class ExpensesViewModel @Inject constructor(
         try {
             repository.allocateCompanyPayment(
                 amountToman = amount,
-                dateEpochDay = JalaliCalendar.todayEpochDay(),
+                dateEpochDay = dateEpochDay,
+                receiptReference = receiptReference.trim(),
                 note = strings.get(ir.hoboho.shooting.R.string.expense_company_payment_note),
             )
-        } catch (e: ValidationException) {
-            _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_exceeds)
         } catch (e: Exception) {
             _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
         }

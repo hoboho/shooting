@@ -6,6 +6,7 @@ import ir.hoboho.shooting.core.backup.BackupData
 import ir.hoboho.shooting.core.backup.BackupIntegrityException
 import ir.hoboho.shooting.data.local.AppSettingDao
 import ir.hoboho.shooting.data.local.CableTypeDao
+import ir.hoboho.shooting.data.local.CompanyPaymentDao
 import ir.hoboho.shooting.data.local.ExpenseCategoryDao
 import ir.hoboho.shooting.data.local.ExpenseDao
 import ir.hoboho.shooting.data.local.OperationDao
@@ -40,6 +41,7 @@ class BackupRepositoryImpl @Inject constructor(
     private val categoryDao: ExpenseCategoryDao,
     private val expenseDao: ExpenseDao,
     private val settlementDao: SettlementDao,
+    private val companyPaymentDao: CompanyPaymentDao,
     private val settingDao: AppSettingDao,
 ) : BackupRepository {
 
@@ -85,6 +87,7 @@ class BackupRepositoryImpl @Inject constructor(
             categories = categories,
             expenses = expenses,
             settlements = settlements,
+            companyPayments = companyPaymentDao.getAll().map { it.toDomain() },
         )
     }
 
@@ -95,6 +98,7 @@ class BackupRepositoryImpl @Inject constructor(
             if (strategy == RestoreStrategy.REPLACE) {
                 // Child-first order keeps every FK satisfied.
                 settlementDao.deleteAll()
+                companyPaymentDao.deleteAll()
                 operationDao.deleteAll()
                 expenseDao.deleteAll()
                 workdayDao.deleteAll()
@@ -224,6 +228,14 @@ class BackupRepositoryImpl @Inject constructor(
                 }
             }
 
+            var importedPayments = 0
+            for (payment in data.companyPayments) {
+                val existing = companyPaymentDao.getByUuid(payment.uuid)
+                if (existing != null && !overwrite) continue
+                companyPaymentDao.upsert(payment.copy(id = existing?.id ?: 0L).toEntity())
+                importedPayments++
+            }
+
             var importedSettlements = 0
             for (settlement in data.settlements) {
                 val expenseUuid = expenseUuidById[settlement.expenseId]
@@ -258,6 +270,7 @@ class BackupRepositoryImpl @Inject constructor(
                 categories = data.categories.size,
                 expenses = data.expenses.size,
                 settlements = importedSettlements,
+                companyPayments = importedPayments,
             )
         }
 }

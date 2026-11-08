@@ -33,6 +33,6 @@
 
 ## دریافت برنامه
 
-نسخهٔ پایدار **2.1.0** شامل مدیریت تأیید هزینه‌ها و تسویهٔ مرحله‌ای مطالبات است و از [صفحهٔ Release ها](https://github.com/hoboho/shooting/releases) قابل دریافت خواهد بود. فایل Debug جایگزین نسخهٔ Release نیست.
+نسخهٔ پایدار **2.2.0** شامل ثبت کامل دریافتی‌های شرکت با تاریخ و شماره رسید، تخصیص FIFO و نگهداری مازاد دریافتی است و از [صفحهٔ Release ها](https://github.com/hoboho/shooting/releases) قابل دریافت خواهد بود. فایل Debug جایگزین نسخهٔ Release نیست.
 
 جزئیات ساخت در [docs/BUILD.md](docs/BUILD.md) و نگهداری کلید در [docs/RELEASE_SIGNING.md](docs/RELEASE_SIGNING.md) آمده است.

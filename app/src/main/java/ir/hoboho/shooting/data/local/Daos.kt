@@ -327,6 +327,27 @@ interface SettlementDao {
 }
 
 @Dao
+interface CompanyPaymentDao {
+    @Query("SELECT * FROM company_payments ORDER BY dateEpochDay DESC, id DESC")
+    fun observeAll(): Flow<List<CompanyPaymentEntity>>
+
+    @Query("SELECT * FROM company_payments ORDER BY dateEpochDay ASC, id ASC")
+    suspend fun getAll(): List<CompanyPaymentEntity>
+
+    @Query("SELECT * FROM company_payments WHERE uuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): CompanyPaymentEntity?
+
+    @Upsert
+    suspend fun upsert(payment: CompanyPaymentEntity): Long
+
+    @Insert
+    suspend fun insertAll(payments: List<CompanyPaymentEntity>): List<Long>
+
+    @Query("DELETE FROM company_payments")
+    suspend fun deleteAll()
+}
+
+@Dao
 interface AppSettingDao {
     @Query("SELECT * FROM app_settings WHERE `key` = :key LIMIT 1")
     fun observe(key: String): Flow<AppSettingEntity?>

@@ -5,6 +5,7 @@ import ir.hoboho.shooting.domain.ShootingCalculator
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.AppSettings
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.ExpenseCategory
 import ir.hoboho.shooting.domain.model.PointType
@@ -73,6 +74,10 @@ object BackupMapper {
             settlements = data.settlements.map {
                 SettlementDto(it.uuid, expenseUuid[it.expenseId].orEmpty(), it.amountToman,
                     it.dateEpochDay, it.note, it.createdAt)
+            },
+            companyPayments = data.companyPayments.map {
+                CompanyPaymentDto(it.uuid, it.amountToman, it.dateEpochDay,
+                    it.receiptReference, it.note, it.createdAt)
             },
         )
     }
@@ -154,6 +159,13 @@ object BackupMapper {
             )
         }
 
+        val companyPayments = payload.companyPayments.mapIndexed { i, payment ->
+            CompanyPayment(
+                id = i + 1L, uuid = payment.uuid, amountToman = payment.amountToman,
+                dateEpochDay = payment.dateEpochDay, receiptReference = payment.receiptReference,
+                note = payment.note, createdAt = payment.createdAt,
+            )
+        }
         val settings = AppSettings(
             themeMode = runCatching { ThemeMode.valueOf(payload.settings.themeMode) }
                 .getOrDefault(ThemeMode.SYSTEM),
@@ -174,6 +186,7 @@ object BackupMapper {
             },
             expenses = rebuiltExpenses,
             settlements = settlements,
+            companyPayments = companyPayments,
         )
     }
 
@@ -187,11 +200,14 @@ object BackupMapper {
         val expenseUuids = payload.expenses.map { it.uuid }.toSet()
         val operationUuids = payload.operations.map { it.uuid }.toSet()
         val settlementUuids = payload.settlements.map { it.uuid }.toSet()
+        val companyPaymentUuids = payload.companyPayments.map { it.uuid }.toSet()
         if (projectUuids.size != payload.projects.size) add("شناسه پروژه تکراری است")
         if (workdayUuids.size != payload.workdays.size) add("شناسه گزارش تکراری است")
         if (expenseUuids.size != payload.expenses.size) add("شناسه هزینه تکراری است")
         if (operationUuids.size != payload.operations.size) add("شناسه عملیات تکراری است")
         if (settlementUuids.size != payload.settlements.size) add("شناسه تسویه تکراری است")
+        if (companyPaymentUuids.size != payload.companyPayments.size) add("شناسه دریافتی تکراری است")
+        payload.companyPayments.filter { it.amountToman <= 0L }.forEach { add("مبلغ دریافتی نامعتبر است: ${it.uuid}") }
         if (payload.projects.map { it.name }.toSet().size != payload.projects.size) add("نام پروژه در فایل پشتیبان تکراری است")
         if (payload.cableTypes.map { it.coreCount }.toSet().size != payload.cableTypes.size) add("تعداد کور کابل در فایل پشتیبان تکراری است")
         if (payload.categories.map { it.name }.toSet().size != payload.categories.size) add("نام دسته هزینه در فایل پشتیبان تکراری است")

@@ -135,6 +135,16 @@ data class Settlement(
     val createdAt: Long = 0L,
 )
 
+data class CompanyPayment(
+    val id: Long = 0L,
+    val uuid: String = "",
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val receiptReference: String = "",
+    val note: String = "",
+    val createdAt: Long = 0L,
+)
+
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /** User configuration that is included in backups. */

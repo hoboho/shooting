@@ -87,6 +87,7 @@ object BackupCodec {
         "categories" to arrOf(p.categories.map(::categoryToJson)),
         "expenses" to arrOf(p.expenses.map(::expenseToJson)),
         "settlements" to arrOf(p.settlements.map(::settlementToJson)),
+        "companyPayments" to arrOf(p.companyPayments.map(::companyPaymentToJson)),
     )
 
     private fun settingsToJson(s: SettingsDto) = objOf(
@@ -154,6 +155,15 @@ object BackupCodec {
         "note" to JsonValue.Str(s.note), "createdAt" to JsonValue.Num(s.createdAt.toString()),
     )
 
+    private fun companyPaymentToJson(p: CompanyPaymentDto) = objOf(
+        "uuid" to JsonValue.Str(p.uuid),
+        "amountToman" to JsonValue.Num(p.amountToman.toString()),
+        "dateEpochDay" to JsonValue.Num(p.dateEpochDay.toString()),
+        "receiptReference" to JsonValue.Str(p.receiptReference),
+        "note" to JsonValue.Str(p.note),
+        "createdAt" to JsonValue.Num(p.createdAt.toString()),
+    )
+
     private fun payloadFromJson(o: JsonValue.Obj): BackupPayload = BackupPayload(
         formatVersion = o.int("formatVersion"),
         appVersionName = o.string("appVersionName"),
@@ -198,6 +208,13 @@ object BackupCodec {
             val x = v.asObj()!!
             SettlementDto(x.string("uuid"), x.string("expenseUuid"), x.long("amountToman"),
                 x.long("dateEpochDay"), x.string("note"), x.long("createdAt"))
+        } ?: emptyList(),
+        companyPayments = o.field("companyPayments").asArr()?.values?.map { v ->
+            val x = v.asObj()!!
+            CompanyPaymentDto(
+                x.string("uuid"), x.long("amountToman"), x.long("dateEpochDay"),
+                x.string("receiptReference"), x.string("note"), x.long("createdAt"),
+            )
         } ?: emptyList(),
     )
 }

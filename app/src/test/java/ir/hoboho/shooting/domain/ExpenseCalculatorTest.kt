@@ -76,17 +76,15 @@ class ExpenseCalculatorTest {
     }
 
     @Test
-    fun fifoAllocations_rejectPaymentAboveApprovedOutstanding() {
+    fun fifoAllocations_acceptPaymentAboveReceivablesAndAllocateOnlyAvailableBalance() {
         val expenses = listOf(
             Expense(id = 1L, dateEpochDay = 10L, categoryId = 1L, amountToman = 500L, companyApproved = true),
             Expense(id = 2L, dateEpochDay = 20L, categoryId = 1L, amountToman = 1_000L, companyApproved = false),
         )
-        try {
-            ExpenseCalculator.fifoAllocations(expenses, 501L)
-            fail("expected IllegalArgumentException")
-        } catch (expected: IllegalArgumentException) {
-            assertTrue(expected.message!!.contains("exceeds"))
-        }
+        assertEquals(
+            listOf(SettlementAllocation(1L, 500L)),
+            ExpenseCalculator.fifoAllocations(expenses, 5_000L),
+        )
     }
 
     @Test

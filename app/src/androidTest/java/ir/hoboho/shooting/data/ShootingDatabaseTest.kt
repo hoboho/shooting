@@ -55,11 +55,11 @@ class ShootingDatabaseTest {
         db, db.workdayDao(), db.operationDao(), db.projectDao(), db.cableTypeDao(), clock,
     )
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
     )
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
     )
 
     @Test
@@ -164,7 +164,9 @@ class ShootingDatabaseTest {
             Expense(dateEpochDay = 20_002L, categoryId = categoryId, amountToman = 2_000L, companyApproved = false),
         )
 
-        expenses().allocateCompanyPayment(1_250L, 20_003L, "واریز شرکت")
+        expenses().allocateCompanyPayment(1_250L, 20_003L, "RCPT-001", "واریز شرکت")
+        assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-001")
+        assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_250L)
         assertThat(expenses().getExpense(oldestId)!!.settledAmountToman).isEqualTo(1_000L)
         assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(250L)
         assertThat(expenses().getExpense(unapprovedId)!!.settledAmountToman).isEqualTo(0L)
@@ -173,6 +175,26 @@ class ShootingDatabaseTest {
         expenses().updateSettlement(nextAllocation.copy(amountToman = 150L))
         assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(150L)
         assertThat(expenses().getExpense(nextId)!!.outstandingToman).isEqualTo(1_350L)
+    }
+
+    @Test
+    fun companyPaymentAboveReceivables_isRecordedAndExcessRemainsUnallocated() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val expenseId = expenses().save(
+            Expense(dateEpochDay = 20_100L, categoryId = categoryId, amountToman = 500L, companyApproved = true),
+        )
+
+        expenses().allocateCompanyPayment(1_500L, 20_101L, "RCPT-OVER", "پیش‌پرداخت شرکت")
+
+        assertThat(expenses().getAllCompanyPayments()).hasSize(1)
+        assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_500L)
+        assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-OVER")
+        assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(500L)
+        assertThat(expenses().getExpense(expenseId)!!.outstandingToman).isEqualTo(0L)
+
+        val snapshot = backups().snapshot()
+        assertThat(snapshot.companyPayments).hasSize(1)
+        assertThat(snapshot.companyPayments.single().amountToman).isEqualTo(1_500L)
     }
 
     @Test
