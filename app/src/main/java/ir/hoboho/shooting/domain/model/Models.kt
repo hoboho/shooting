@@ -111,11 +111,11 @@ data class Expense(
     val projectId: Long? = null,
     val projectName: String? = null,
     val workdayId: Long? = null,
-    val companyApproved: Boolean = false,
     val settledAmountToman: Long = 0L,
     val settlementCount: Int = 0,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val companyApproved: Boolean = false,
 ) {
     val outstandingToman: Long
         get() = if (companyApproved) ir.hoboho.shooting.domain.ExpenseCalculator.outstanding(amountToman, settledAmountToman) else 0L

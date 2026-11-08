@@ -154,10 +154,10 @@ data class ExpenseEntity(
     val receiptReference: String = "",
     val projectId: Long? = null,
     val workdayId: Long? = null,
-    @ColumnInfo(defaultValue = "0")
-    val companyApproved: Boolean = false,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    @ColumnInfo(defaultValue = "0")
+    val companyApproved: Boolean = false,
 )
 
 @Entity(
