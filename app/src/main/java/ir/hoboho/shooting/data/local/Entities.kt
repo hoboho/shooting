@@ -182,6 +182,17 @@ data class SettlementEntity(
     val createdAt: Long = 0L,
 )
 
+@Entity(tableName = "company_payments", indices = [Index(value = ["uuid"], unique = true), Index(value = ["dateEpochDay"])])
+data class CompanyPaymentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val uuid: String = "",
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val receiptReference: String = "",
+    val note: String = "",
+    val createdAt: Long = 0L,
+)
+
 @Entity(tableName = "app_settings")
 data class AppSettingEntity(
     @PrimaryKey val key: String,
