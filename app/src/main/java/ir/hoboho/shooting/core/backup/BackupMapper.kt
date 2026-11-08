@@ -5,6 +5,7 @@ import ir.hoboho.shooting.domain.ShootingCalculator
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.AppSettings
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.ExpenseCategory
 import ir.hoboho.shooting.domain.model.PointType
@@ -73,6 +74,10 @@ object BackupMapper {
             settlements = data.settlements.map {
                 SettlementDto(it.uuid, expenseUuid[it.expenseId].orEmpty(), it.amountToman,
                     it.dateEpochDay, it.note, it.createdAt)
+            },
+            companyPayments = data.companyPayments.map {
+                CompanyPaymentDto(it.uuid, it.amountToman, it.dateEpochDay,
+                    it.receiptReference, it.note, it.createdAt)
             },
         )
     }
@@ -154,6 +159,13 @@ object BackupMapper {
             )
         }
 
+        val companyPayments = payload.companyPayments.mapIndexed { i, payment ->
+            CompanyPayment(
+                id = i + 1L, uuid = payment.uuid, amountToman = payment.amountToman,
+                dateEpochDay = payment.dateEpochDay, receiptReference = payment.receiptReference,
+                note = payment.note, createdAt = payment.createdAt,
+            )
+        }
         val settings = AppSettings(
             themeMode = runCatching { ThemeMode.valueOf(payload.settings.themeMode) }
                 .getOrDefault(ThemeMode.SYSTEM),
@@ -174,6 +186,7 @@ object BackupMapper {
             },
             expenses = rebuiltExpenses,
             settlements = settlements,
+            companyPayments = companyPayments,
         )
     }
 
