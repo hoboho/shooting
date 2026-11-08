@@ -26,7 +26,7 @@ class PeriodAggregatorTest {
 
     private fun expense(id: Long, day: Long, projectId: Long?, amount: Long, settled: Long) = Expense(
         id = id, dateEpochDay = day, categoryId = 1L, amountToman = amount,
-        settledAmountToman = settled, projectId = projectId,
+        settledAmountToman = settled, projectId = projectId, companyApproved = true,
     )
 
     private val workdays = listOf(

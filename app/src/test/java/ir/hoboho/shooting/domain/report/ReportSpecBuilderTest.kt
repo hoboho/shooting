@@ -79,7 +79,7 @@ class ReportSpecBuilderTest {
             ),
         )
         val expenses = listOf(
-            Expense(dateEpochDay = 20_759L, categoryId = 1L, amountToman = 1_000_000L, settledAmountToman = 250_000L),
+            Expense(dateEpochDay = 20_759L, categoryId = 1L, amountToman = 1_000_000L, settledAmountToman = 250_000L, companyApproved = true),
         )
         val report = PeriodAggregator.build(
             DateRange(20_759L, 20_759L),
@@ -102,6 +102,7 @@ class ReportSpecBuilderTest {
         val expense = Expense(
             dateEpochDay = 20_759L, categoryId = 1L, categoryName = "سوخت خودرو",
             amountToman = 1_000_000L, settledAmountToman = 400_000L, description = "بنزین",
+            companyApproved = true,
         )
         val rows = listOf(ExpenseReportRow(expense, listOf(
             ir.hoboho.shooting.domain.model.Settlement(
