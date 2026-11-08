@@ -290,4 +290,5 @@
     <string name="calendar_month_next">ماه بعد</string>
     <string name="error_generic">خطایی رخ داد. دوباره تلاش کنید.</string>
     <string name="error_not_found">مورد مورد نظر یافت نشد.</string>
+    <string name="expense_company_payments">دریافتی‌های ثبت‌شده از شرکت</string>
 </resources>
