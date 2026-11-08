@@ -178,6 +178,26 @@ class ShootingDatabaseTest {
     }
 
     @Test
+    fun companyPaymentAboveReceivables_isRecordedAndExcessRemainsUnallocated() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val expenseId = expenses().save(
+            Expense(dateEpochDay = 20_100L, categoryId = categoryId, amountToman = 500L, companyApproved = true),
+        )
+
+        expenses().allocateCompanyPayment(1_500L, 20_101L, "RCPT-OVER", "پیش‌پرداخت شرکت")
+
+        assertThat(expenses().getAllCompanyPayments()).hasSize(1)
+        assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_500L)
+        assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-OVER")
+        assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(500L)
+        assertThat(expenses().getExpense(expenseId)!!.outstandingToman).isEqualTo(0L)
+
+        val snapshot = backups().snapshot()
+        assertThat(snapshot.companyPayments).hasSize(1)
+        assertThat(snapshot.companyPayments.single().amountToman).isEqualTo(1_500L)
+    }
+
+    @Test
     fun addOnlyRestore_doesNotDuplicateOrLoseRows() = runBlocking {
         val projectId = projects().save(Project(name = "پروژه ج"))
         val cableId = db.cableTypeDao().getByCoreCount(48)!!.id
