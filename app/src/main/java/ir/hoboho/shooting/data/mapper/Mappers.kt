@@ -2,6 +2,7 @@ package ir.hoboho.shooting.data.mapper
 
 import ir.hoboho.shooting.data.local.AppSettingEntity
 import ir.hoboho.shooting.data.local.CableTypeEntity
+import ir.hoboho.shooting.data.local.CompanyPaymentEntity
 import ir.hoboho.shooting.data.local.ExpenseCategoryEntity
 import ir.hoboho.shooting.data.local.ExpenseEntity
 import ir.hoboho.shooting.data.local.ExpenseRow
@@ -14,6 +15,7 @@ import ir.hoboho.shooting.data.local.WorkdayRow
 import ir.hoboho.shooting.domain.ShootingCalculator
 import ir.hoboho.shooting.domain.model.AppSettings
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.ExpenseCategory
 import ir.hoboho.shooting.domain.model.PointType
@@ -167,6 +169,16 @@ fun SettlementEntity.toDomain() = Settlement(
 
 fun Settlement.toEntity() = SettlementEntity(
     id, uuid, expenseId, amountToman, dateEpochDay, note, createdAt,
+)
+
+fun CompanyPaymentEntity.toDomain() = CompanyPayment(
+    id = id, uuid = uuid, amountToman = amountToman, dateEpochDay = dateEpochDay,
+    receiptReference = receiptReference, note = note, createdAt = createdAt,
+)
+
+fun CompanyPayment.toEntity() = CompanyPaymentEntity(
+    id = id, uuid = uuid, amountToman = amountToman, dateEpochDay = dateEpochDay,
+    receiptReference = receiptReference, note = note, createdAt = createdAt,
 )
 
 // -------------------------------------------------------------------- settings
