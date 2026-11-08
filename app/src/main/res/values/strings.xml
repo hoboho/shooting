@@ -291,4 +291,7 @@
     <string name="error_generic">خطایی رخ داد. دوباره تلاش کنید.</string>
     <string name="error_not_found">مورد مورد نظر یافت نشد.</string>
     <string name="expense_company_payments">دریافتی‌های ثبت‌شده از شرکت</string>
+    <string name="label_total_company_payments">جمع کل دریافتی از شرکت</string>
+    <string name="label_allocated_company_payments">مبلغ تخصیص‌یافته به هزینه‌ها</string>
+    <string name="label_unallocated_company_payments">اعتبار دریافتی تخصیص‌نیافته</string>
 </resources>
