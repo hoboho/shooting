@@ -91,14 +91,14 @@ class WorkflowIntegrationTest {
     )
 
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
     )
 
     private fun references() = ReferenceRepositoryImpl(db.cableTypeDao(), db.expenseCategoryDao())
 
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
     )
 
     private fun settings() = SettingsRepositoryImpl(db.appSettingDao())
