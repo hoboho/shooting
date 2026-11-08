@@ -28,7 +28,7 @@ class BackupMapperTest {
         cableTypes = listOf(CableType(1L, 24, "۲۴ کور", true, 2)),
         categories = listOf(ExpenseCategory(1L, "سوخت خودرو", true, 0)),
         expenses = listOf(Expense(1L, "e1", 20_759L, 1L, "سوخت خودرو", 1_000_000L,
-            "بنزین", "رسید ۱۲", 1L, "پروژه الف", 1L, 400_000L, 2, 10L, 20L)),
+            "بنزین", "رسید ۱۲", 1L, "پروژه الف", 1L, 400_000L, 2, 10L, 20L, companyApproved = true)),
         settlements = listOf(
             Settlement(1L, "s1", 1L, 250_000L, 20_760L, "واریز اول", 11L),
             Settlement(2L, "s2", 1L, 150_000L, 20_761L, "واریز دوم", 12L),

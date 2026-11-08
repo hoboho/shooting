@@ -178,7 +178,7 @@
     <!-- Expenses -->
     <string name="expenses_title">هزینه‌های شرکت</string>
     <string name="expenses_empty">هنوز هزینه ای ثبت نشده است.</string>
-    <string name="expenses_hint">این هزینه‌ها از طرف شرکت پرداخت شده و طلب شما از شرکت هستند؛ حقوق یا هزینه شخصی نیستند.</string>
+    <string name="expenses_hint">هزینه‌های انجام‌شده برای شرکت را ثبت کنید؛ فقط هزینه‌های تأییدشده وارد مطالبات می‌شوند و پرداخت‌ها از قدیمی‌ترین هزینه‌های تأییدشده تسویه خواهند شد.</string>
     <string name="expense_new">هزینه جدید</string>
     <string name="expense_edit">ویرایش هزینه</string>
     <string name="expense_delete">حذف هزینه</string>
