@@ -60,11 +60,11 @@ class DatabaseSchemaTest {
     }
 
     @Test
-    fun version2_createsEveryTable() {
-        assertThat(db.openHelper.writableDatabase.version).isEqualTo(2)
+    fun version3_createsEveryTable() {
+        assertThat(db.openHelper.writableDatabase.version).isEqualTo(3)
         assertThat(tableNames()).containsExactly(
             "projects", "workdays", "operations", "cable_types",
-            "expense_categories", "expenses", "settlements", "app_settings",
+            "expense_categories", "expenses", "settlements", "company_payments", "app_settings",
         )
     }
 
@@ -74,6 +74,7 @@ class DatabaseSchemaTest {
             "dateEpochDay", "amountToman", "categoryId", "projectId", "workdayId", "companyApproved",
         )
         assertThat(columnNames("settlements")).containsAtLeast("amountToman", "dateEpochDay")
+        assertThat(columnNames("company_payments")).containsAtLeast("amountToman", "dateEpochDay", "receiptReference")
         assertThat(columnNames("operations")).containsAtLeast(
             "startMeter", "endMeter", "lengthMeters", "cableTypeId",
         )
