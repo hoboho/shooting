@@ -41,8 +41,7 @@ class AppUpdater @javax.inject.Inject constructor(
 
         val tag = release.optString("tag_name")
         val latestVersion = tag.removePrefix("v").removeSuffix("-release")
-        val latestCode = versionCodeFromVersion(latestVersion)
-        if (latestCode <= BuildConfig.APP_VERSION_CODE) {
+        if (compareVersions(latestVersion, BuildConfig.APP_VERSION_NAME) <= 0) {
             return@withContext AppUpdateState(
                 latestVersion = latestVersion,
                 message = "برنامه به‌روز است. نسخهٔ نصب‌شده: ${BuildConfig.APP_VERSION_NAME}",
@@ -159,11 +158,20 @@ class AppUpdater @javax.inject.Inject constructor(
         }
     }
 
-    private fun versionCodeFromVersion(version: String): Int {
-        val parts = version.split(".")
-        require(parts.size == 3 && parts.all { it.toIntOrNull() != null }) {
-            "شمارهٔ نسخهٔ انتشار معتبر نیست: $version"
+    private fun compareVersions(left: String, right: String): Int {
+        fun parts(value: String): List<Int> {
+            val parsed = value.trim().removePrefix("v").split(".").map { it.toIntOrNull() }
+            require(parsed.size == 3 && parsed.all { it != null }) {
+                "شمارهٔ نسخه معتبر نیست: $value"
+            }
+            return parsed.filterNotNull()
         }
-        return 1000 + parts.last().toInt()
+        val a = parts(left)
+        val b = parts(right)
+        for (index in 0..2) {
+            val compared = a[index].compareTo(b[index])
+            if (compared != 0) return compared
+        }
+        return 0
     }
 }
