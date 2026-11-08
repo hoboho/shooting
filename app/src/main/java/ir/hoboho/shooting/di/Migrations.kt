@@ -14,7 +14,7 @@ object Migrations {
 
     val MIGRATION_2_3 = object : Migration(2, 3) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("CREATE TABLE IF NOT EXISTS company_payments (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, uuid TEXT NOT NULL, amountToman INTEGER NOT NULL, dateEpochDay INTEGER NOT NULL, receiptReference TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', createdAt INTEGER NOT NULL DEFAULT 0)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS company_payments (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, uuid TEXT NOT NULL, amountToman INTEGER NOT NULL, dateEpochDay INTEGER NOT NULL, receiptReference TEXT NOT NULL, note TEXT NOT NULL, createdAt INTEGER NOT NULL)")
             db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_company_payments_uuid ON company_payments(uuid)")
             db.execSQL("CREATE INDEX IF NOT EXISTS index_company_payments_dateEpochDay ON company_payments(dateEpochDay)")
         }
