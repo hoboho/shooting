@@ -6,6 +6,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.format.NumberFormatter
+import ir.hoboho.shooting.core.date.JalaliCalendar
+import ir.hoboho.shooting.ui.components.ClickableField
+import ir.hoboho.shooting.ui.components.JalaliDatePickerDialog
 import ir.hoboho.shooting.domain.model.SettlementStatus
 import ir.hoboho.shooting.ui.components.ConfirmDialog
 import ir.hoboho.shooting.ui.components.EmptyState
@@ -64,11 +68,15 @@ fun ExpensesScreen(
 ) {
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val overview by viewModel.overview.collectAsStateWithLifecycle()
+    val companyPayments by viewModel.companyPayments.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Long?>(null) }
     var showPaymentDialog by remember { mutableStateOf(false) }
     var paymentAmount by remember { mutableStateOf("") }
+    var paymentReceiptReference by remember { mutableStateOf("") }
+    var paymentDateEpochDay by remember { mutableStateOf(JalaliCalendar.todayEpochDay()) }
+    var showPaymentDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(error) { error?.let { snackbar.showSnackbar(it); viewModel.consumeError() } }
     if (showPaymentDialog) {
@@ -76,18 +84,33 @@ fun ExpensesScreen(
             onDismissRequest = { showPaymentDialog = false },
             title = { Text(stringResource(R.string.expense_company_payment)) },
             text = {
-                OutlinedTextField(
-                    value = paymentAmount,
-                    onValueChange = { paymentAmount = it },
-                    label = { Text(stringResource(R.string.label_amount)) },
-                    suffix = { Text(stringResource(R.string.toman)) },
-                    singleLine = true,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = paymentAmount,
+                        onValueChange = { paymentAmount = it },
+                        label = { Text(stringResource(R.string.label_amount)) },
+                        suffix = { Text(stringResource(R.string.toman)) },
+                        singleLine = true,
+                    )
+                    ClickableField(
+                        label = stringResource(R.string.label_date),
+                        value = DateFormatter.format(paymentDateEpochDay),
+                        onClick = { showPaymentDatePicker = true },
+                    )
+                    OutlinedTextField(
+                        value = paymentReceiptReference,
+                        onValueChange = { paymentReceiptReference = it },
+                        label = { Text(stringResource(R.string.label_receipt_reference)) },
+                        singleLine = true,
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.allocateCompanyPayment(paymentAmount)
+                    viewModel.allocateCompanyPayment(paymentAmount, paymentDateEpochDay, paymentReceiptReference)
                     paymentAmount = ""
+                    paymentReceiptReference = ""
+                    paymentDateEpochDay = JalaliCalendar.todayEpochDay()
                     showPaymentDialog = false
                 }) { Text(stringResource(R.string.action_confirm)) }
             },
@@ -96,6 +119,13 @@ fun ExpensesScreen(
                     Text(stringResource(R.string.action_cancel))
                 }
             },
+        )
+    }
+    if (showPaymentDatePicker) {
+        JalaliDatePickerDialog(
+            initialEpochDay = paymentDateEpochDay,
+            onDismiss = { showPaymentDatePicker = false },
+            onDateSelected = { paymentDateEpochDay = it },
         )
     }
     if (pendingDelete != null) {
@@ -142,6 +172,19 @@ fun ExpensesScreen(
                         NumberFormatter.formatToman(overview.totalReimbursedToman))
                     StatRow(stringResource(R.string.label_outstanding_receivables),
                         NumberFormatter.formatToman(overview.outstandingToman), emphasised = true)
+                }
+            }
+            if (companyPayments.isNotEmpty()) {
+                item {
+                    SectionCard(title = stringResource(R.string.expense_company_payments)) {
+                        companyPayments.forEach { payment ->
+                            StatRow(
+                                DateFormatter.format(payment.dateEpochDay) +
+                                    if (payment.receiptReference.isBlank()) "" else " — ${payment.receiptReference}",
+                                NumberFormatter.formatToman(payment.amountToman),
+                            )
+                        }
+                    }
                 }
             }
             if (expenses.isEmpty()) {
