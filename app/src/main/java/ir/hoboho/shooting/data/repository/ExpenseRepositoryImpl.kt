@@ -5,6 +5,8 @@ import ir.hoboho.shooting.core.common.Clock
 import ir.hoboho.shooting.core.common.NotFoundException
 import ir.hoboho.shooting.core.common.ValidationException
 import ir.hoboho.shooting.data.local.ExpenseCategoryDao
+import ir.hoboho.shooting.data.local.CompanyPaymentDao
+import ir.hoboho.shooting.data.local.CompanyPaymentEntity
 import ir.hoboho.shooting.data.local.ExpenseDao
 import ir.hoboho.shooting.data.local.SettlementDao
 import ir.hoboho.shooting.data.local.ShootingDatabase
@@ -15,6 +17,7 @@ import ir.hoboho.shooting.domain.ValidationField
 import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.Expense
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +32,7 @@ class ExpenseRepositoryImpl @Inject constructor(
     private val dao: ExpenseDao,
     private val settlementDao: SettlementDao,
     private val categoryDao: ExpenseCategoryDao,
+    private val companyPaymentDao: CompanyPaymentDao,
     private val clock: Clock,
 ) : ExpenseRepository {
 
@@ -98,6 +102,12 @@ class ExpenseRepositoryImpl @Inject constructor(
     override suspend fun getAllSettlements(): List<Settlement> =
         settlementDao.getAll().map { it.toDomain() }
 
+    override fun observeCompanyPayments(): Flow<List<CompanyPayment>> =
+        companyPaymentDao.observeAll().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun getAllCompanyPayments(): List<CompanyPayment> =
+        companyPaymentDao.getAll().map { it.toDomain() }
+
     override suspend fun addSettlement(settlement: Settlement): Long = db.withTransaction {
         val expense = dao.getById(settlement.expenseId)
             ?: throw NotFoundException("expense ${settlement.expenseId}")
@@ -144,15 +154,23 @@ class ExpenseRepositoryImpl @Inject constructor(
     override suspend fun allocateCompanyPayment(
         amountToman: Long,
         dateEpochDay: Long,
+        receiptReference: String,
         note: String,
     ): Long = db.withTransaction {
-        val approved = dao.getApprovedOldest().map { it.toDomain() }
-        val allocations = try {
-            ExpenseCalculator.fifoAllocations(approved, amountToman)
-        } catch (error: IllegalArgumentException) {
-            throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_EXCEEDS_OUTSTANDING)))
-        }
+        require(amountToman > 0L) { "Company payment must be positive" }
         val now = clock.nowEpochMilli()
+        val paymentId = companyPaymentDao.upsert(
+            CompanyPaymentEntity(
+                uuid = UUID.randomUUID().toString(),
+                amountToman = amountToman,
+                dateEpochDay = dateEpochDay,
+                receiptReference = receiptReference.trim(),
+                note = note,
+                createdAt = now,
+            ),
+        )
+        val approved = dao.getApprovedOldest().map { it.toDomain() }
+        val allocations = ExpenseCalculator.fifoAllocations(approved, amountToman)
         allocations.forEach { allocation ->
             settlementDao.upsert(
                 Settlement(
@@ -165,8 +183,8 @@ class ExpenseRepositoryImpl @Inject constructor(
                 ).toEntity(),
             )
         }
-        amountToman
+        // Any excess remains recorded as an unallocated company advance.
+        paymentId
     }
-
     override suspend fun deleteSettlement(id: Long) = settlementDao.deleteById(id)
 }
