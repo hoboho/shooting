@@ -124,7 +124,7 @@ class ShootingDatabaseTest {
     fun settlements_neverExceedOutstanding_andDeletionIsGuarded() = runBlocking {
         val categoryId = db.expenseCategoryDao().getAll().first().id
         val expenseId = expenses().save(
-            Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 1_000L),
+            Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 1_000L, companyApproved = true),
         )
         expenses().addSettlement(Settlement(expenseId = expenseId, amountToman = 400L, dateEpochDay = 20_001L))
         assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(400L)
@@ -149,6 +149,30 @@ class ShootingDatabaseTest {
         }
         assertThat(deleteRejected).isTrue()
         assertThat(expenses().getExpense(expenseId)).isNotNull()
+    }
+
+    @Test
+    fun companyPayment_allocatesOldestApprovedFirst_andAllowsManualAdjustment() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val oldestId = expenses().save(
+            Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 1_000L, companyApproved = true),
+        )
+        val nextId = expenses().save(
+            Expense(dateEpochDay = 20_001L, categoryId = categoryId, amountToman = 1_500L, companyApproved = true),
+        )
+        val unapprovedId = expenses().save(
+            Expense(dateEpochDay = 20_002L, categoryId = categoryId, amountToman = 2_000L, companyApproved = false),
+        )
+
+        expenses().allocateCompanyPayment(1_250L, 20_003L, "واریز شرکت")
+        assertThat(expenses().getExpense(oldestId)!!.settledAmountToman).isEqualTo(1_000L)
+        assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(250L)
+        assertThat(expenses().getExpense(unapprovedId)!!.settledAmountToman).isEqualTo(0L)
+
+        val nextAllocation = expenses().getAllSettlements().single { it.expenseId == nextId }
+        expenses().updateSettlement(nextAllocation.copy(amountToman = 150L))
+        assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(150L)
+        assertThat(expenses().getExpense(nextId)!!.outstandingToman).isEqualTo(1_350L)
     }
 
     @Test

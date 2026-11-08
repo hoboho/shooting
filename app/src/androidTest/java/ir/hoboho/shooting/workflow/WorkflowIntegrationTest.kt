@@ -255,6 +255,7 @@ class WorkflowIntegrationTest {
                 description = "سوخت خودرو",
                 projectId = projectId,
                 workdayId = workdayId,
+                companyApproved = true,
             ),
         )
 
@@ -321,6 +322,7 @@ class WorkflowIntegrationTest {
                 amountToman = 500L,
                 projectId = projectId,
                 workdayId = workdayId,
+                companyApproved = true,
             ),
         )
         expenses().addSettlement(

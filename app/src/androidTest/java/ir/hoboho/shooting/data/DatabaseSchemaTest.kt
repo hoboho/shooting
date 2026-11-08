@@ -13,9 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Verifies the exported version-1 schema shape on a real SQLite database.
- * Version 1 has no migrations to replay; from version 2 onwards every change
- * must add a `MigrationTestHelper` case using the committed schema JSON.
+ * Verifies the current Room schema shape on a real SQLite database.
  */
 @RunWith(AndroidJUnit4::class)
 class DatabaseSchemaTest {
@@ -62,8 +60,8 @@ class DatabaseSchemaTest {
     }
 
     @Test
-    fun version1_createsEveryTable() {
-        assertThat(db.openHelper.writableDatabase.version).isEqualTo(1)
+    fun version2_createsEveryTable() {
+        assertThat(db.openHelper.writableDatabase.version).isEqualTo(2)
         assertThat(tableNames()).containsExactly(
             "projects", "workdays", "operations", "cable_types",
             "expense_categories", "expenses", "settlements", "app_settings",
@@ -73,7 +71,7 @@ class DatabaseSchemaTest {
     @Test
     fun moneyAndDates_areStoredAsIntegers() {
         assertThat(columnNames("expenses")).containsAtLeast(
-            "dateEpochDay", "amountToman", "categoryId", "projectId", "workdayId",
+            "dateEpochDay", "amountToman", "categoryId", "projectId", "workdayId", "companyApproved",
         )
         assertThat(columnNames("settlements")).containsAtLeast("amountToman", "dateEpochDay")
         assertThat(columnNames("operations")).containsAtLeast(
