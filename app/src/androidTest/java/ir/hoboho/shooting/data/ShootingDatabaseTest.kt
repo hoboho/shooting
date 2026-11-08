@@ -55,11 +55,11 @@ class ShootingDatabaseTest {
         db, db.workdayDao(), db.operationDao(), db.projectDao(), db.cableTypeDao(), clock,
     )
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
     )
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
     )
 
     @Test
@@ -164,7 +164,9 @@ class ShootingDatabaseTest {
             Expense(dateEpochDay = 20_002L, categoryId = categoryId, amountToman = 2_000L, companyApproved = false),
         )
 
-        expenses().allocateCompanyPayment(1_250L, 20_003L, "واریز شرکت")
+        expenses().allocateCompanyPayment(1_250L, 20_003L, "RCPT-001", "واریز شرکت")
+        assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-001")
+        assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_250L)
         assertThat(expenses().getExpense(oldestId)!!.settledAmountToman).isEqualTo(1_000L)
         assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(250L)
         assertThat(expenses().getExpense(unapprovedId)!!.settledAmountToman).isEqualTo(0L)
