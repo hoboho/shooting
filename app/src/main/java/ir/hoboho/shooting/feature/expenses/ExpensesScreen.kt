@@ -168,8 +168,13 @@ fun ExpensesScreen(
                 ) {
                     StatRow(stringResource(R.string.label_total_expenses),
                         NumberFormatter.formatToman(overview.totalExpensesToman))
-                    StatRow(stringResource(R.string.label_total_reimbursed),
+                    val totalReceived = companyPayments.sumOf { it.amountToman }
+                    StatRow(stringResource(R.string.label_total_company_payments),
+                        NumberFormatter.formatToman(totalReceived))
+                    StatRow(stringResource(R.string.label_allocated_company_payments),
                         NumberFormatter.formatToman(overview.totalReimbursedToman))
+                    StatRow(stringResource(R.string.label_unallocated_company_payments),
+                        NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
                     StatRow(stringResource(R.string.label_outstanding_receivables),
                         NumberFormatter.formatToman(overview.outstandingToman), emphasised = true)
                 }
