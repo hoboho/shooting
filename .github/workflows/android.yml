@@ -18,8 +18,8 @@ concurrency:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
-  # Pins the 2.2.0 release version across all CI jobs.
-  SHOOTING_VERSION_BUILD: 0
+  # Pins the 2.2.1 release version across all CI jobs.
+  SHOOTING_VERSION_BUILD: 1
 
 permissions:
   contents: read
@@ -444,7 +444,7 @@ jobs:
           TAG="v${VERSION_NAME}-release"
           APK="Shooting-release.apk"
           cp "$(find release-apk -name '*.apk' -type f | head -n 1)" "$APK"
-          NOTES="Shooting ${VERSION_NAME} is a signed production release. Includes expense approval and settlement: company approval adds to receivables; company payments are recorded with date and receipt reference; approved expenses are allocated oldest-first, and excess receipts remain as unallocated advances. Existing expense records are migrated as approved to preserve balances. Built from main (${BUILD_SHA}); apksigner verification passed in CI."
+          NOTES="رفع ایرادات"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --clobber
             gh release edit "$TAG" --notes "$NOTES"
