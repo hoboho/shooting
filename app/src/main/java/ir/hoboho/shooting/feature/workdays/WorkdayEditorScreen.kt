@@ -75,9 +75,6 @@ fun WorkdayEditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
-    var operationQuery by remember { mutableStateOf("") }
-    var operationCableFilter by remember { mutableStateOf<Long?>(null) }
-    var operationPointFilter by remember { mutableStateOf<PointType?>(null) }
 
     LaunchedEffect(workdayId, initialProjectId) { viewModel.load(workdayId, initialProjectId) }
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
@@ -154,44 +151,13 @@ fun WorkdayEditorScreen(
                 },
             ) {
                 if (state.operations.isEmpty()) {
-                    Text(stringResource(R.string.msg_workday_operations_empty),
+                    Text(
+                        stringResource(R.string.msg_workday_operations_empty),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    ShootingTextField(
-                        value = operationQuery,
-                        onValueChange = { operationQuery = it },
-                        label = stringResource(R.string.search_operations_hint),
-                    )
-                    Text(stringResource(R.string.label_cable_type), style = MaterialTheme.typography.labelMedium)
-                    ChoiceChips(
-                        options = listOf<Long?>(null) + state.cableTypes.map { it.id },
-                        selected = operationCableFilter,
-                        onSelected = { operationCableFilter = it },
-                        labelOf = { id -> id?.let { selectedId -> state.cableTypes.firstOrNull { it.id == selectedId }?.label }
-                            ?: stringResource(R.string.filter_all) },
-                    )
-                    Text(stringResource(R.string.label_start_type), style = MaterialTheme.typography.labelMedium)
-                    ChoiceChips(
-                        options = listOf<PointType?>(null) + PointType.entries,
-                        selected = operationPointFilter,
-                        onSelected = { operationPointFilter = it },
-                        labelOf = { it?.let { type -> pointTypeLabel(type) } ?: stringResource(R.string.filter_all) },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                val visibleOperations = state.operations.withIndex().filter { (_, draft) ->
-                    val queryMatches = operationQuery.isBlank() ||
-                        draft.startCode.contains(operationQuery.trim(), ignoreCase = true) ||
-                        draft.endCode.contains(operationQuery.trim(), ignoreCase = true)
-                    queryMatches &&
-                        (operationCableFilter == null || draft.cableTypeId == operationCableFilter) &&
-                        (operationPointFilter == null ||
-                            draft.startType == operationPointFilter || draft.endType == operationPointFilter)
-                }
-                if (state.operations.isNotEmpty() && visibleOperations.isEmpty()) {
-                    EmptyState(stringResource(R.string.search_no_results))
-                }
-                visibleOperations.forEach { (index, draft) ->
+                state.operations.forEachIndexed { index, draft ->
                     HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
                     OperationEditor(
                         index = index + 1,
