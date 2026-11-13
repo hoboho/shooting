@@ -6,6 +6,7 @@ import ir.hoboho.shooting.domain.PeriodAggregator
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PointType
+import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.ReferenceData
 import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
@@ -54,11 +55,15 @@ class ReportSpecBuilderTest {
 
         val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
         assertTrue(tables.any { it.caption == ReportText.CABLE_BREAKDOWN && it.rows.single()[3] == "۸۰۰" })
-        val operationsTable = tables.single { it.header.size == 9 }
-        assertEquals(9, operationsTable.header.size)
-        assertEquals("FAT", operationsTable.rows.single()[4])
-        assertEquals("۸۰۰", operationsTable.rows.single()[8])
-        assertEquals("۶ کور", operationsTable.rows.single()[7])
+        val operationsTable = tables.single { it.header.size == 7 }
+        assertEquals(listOf(
+            ReportText.ROW, ReportText.START_POINT, ReportText.START_METER,
+            ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
+        ), operationsTable.header)
+        assertEquals("ODC_ODC-1", operationsTable.rows.single()[1])
+        assertEquals("FAT_FAT-2", operationsTable.rows.single()[3])
+        assertEquals("۸۰۰", operationsTable.rows.single()[6])
+        assertEquals("۶ کور", operationsTable.rows.single()[5])
     }
 
     @Test
@@ -73,6 +78,39 @@ class ReportSpecBuilderTest {
         assertTrue(ReportText.CABLE_BREAKDOWN !in labels)
         assertTrue(spec.blocks.filterIsInstance<PdfBlock.Table>()
             .none { it.caption == ReportText.CABLE_BREAKDOWN })
+    }
+
+    @Test
+    fun projectOperations_mergesPointAndCodeAndOmitsRowColumn() {
+        val workday = Workday(
+            projectId = 1L,
+            projectName = "پروژه الف",
+            dateEpochDay = 20_759L,
+            operations = listOf(
+                operation(cableId = 3L, length = 800).copy(
+                    startType = PointType.HANDHOLE,
+                    startCode = "123",
+                    endType = PointType.MANHOLE,
+                    endCode = "456",
+                ),
+            ),
+            totalLengthMeters = 800,
+        )
+        val spec = ReportSpecBuilder.projectOperations(
+            workdays = listOf(workday),
+            project = Project(name = "پروژه الف"),
+            cableTypes = cableTypes,
+            range = DateRange(20_759L, 20_759L),
+        )
+        val table = spec.blocks.filterIsInstance<PdfBlock.Table>().single()
+        assertEquals(listOf(
+            ReportText.DATE, ReportText.START_POINT, ReportText.START_METER,
+            ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
+        ), table.header)
+        assertTrue(ReportText.ROW !in table.header)
+        assertEquals("HH_123", table.rows.single()[1])
+        assertEquals("MH_456", table.rows.single()[3])
+        assertEquals(7, table.rows.single().size)
     }
 
     @Test
