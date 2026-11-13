@@ -31,6 +31,12 @@ class ReportSpecBuilderTest {
     )
 
     @Test
+    fun pointTypeLabels_useShortReportNames() {
+        assertEquals("HH", PointType.HANDHOLE.label)
+        assertEquals("MH", PointType.MANHOLE.label)
+    }
+
+    @Test
     fun dailyReport_containsProjectInfoTotalAndCableBreakdown() {
         val workday = Workday(
             projectId = 1L, projectName = "پروژه الف", dateEpochDay = 20_759L,

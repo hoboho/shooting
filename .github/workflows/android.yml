@@ -18,8 +18,8 @@ concurrency:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
-  # Pins the 2.2.1 release version across all CI jobs.
-  SHOOTING_VERSION_BUILD: 1
+  # Pins the 2.2.2 release version across all CI jobs.
+  SHOOTING_VERSION_BUILD: 2
 
 permissions:
   contents: read

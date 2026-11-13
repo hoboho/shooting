@@ -9,8 +9,8 @@ package ir.hoboho.shooting.domain.model
 enum class PointType(val label: String) {
     ODC("ODC"),
     FAT("FAT"),
-    HANDHOLE("Handhole (HH)"),
-    MANHOLE("Manhole (MH)"),
+    HANDHOLE("HH"),
+    MANHOLE("MH"),
     ;
 
     companion object {

@@ -100,11 +100,9 @@ object ReportSpecBuilder {
         val rows = workday.operations.mapIndexed { index, op ->
             listOf(
                 persianInt(index + 1),
-                op.startType.label,
-                op.startCode,
+                "${op.startType.label}_${op.startCode}",
                 persianInt(op.startMeter),
-                op.endType.label,
-                op.endCode,
+                "${op.endType.label}_${op.endCode}",
                 persianInt(op.endMeter),
                 labels[op.cableTypeId]?.label ?: persianInt(op.cableTypeId.toInt()),
                 NumberFormatter.formatMetersValue(op.lengthMeters),
@@ -141,22 +139,19 @@ object ReportSpecBuilder {
                     PdfBlock.Table(
                         columns = listOf(
                             PdfColumn(ReportText.ROW, 0.5f, 26f),
-                            PdfColumn(ReportText.START_POINT, 0.9f),
-                            PdfColumn(ReportText.START_CODE, 1f),
+                            PdfColumn(ReportText.START_POINT, 1.5f),
                             PdfColumn(ReportText.START_METER, 1f),
-                            PdfColumn(ReportText.END_POINT, 0.9f),
-                            PdfColumn(ReportText.END_CODE, 1f),
+                            PdfColumn(ReportText.END_POINT, 1.5f),
                             PdfColumn(ReportText.END_METER, 1f),
                             PdfColumn(ReportText.CABLE, 1f),
                             PdfColumn(ReportText.LENGTH, 1f),
                         ),
                         header = listOf(
-                            ReportText.ROW, ReportText.START_POINT, ReportText.START_CODE,
-                            ReportText.START_METER, ReportText.END_POINT, ReportText.END_CODE,
-                            ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
+                            ReportText.ROW, ReportText.START_POINT, ReportText.START_METER,
+                            ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
                         ),
                         rows = rows,
-                        aligns = List(9) { PdfAlign.CENTER },
+                        aligns = List(7) { PdfAlign.CENTER },
                     ),
                 )
                 add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
@@ -237,12 +232,9 @@ object ReportSpecBuilder {
             workday.operations.mapIndexed { index, operation ->
                 listOf(
                     DateFormatter.format(workday.dateEpochDay),
-                    persianInt(index + 1),
-                    operation.startType.label,
-                    operation.startCode,
+                    "${operation.startType.label}_${operation.startCode}",
                     persianInt(operation.startMeter),
-                    operation.endType.label,
-                    operation.endCode,
+                    "${operation.endType.label}_${operation.endCode}",
                     persianInt(operation.endMeter),
                     cableLabels[operation.cableTypeId]?.label ?: persianInt(operation.cableTypeId.toInt()),
                     NumberFormatter.formatMetersValue(operation.lengthMeters),
@@ -265,20 +257,17 @@ object ReportSpecBuilder {
                 add(PdfBlock.Table(
                     columns = listOf(
                         PdfColumn(ReportText.DATE, 1.1f),
-                        PdfColumn(ReportText.ROW, 0.45f, 24f),
-                        PdfColumn(ReportText.START_POINT, 0.75f),
-                        PdfColumn(ReportText.START_CODE, 0.9f),
+                        PdfColumn(ReportText.START_POINT, 1.25f),
                         PdfColumn(ReportText.START_METER, 0.7f),
-                        PdfColumn(ReportText.END_POINT, 0.75f),
-                        PdfColumn(ReportText.END_CODE, 0.9f),
+                        PdfColumn(ReportText.END_POINT, 1.25f),
                         PdfColumn(ReportText.END_METER, 0.7f),
                         PdfColumn(ReportText.CABLE, 0.9f),
                         PdfColumn(ReportText.LENGTH, 0.8f),
                     ),
-                    header = listOf(ReportText.DATE, ReportText.ROW, ReportText.START_POINT, ReportText.START_CODE, ReportText.START_METER, ReportText.END_POINT, ReportText.END_CODE, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH),
+                    header = listOf(ReportText.DATE, ReportText.START_POINT, ReportText.START_METER, ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH),
                     rows = rows,
                     caption = ReportText.OPERATIONS,
-                    aligns = List(10) { PdfAlign.CENTER },
+                    aligns = List(7) { PdfAlign.CENTER },
                 ))
                 add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
             },
