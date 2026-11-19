@@ -28,7 +28,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.format.NumberFormatter
-import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.matchesOperationSearch
 import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
