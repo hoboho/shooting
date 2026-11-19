@@ -26,6 +26,9 @@ class BackupIntegrityException(message: String) : IllegalArgumentException(messa
  */
 object BackupMapper {
 
+    // v2.2.2 and earlier stored the entered FAT value with the ODC prefix injected.
+    private const val FAT_CODE_NORMALIZATION_VERSION_CODE = 2020003
+
     fun toPayload(
         data: BackupData,
         appVersionName: String,
@@ -119,7 +122,12 @@ object BackupMapper {
                 workdayId = resolve(workdayIds, o.workdayUuid, "workday")!!,
                 startType = PointType.fromName(o.startType), startCode = o.startCode,
                 startMeter = o.startMeter, endType = PointType.fromName(o.endType),
-                endCode = o.endCode, endMeter = o.endMeter,
+                endCode = if (
+                    payload.appVersionCode < FAT_CODE_NORMALIZATION_VERSION_CODE &&
+                    o.startType == "ODC" && o.endType == "FAT" &&
+                    o.startCode.isNotEmpty() && o.endCode.startsWith(o.startCode)
+                ) o.endCode.removePrefix(o.startCode) else o.endCode,
+                endMeter = o.endMeter,
                 cableTypeId = cableIds[o.cableTypeCoreCount]
                     ?: throw BackupIntegrityException("Unknown cable type: ${o.cableTypeCoreCount}"),
                 // Never trust a stored calculation: recompute from the readings.
