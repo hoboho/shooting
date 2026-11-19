@@ -16,6 +16,7 @@ import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.report.ExpenseReportRow
 import ir.hoboho.shooting.domain.report.ReportSpecBuilder
+import ir.hoboho.shooting.domain.report.ReportFileNames
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import ir.hoboho.shooting.domain.repository.ProjectRepository
 import ir.hoboho.shooting.domain.repository.ReferenceRepository
@@ -173,9 +174,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range)
-                val startDate = DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')
-                val endDate = DateFormatter.format(current.range.endEpochDay, false).replace('/', '-')
-                val name = "project-${project.id}-${startDate}-${endDate}.pdf"
+                val name = ReportFileNames.project(project.id, current.range)
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
                 showMessage(pdfSavedMessage(saved))
