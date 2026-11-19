@@ -62,7 +62,13 @@ android {
     // release variant stays unsigned and CI must not publish it
     // (see docs/RELEASE_SIGNING.md).
     buildTypes {
-        debug { isMinifyEnabled = false }
+        debug {
+            isMinifyEnabled = false
+            // Keep QA builds installable beside the production app, with a separate
+            // application sandbox so test data cannot overwrite production data.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
