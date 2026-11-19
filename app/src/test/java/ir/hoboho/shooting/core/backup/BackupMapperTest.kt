@@ -70,6 +70,22 @@ class BackupMapperTest {
     }
 
     @Test
+    fun legacyBackupFatCodes_areNormalizedOnlyForPreFixVersions() {
+        val legacy = BackupMapper.toPayload(sampleData(), "2.2.2", 2020002, 1L).copy(
+            operations = listOf(
+                BackupMapper.toPayload(sampleData(), "2.2.2", 2020002, 1L).operations.single().copy(
+                    startCode = "60903",
+                    endCode = "609036090303",
+                ),
+            ),
+        )
+        assertEquals("6090303", BackupMapper.toData(legacy).operations.single().endCode)
+
+        val current = legacy.copy(appVersionName = "2.2.3", appVersionCode = 2020003)
+        assertEquals("609036090303", BackupMapper.toData(current).operations.single().endCode)
+    }
+
+    @Test
     fun lengthIsRecomputedOnImport_notTrustedFromFile() {
         val payload = BackupMapper.toPayload(sampleData(), "1.0.0", 1, 1L)
             .let { p -> p.copy(operations = p.operations.map { it.copy(lengthMeters = 999) }) }
