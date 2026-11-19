@@ -25,7 +25,7 @@ import androidx.room.RoomDatabase
         CompanyPaymentEntity::class,
         AppSettingEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class ShootingDatabase : RoomDatabase() {
