@@ -191,12 +191,7 @@ class WorkdayEditorViewModel @Inject constructor(
                         ) {
                             updated = updated.copy(endMeter = "")
                         }
-                        val startChanged = updated.startCode != draft.startCode
-                        if (startChanged && updated.startType == PointType.ODC &&
-                            updated.endType == PointType.FAT && updated.endCode.startsWith(draft.startCode)
-                        ) {
-                            updated.copy(endCode = updated.startCode + updated.endCode.removePrefix(draft.startCode))
-                        } else updated
+                        updated
                     }
                 },
                 invalidRows = state.invalidRows - key,
