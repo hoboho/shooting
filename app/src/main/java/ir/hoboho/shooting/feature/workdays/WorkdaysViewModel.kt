@@ -14,6 +14,6 @@ import javax.inject.Inject
 class WorkdaysViewModel @Inject constructor(
     repository: WorkdayRepository,
 ) : ViewModel() {
-    val workdays: StateFlow<List<Workday>> = repository.observeWorkdays()
+    val workdays: StateFlow<List<Workday>> = repository.observeWorkdaysWithOperations()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }
