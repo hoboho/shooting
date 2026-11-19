@@ -29,26 +29,14 @@ import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.domain.model.Workday
-import ir.hoboho.shooting.core.format.PersianDigits
+import ir.hoboho.shooting.domain.matchesOperationSearch
 import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.ShootingTextField
 import ir.hoboho.shooting.ui.components.StatRow
 
-private fun Workday.matchesQuery(query: String): Boolean {
-    val term = PersianDigits.toLatin(query).trim()
-    if (term.isBlank()) return true
-    val codeMatches = operations.any { operation ->
-        operation.startCode.contains(term, ignoreCase = true) ||
-            operation.endCode.contains(term, ignoreCase = true)
-    }
-    val meterMatches = term.all { it.isDigit() } && operations.any { operation ->
-        listOf(operation.startMeter, operation.endMeter, operation.lengthMeters)
-            .any { it.toString().contains(term) }
-    }
-    return codeMatches || meterMatches
-}
+
 
 @Composable
 fun WorkdaysScreen(
@@ -58,7 +46,7 @@ fun WorkdaysScreen(
 ) {
     val workdays by viewModel.workdays.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
-    val filtered = workdays.filter { it.matchesQuery(query) }
+    val filtered = workdays.filter { it.matchesOperationSearch(query) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.workdays_title)) }) },
