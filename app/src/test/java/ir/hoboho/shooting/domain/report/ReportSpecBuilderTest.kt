@@ -86,6 +86,7 @@ class ReportSpecBuilderTest {
             projectId = 1L,
             projectName = "پروژه الف",
             dateEpochDay = 20_759L,
+            workArea = "محدوده روز اول",
             operations = listOf(
                 operation(cableId = 3L, length = 800).copy(
                     startType = PointType.HANDHOLE,
@@ -104,13 +105,14 @@ class ReportSpecBuilderTest {
         )
         val table = spec.blocks.filterIsInstance<PdfBlock.Table>().single()
         assertEquals(listOf(
-            ReportText.DATE, ReportText.START_POINT, ReportText.START_METER,
+            ReportText.DATE, ReportText.WORK_AREA, ReportText.START_POINT, ReportText.START_METER,
             ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH,
         ), table.header)
         assertTrue(ReportText.ROW !in table.header)
-        assertEquals("HH_123", table.rows.single()[1])
-        assertEquals("MH_456", table.rows.single()[3])
-        assertEquals(7, table.rows.single().size)
+        assertEquals("محدوده روز اول", table.rows.single()[1])
+        assertEquals("HH_123", table.rows.single()[2])
+        assertEquals("MH_456", table.rows.single()[4])
+        assertEquals(8, table.rows.single().size)
     }
 
     @Test
