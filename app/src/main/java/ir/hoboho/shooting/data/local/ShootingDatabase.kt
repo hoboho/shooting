@@ -9,9 +9,9 @@ import androidx.room.RoomDatabase
  * **Migration policy:** `fallbackToDestructiveMigration` is deliberately never
  * used. Every future schema change must ship an explicit, additive `Migration`
  * registered in `di/Migrations.kt`; `room.schemaLocation` exports the versioned
- * JSON schema so CI can validate it. Version 1 is the initial release, so there
- * are no migrations yet — but the infrastructure and the test harness are in
- * place from day one.
+ * JSON schema so CI can validate it. Versions 1–3 are upgraded through explicit
+ * migrations; v4 also repairs legacy ODC-prefixed FAT point codes. No destructive
+ * fallback is allowed, so existing project and operation history is preserved.
  */
 @Database(
     entities = [
