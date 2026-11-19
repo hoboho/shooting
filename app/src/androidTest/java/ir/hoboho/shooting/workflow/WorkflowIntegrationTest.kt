@@ -230,9 +230,19 @@ class WorkflowIntegrationTest {
         assertThat(duplicateRejected).isTrue()
         assertThat(db.workdayDao().getAll()).hasSize(1)
 
+        val cableTypes = references().getAllCableTypes()
         render(
-            ReportSpecBuilder.daily(detail, references().getAllCableTypes()),
+            ReportSpecBuilder.daily(detail, cableTypes),
             "daily-workflow.pdf",
+        )
+        render(
+            ReportSpecBuilder.projectOperations(
+                workdays = listOf(detail),
+                project = Project(name = detail.projectName, employer = detail.employer, supervisor = detail.supervisor),
+                cableTypes = cableTypes,
+                range = DateRange(day, day),
+            ),
+            "project-workflow.pdf",
         )
         Unit
     }
