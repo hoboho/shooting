@@ -12,7 +12,9 @@ fun Workday.matchesOperationSearch(query: String): Boolean {
     if (term.isBlank()) return true
     val codeMatches = operations.any { operation ->
         operation.startCode.contains(term, ignoreCase = true) ||
-            operation.endCode.contains(term, ignoreCase = true)
+            operation.endCode.contains(term, ignoreCase = true) ||
+            "${operation.startType.label}_${operation.startCode}".contains(term, ignoreCase = true) ||
+            "${operation.endType.label}_${operation.endCode}".contains(term, ignoreCase = true)
     }
     val meterMatches = term.all { it.isDigit() } && operations.any { operation ->
         listOf(operation.startMeter, operation.endMeter, operation.lengthMeters)
