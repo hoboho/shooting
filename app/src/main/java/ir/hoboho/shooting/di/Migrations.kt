@@ -20,5 +20,23 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * Older editor builds stored ODC + the entered FAT code in one field.
+     * Recover the exact user-entered FAT value by removing that injected prefix.
+     * Equality is included: an empty FAT input was previously saved as the ODC.
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """UPDATE operations
+                   SET endCode = substr(endCode, length(startCode) + 1)
+                   WHERE startType = 'ODC'
+                     AND endType = 'FAT'
+                     AND length(startCode) > 0
+                     AND substr(endCode, 1, length(startCode)) = startCode""",
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }
