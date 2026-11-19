@@ -173,7 +173,9 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range)
-                val name = "project-${project.id}-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
+                val startDate = DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')
+                val endDate = DateFormatter.format(current.range.endEpochDay, false).replace('/', '-')
+                val name = "project-${project.id}-${startDate}-${endDate}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
                 showMessage(pdfSavedMessage(saved))
