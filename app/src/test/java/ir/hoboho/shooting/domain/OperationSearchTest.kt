@@ -31,6 +31,7 @@ class OperationSearchTest {
     @Test fun findsStartOrEndPointCodes() {
         assertTrue(workday.matchesOperationSearch("60903"))
         assertTrue(workday.matchesOperationSearch("6090303"))
+        assertTrue(workday.matchesOperationSearch("FAT_6090303"))
     }
 
     @Test fun findsMeterValuesUsingPersianOrLatinDigits() {
