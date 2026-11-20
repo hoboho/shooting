@@ -337,6 +337,15 @@ interface CompanyPaymentDao {
     @Query("SELECT * FROM company_payments WHERE uuid = :uuid LIMIT 1")
     suspend fun getByUuid(uuid: String): CompanyPaymentEntity?
 
+    @Query("SELECT * FROM company_payments WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): CompanyPaymentEntity?
+
+    @Query("UPDATE company_payments SET amountToman = :amount, dateEpochDay = :date, receiptReference = :receipt WHERE id = :id")
+    suspend fun updateDetails(id: Long, amount: Long, date: Long, receipt: String)
+
+    @Query("DELETE FROM company_payments WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Upsert
     suspend fun upsert(payment: CompanyPaymentEntity): Long
 
@@ -387,6 +396,12 @@ interface CashLedgerDao {
     suspend fun latestExpenseDebit(expenseId: Long): CashLedgerEntryEntity?
     @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
     suspend fun insert(entry: CashLedgerEntryEntity): Long
+    @Query("UPDATE cash_ledger SET amountToman = :amount, dateEpochDay = :date, description = :description WHERE originType = 'RECEIPT' AND originId = :originId")
+    suspend fun updateReceipt(originId: Long, amount: Long, date: Long, description: String)
+
+    @Query("DELETE FROM cash_ledger WHERE originType = 'RECEIPT' AND originId = :originId")
+    suspend fun deleteReceipt(originId: Long)
+
     @Query("DELETE FROM cash_ledger")
     suspend fun deleteAll()
     @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'receipt:' || uuid, 'RECEIPT', id, amountToman, dateEpochDay, note, createdAt, NULL FROM company_payments""")
