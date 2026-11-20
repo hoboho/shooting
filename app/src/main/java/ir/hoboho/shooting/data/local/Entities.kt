@@ -155,7 +155,7 @@ data class ExpenseEntity(
     val workdayId: Long? = null,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
-    @ColumnInfo(defaultValue = "1")
+    @ColumnInfo(defaultValue = "0")
     val companyApproved: Boolean = true,
 )
 
