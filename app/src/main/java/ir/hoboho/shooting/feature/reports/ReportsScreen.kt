@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -108,7 +109,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 )
             }
             item {
-                SectionCard(title = stringResource(R.string.label_date_range)) {
+                SectionCard(title = stringResource(R.string.label_date_range), icon = Icons.Filled.DateRange) {
                     DateRangeFields(
                         startEpochDay = state.range.startEpochDay,
                         endEpochDay = state.range.endEpochDay,
@@ -130,6 +131,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     item {
                         SectionCard(
                             title = stringResource(R.string.reports_daily),
+                            icon = Icons.Filled.Assessment,
                             modifier = Modifier.pointerInput(state.selectedWorkdayId, state.workdays) {
                                 var drag = 0f
                                 detectHorizontalDragGestures(
@@ -179,7 +181,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.label_cable_breakdown)) {
+                        SectionCard(title = stringResource(R.string.label_cable_breakdown), icon = Icons.Filled.Cable) {
                             val selected = state.workdays.firstOrNull { it.id == state.selectedWorkdayId }
                             val rows = selected?.let {
                                 PeriodAggregator.cableBreakdown(listOf(it), state.cableTypes)
@@ -200,6 +202,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     item {
                         SectionCard(
                             title = stringResource(R.string.label_period_total),
+                            icon = Icons.Filled.QueryStats,
                             subtitle = DateFormatter.formatRange(state.range),
                         ) {
                             StatRow(
@@ -210,7 +213,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.label_daily_breakdown)) {
+                        SectionCard(title = stringResource(R.string.label_daily_breakdown), icon = Icons.Filled.CalendarMonth) {
                             if (state.periodReport.dailyBreakdown.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
                             } else {
@@ -224,7 +227,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.label_project_breakdown)) {
+                        SectionCard(title = stringResource(R.string.label_project_breakdown), icon = Icons.Filled.Folder) {
                             if (state.periodReport.projectBreakdown.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
                             } else {
@@ -244,7 +247,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     }
                     item {
                         // Money is a separate block; lengths and amounts are never combined.
-                        SectionCard(title = stringResource(R.string.label_expense_summary)) {
+                        SectionCard(title = stringResource(R.string.label_expense_summary), icon = Icons.Filled.AccountBalanceWallet) {
                             StatRow(stringResource(R.string.reports_expense_totals),
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
                             StatRow(stringResource(R.string.reports_settled),
@@ -266,7 +269,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 }
                 ReportTab.PROJECT -> {
                     item {
-                        SectionCard(title = stringResource(R.string.reports_project_detail)) {
+                        SectionCard(title = stringResource(R.string.reports_project_detail), icon = Icons.Filled.Business) {
                             if (state.projectFilter == null) {
                                 Text(stringResource(R.string.reports_select_project_detail), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else if (state.workdays.isEmpty()) {
@@ -305,7 +308,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.reports_expenses)) {
+                        SectionCard(title = stringResource(R.string.reports_expenses), icon = Icons.Filled.ReceiptLong) {
                             if (state.expenseRows.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
                             } else {
