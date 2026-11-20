@@ -37,7 +37,6 @@ import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.StatRow
-import ir.hoboho.shooting.ui.components.rememberFileSaveAction
 
 @Composable
 private fun countsText(counts: BackupCounts): String = stringResource(
@@ -53,7 +52,7 @@ private fun countsText(counts: BackupCounts): String = stringResource(
 fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val createAndShare = rememberFileSaveAction(viewModel::createAndShare)
+    val createBackup = viewModel::createBackup
     var confirmReplace by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -90,9 +89,17 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     ShootingButton(
                         text = stringResource(R.string.backup_create),
-                        onClick = createAndShare,
+                        onClick = createBackup,
                         enabled = !state.busy,
                     )
+                    if (state.backupAvailable) {
+                        ShootingButton(
+                            text = "باز کردن فایل پشتیبان",
+                            onClick = viewModel::openCreatedBackup,
+                            level = ir.hoboho.shooting.ui.components.ButtonLevel.Outline,
+                            enabled = !state.busy,
+                        )
+                    }
                 }
             }
             item {
