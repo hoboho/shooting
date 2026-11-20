@@ -227,7 +227,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.expensesExecutiveSummary(
-                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null,
+                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null, cashLedger.value,
                 )
                 val name = "financial-summary-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
