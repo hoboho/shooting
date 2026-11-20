@@ -72,16 +72,17 @@ class ExpensesViewModel @Inject constructor(
         }
     }
 
-    fun updateCompanyPayment(payment: CompanyPayment) {
+    fun updateCompanyPayment(payment: CompanyPayment, amountText: String) {
         if (_paymentSaving.value) return
         _paymentSaving.value = true
         viewModelScope.launch {
             try {
-                if (payment.amountToman <= 0L) {
+                val amount = NumberFormatter.parseToman(amountText)
+                if (amount == null || amount <= 0L) {
                     _error.value = strings.validationMessage(ir.hoboho.shooting.domain.ValidationField.SETTLEMENT_AMOUNT)
                     return@launch
                 }
-                repository.updateCompanyPayment(payment)
+                repository.updateCompanyPayment(payment.copy(amountToman = amount))
             } catch (e: ValidationException) {
                 _error.value = strings.validationMessage(e.issues.first().field)
             } catch (e: Exception) {
