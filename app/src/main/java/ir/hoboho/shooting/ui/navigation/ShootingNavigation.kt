@@ -101,7 +101,7 @@ fun ShootingApp(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = TopLevelDestination.entries.any { currentRoute == it.route }
-    val showFab = currentRoute in listOf(Routes.DASHBOARD, Routes.WORKDAYS, Routes.REPORTS)
+    val showFab = currentRoute in listOf(Routes.DASHBOARD, Routes.WORKDAYS)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

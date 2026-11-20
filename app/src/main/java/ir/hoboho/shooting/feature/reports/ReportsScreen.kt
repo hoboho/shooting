@@ -3,11 +3,15 @@
 package ir.hoboho.shooting.feature.reports
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -24,9 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.sign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ir.hoboho.shooting.R
@@ -130,25 +139,49 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
             when (state.tab) {
                 ReportTab.DAILY -> {
                     item {
+                        val dailySwipeOffset = remember { Animatable(0f) }
+                        val dailySwipeScope = rememberCoroutineScope()
                         SectionCard(
                             title = stringResource(R.string.reports_daily),
                             icon = Icons.Filled.Assessment,
-                            modifier = Modifier.pointerInput(state.selectedWorkdayId, state.workdays) {
-                                var drag = 0f
-                                detectHorizontalDragGestures(
-                                    onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
-                                    onDragEnd = {
-                                        val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
-                                        if (drag < -80f && index >= 0 && index < state.workdays.lastIndex) {
-                                            viewModel.setSelectedWorkday(state.workdays[index + 1].id)
-                                        } else if (drag > 80f && index > 0) {
-                                            viewModel.setSelectedWorkday(state.workdays[index - 1].id)
-                                        }
-                                        drag = 0f
-                                    },
-                                    onDragCancel = { drag = 0f },
-                                )
-                            },
+                            modifier = Modifier
+                                .graphicsLayer { translationX = dailySwipeOffset.value }
+                                .pointerInput(state.selectedWorkdayId, state.workdays) {
+                                    var drag = 0f
+                                    detectHorizontalDragGestures(
+                                        onHorizontalDrag = { change, amount ->
+                                            change.consume()
+                                            drag += amount
+                                            val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
+                                            val hasTarget = (drag < 0f && index in 0 until state.workdays.lastIndex) ||
+                                                (drag > 0f && index > 0)
+                                            val visual = if (hasTarget) {
+                                                drag.coerceIn(-size.width.toFloat() * 0.72f, size.width.toFloat() * 0.72f)
+                                            } else {
+                                                val limit = size.width * 0.18f
+                                                sign(drag) * limit * (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.45f)))
+                                            }
+                                            dailySwipeScope.launch { dailySwipeOffset.snapTo(visual) }
+                                        },
+                                        onDragEnd = {
+                                            val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
+                                            when {
+                                                drag < -size.width * 0.18f && index >= 0 && index < state.workdays.lastIndex ->
+                                                    viewModel.setSelectedWorkday(state.workdays[index + 1].id)
+                                                drag > size.width * 0.18f && index > 0 ->
+                                                    viewModel.setSelectedWorkday(state.workdays[index - 1].id)
+                                            }
+                                            dailySwipeScope.launch {
+                                                dailySwipeOffset.animateTo(0f, spring(dampingRatio = 0.72f, stiffness = 420f))
+                                            }
+                                            drag = 0f
+                                        },
+                                        onDragCancel = {
+                                            dailySwipeScope.launch { dailySwipeOffset.animateTo(0f, spring()) }
+                                            drag = 0f
+                                        },
+                                    )
+                                },
                         ) {
                             if (state.workdays.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
@@ -294,6 +327,39 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     }
                 }
                 ReportTab.EXPENSES -> {
+                    item {
+                        SectionCard(title = "دفتر گردش مالی", icon = Icons.Filled.AccountBalanceWallet) {
+                            val visiblePayments = state.companyPayments.filter {
+                                it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay
+                            }.sortedByDescending { it.dateEpochDay }
+                            if (visiblePayments.isEmpty()) {
+                                EmptyState(stringResource(R.string.label_no_data))
+                            } else {
+                                visiblePayments.forEach { payment ->
+                                        androidx.compose.foundation.layout.Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                        ) {
+                                            androidx.compose.foundation.layout.Column {
+                                                Text(DateFormatter.format(payment.dateEpochDay), style = MaterialTheme.typography.bodyMedium)
+                                                if (payment.receiptReference.isNotBlank()) {
+                                                    Text("رسید: ${payment.receiptReference}", style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
+                                            Text(
+                                                NumberFormatter.formatToman(payment.amountToman),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = if (androidx.compose.foundation.isSystemInDarkTheme())
+                                                    androidx.compose.ui.graphics.Color(0xFF69F0AE)
+                                                else androidx.compose.ui.graphics.Color(0xFF00A85A),
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                            }
+                        }
+                    }
                     item {
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
                             val periodLedger = cashLedger.filter {

@@ -210,6 +210,9 @@ fun StatRow(
                 style = if (emphasised) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
                 fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Normal,
                 color = if (emphasised) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             if (hint != null) {
                 Text(text = hint, style = MaterialTheme.typography.labelSmall,
@@ -259,8 +262,14 @@ fun SectionCard(
                     Spacer(Modifier.width(10.dp))
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
                 }
             }
             if (subtitle != null) {
