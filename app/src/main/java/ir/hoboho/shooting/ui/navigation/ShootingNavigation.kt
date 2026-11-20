@@ -2,6 +2,8 @@ package ir.hoboho.shooting.ui.navigation
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -160,7 +162,35 @@ fun ShootingApp(
             }
         },
     ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Surface(
+            modifier = Modifier.fillMaxSize().pointerInput(currentRoute) {
+                if (currentRoute in setOf(Routes.DASHBOARD, Routes.PROJECTS, Routes.SETTINGS)) {
+                    var drag = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
+                        onDragEnd = {
+                            val destinations = TopLevelDestination.entries
+                            val index = destinations.indexOfFirst { it.route == currentRoute }
+                            val target = when {
+                                drag < -80f && index >= 0 && index < destinations.lastIndex -> destinations[index + 1]
+                                drag > 80f && index > 0 -> destinations[index - 1]
+                                else -> null
+                            }
+                            target?.let { destination ->
+                                navController.navigate(destination.route) {
+                                    popUpTo(Routes.DASHBOARD) { inclusive = false }
+                                    launchSingleTop = true
+                                    restoreState = false
+                                }
+                            }
+                            drag = 0f
+                        },
+                        onDragCancel = { drag = 0f },
+                    )
+                }
+            },
+            color = MaterialTheme.colorScheme.background,
+        ) {
             ShootingNavHost(
                 navController = navController,
                 modifier = Modifier.padding(innerPadding),
