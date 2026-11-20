@@ -83,7 +83,7 @@ val VazirmatnFontFamily = FontFamily(
     Font(R.font.vazirmatn_bold, FontWeight.Bold),
 )
 
-private val NoWordBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.None)
+private val NoWordBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.Default)
 private val ShootingTypography = Typography(
     displayLarge = TextStyle(fontFamily = VazirmatnFontFamily, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 50.sp, letterSpacing = (-0.5).sp, lineBreak = NoWordBreak),
     headlineLarge = TextStyle(fontFamily = VazirmatnFontFamily, fontWeight = FontWeight.Bold, fontSize = 29.sp, lineHeight = 38.sp, letterSpacing = (-0.35).sp, lineBreak = NoWordBreak),
