@@ -58,11 +58,17 @@ fun SettingsScreen(
                     Text("نامی که در گزارش‌های PDF درج می‌شود", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(
                         value = operatorName,
-                        onValueChange = { value -> operatorName = value; viewModel.setOperatorName(value) },
+                        onValueChange = { value -> operatorName = value },
                         modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
                         singleLine = true,
                         label = { Text("نام و نام خانوادگی") },
                         placeholder = { Text("نام اپراتور") },
+                    )
+                    ShootingButton(
+                        text = "ذخیره نام اپراتور",
+                        onClick = { viewModel.setOperatorName(operatorName.trim()) },
+                        level = ButtonLevel.Secondary,
+                        enabled = operatorName.trim() != settings.operatorName,
                     )
                 }
             }
