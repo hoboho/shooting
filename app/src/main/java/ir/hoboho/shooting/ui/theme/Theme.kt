@@ -46,41 +46,41 @@ private val LightColors = lightColorScheme(
     onSecondaryContainer = TealOnContainer,
     tertiary = RedTertiary,
     onTertiary = Color.White,
-    background = Color(0xFFF7F9F7, lineBreak = NoWordBreak),
-    onBackground = Color(0xFF17201D, lineBreak = NoWordBreak),
-    surface = Color(0xFFFFFEFC, lineBreak = NoWordBreak),
-    onSurface = Color(0xFF17201D, lineBreak = NoWordBreak),
-    surfaceVariant = Color(0xFFE4EAE5, lineBreak = NoWordBreak),
-    onSurfaceVariant = Color(0xFF4B5650, lineBreak = NoWordBreak),
-    outline = Color(0xFF728078, lineBreak = NoWordBreak),
-    outlineVariant = Color(0xFFD1D9D3, lineBreak = NoWordBreak),
+    background = Color(0xFFF7F9F7),
+    onBackground = Color(0xFF17201D),
+    surface = Color(0xFFFFFEFC),
+    onSurface = Color(0xFF17201D),
+    surfaceVariant = Color(0xFFE4EAE5),
+    onSurfaceVariant = Color(0xFF4B5650),
+    outline = Color(0xFF728078),
+    outlineVariant = Color(0xFFD1D9D3),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF9DE1CA, lineBreak = NoWordBreak),
-    onPrimary = Color(0xFF00382E, lineBreak = NoWordBreak),
-    primaryContainer = Color(0xFF075443, lineBreak = NoWordBreak),
-    onPrimaryContainer = Color(0xFFD8F2E9, lineBreak = NoWordBreak),
-    secondary = Color(0xFF94D2DE, lineBreak = NoWordBreak),
-    onSecondary = Color(0xFF00353D, lineBreak = NoWordBreak),
-    secondaryContainer = Color(0xFF1F4D57, lineBreak = NoWordBreak),
+    primary = Color(0xFF9DE1CA),
+    onPrimary = Color(0xFF00382E),
+    primaryContainer = Color(0xFF075443),
+    onPrimaryContainer = Color(0xFFD8F2E9),
+    secondary = Color(0xFF94D2DE),
+    onSecondary = Color(0xFF00353D),
+    secondaryContainer = Color(0xFF1F4D57),
     onSecondaryContainer = TealContainer,
-    tertiary = Color(0xFFFFB4AB, lineBreak = NoWordBreak),
-    onTertiary = Color(0xFF690005, lineBreak = NoWordBreak),
-    background = Color(0xFF101614, lineBreak = NoWordBreak),
-    onBackground = Color(0xFFDEE7E1, lineBreak = NoWordBreak),
-    surface = Color(0xFF171E1B, lineBreak = NoWordBreak),
-    onSurface = Color(0xFFDEE7E1, lineBreak = NoWordBreak),
-    surfaceVariant = Color(0xFF414B46, lineBreak = NoWordBreak),
-    onSurfaceVariant = Color(0xFFC0CAC3, lineBreak = NoWordBreak),
-    outline = Color(0xFF89958E, lineBreak = NoWordBreak),
-    outlineVariant = Color(0xFF414B46, lineBreak = NoWordBreak),
+    tertiary = Color(0xFFFFB4AB),
+    onTertiary = Color(0xFF690005),
+    background = Color(0xFF101614),
+    onBackground = Color(0xFFDEE7E1),
+    surface = Color(0xFF171E1B),
+    onSurface = Color(0xFFDEE7E1),
+    surfaceVariant = Color(0xFF414B46),
+    onSurfaceVariant = Color(0xFFC0CAC3),
+    outline = Color(0xFF89958E),
+    outlineVariant = Color(0xFF414B46),
 )
 
 val VazirmatnFontFamily = FontFamily(
-    Font(R.font.vazirmatn_regular, FontWeight.Normal, lineBreak = NoWordBreak),
-    Font(R.font.vazirmatn_medium, FontWeight.Medium, lineBreak = NoWordBreak),
-    Font(R.font.vazirmatn_bold, FontWeight.Bold, lineBreak = NoWordBreak),
+    Font(R.font.vazirmatn_regular, FontWeight.Normal),
+    Font(R.font.vazirmatn_medium, FontWeight.Medium),
+    Font(R.font.vazirmatn_bold, FontWeight.Bold),
 )
 
 private val NoWordBreak = LineBreak.Paragraph.copy(wordBreak = LineBreak.WordBreak.None)
@@ -101,16 +101,16 @@ private val ShootingTypography = Typography(
 )
 
 private val ShootingShapes = Shapes(
-    extraSmall = RoundedCornerShape(10.dp, lineBreak = NoWordBreak),
-    small = RoundedCornerShape(14.dp, lineBreak = NoWordBreak),
-    medium = RoundedCornerShape(20.dp, lineBreak = NoWordBreak),
-    large = RoundedCornerShape(26.dp, lineBreak = NoWordBreak),
-    extraLarge = RoundedCornerShape(32.dp, lineBreak = NoWordBreak),
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(26.dp),
+    extraLarge = RoundedCornerShape(32.dp),
 )
 
 @Composable
 fun ShootingTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(, lineBreak = NoWordBreak),
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     // Persian-only app: pin RTL, otherwise an English-locale device mirrors
