@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -112,6 +113,7 @@ fun WorkdayEditorScreen(
         ) {
             SectionCard(
                 title = stringResource(R.string.workday_detail),
+                icon = Icons.Filled.CalendarMonth,
                 subtitle = if (state.inherited) stringResource(R.string.workday_inherited_hint)
                 else stringResource(R.string.workday_reopen_hint),
             ) {
@@ -145,6 +147,7 @@ fun WorkdayEditorScreen(
 
             SectionCard(
                 title = stringResource(R.string.label_operations),
+                icon = Icons.Filled.Route,
                 trailing = {
                     IconButton(onClick = viewModel::addOperation) {
                         Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.operation_new))
