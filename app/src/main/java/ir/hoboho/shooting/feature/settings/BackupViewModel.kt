@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 data class BackupUiState(
@@ -30,6 +31,7 @@ data class BackupUiState(
     val exportedAtText: String = "",
     val busy: Boolean = false,
     val message: String? = null,
+    val backupAvailable: Boolean = false,
 )
 
 @HiltViewModel
@@ -43,8 +45,9 @@ class BackupViewModel @Inject constructor(
     private val _state = MutableStateFlow(BackupUiState())
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
     private var pendingText: String? = null
+    private var createdBackupFile: File? = null
 
-    fun createAndShare() {
+    fun createBackup() {
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
             try {
@@ -52,7 +55,8 @@ class BackupViewModel @Inject constructor(
                 val saved = withContext(Dispatchers.IO) {
                     runCatching { saver.saveBackup(file, file.name) }.getOrNull()
                 }
-                sharer.shareBackup(file)
+                createdBackupFile = file
+                _state.update { it.copy(backupAvailable = true) }
                 if (saved != null) {
                     show(R.string.backup_created, saved.displayPath)
                 } else {
@@ -63,6 +67,13 @@ class BackupViewModel @Inject constructor(
             } finally {
                 _state.update { it.copy(busy = false) }
             }
+        }
+    }
+
+    fun openCreatedBackup() {
+        createdBackupFile?.let { file ->
+            runCatching { sharer.openBackup(file) }
+                .onFailure { show(R.string.msg_backup_failed) }
         }
     }
 
