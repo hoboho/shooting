@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.HorizontalDivider
@@ -103,6 +104,7 @@ fun WorkdayDetailScreen(
             item {
                 SectionCard(
                     title = report.projectName,
+                    icon = Icons.Filled.CalendarMonth,
                     subtitle = DateFormatter.formatLongWithWeekday(report.dateEpochDay),
                 ) {
                     StatRow(stringResource(R.string.label_work_area),
@@ -125,7 +127,7 @@ fun WorkdayDetailScreen(
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.label_operations)) {
+                SectionCard(title = stringResource(R.string.label_operations), icon = Icons.Filled.Route) {
                     report.operations.forEachIndexed { index, op ->
                         if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
