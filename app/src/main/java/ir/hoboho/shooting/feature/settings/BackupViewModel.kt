@@ -128,21 +128,8 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
             try {
-                val outcome = manager.restore(text, _state.value.strategy)
-                val safetyFile = outcome.safetySnapshotFile
-                    ?.let(manager::safetySnapshotFile)
-                val savedSafety = safetyFile?.let { file ->
-                    withContext(Dispatchers.IO) {
-                        runCatching { saver.saveBackup(file, file.name) }.getOrNull()
-                    }
-                }
-                if (savedSafety != null) {
-                    _state.update {
-                        it.copy(message = strings.get(R.string.backup_restored) + "\n" + savedSafety.displayPath)
-                    }
-                } else {
-                    show(R.string.backup_restored)
-                }
+                manager.restore(text, _state.value.strategy)
+                show(R.string.backup_restored)
             } catch (e: BackupIntegrityException) {
                 show(R.string.backup_restore_conflict)
             } catch (t: Throwable) {
