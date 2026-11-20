@@ -15,7 +15,6 @@ import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Settlement
-import ir.hoboho.shooting.domain.model.SettlementStatus
 import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 
@@ -209,12 +208,7 @@ object ReportSpecBuilder {
                 // Money is a separate block, never combined with length values.
                 add(
                     PdfBlock.KeyValueList(
-                        listOf(
-                            ReportText.TOTAL_EXPENSES to toman(report.totalExpensesToman),
-                            ReportText.TOTAL_SETTLED to toman(report.settledToman),
-                            ReportText.TOTAL_OUTSTANDING to toman(report.outstandingToman),
-                        ),
-                        emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
+                        listOf(ReportText.TOTAL_EXPENSES to toman(report.totalExpensesToman)),
                     ),
                 )
                 add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
