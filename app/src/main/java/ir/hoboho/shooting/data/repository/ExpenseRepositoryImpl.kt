@@ -213,24 +213,37 @@ class ExpenseRepositoryImpl @Inject constructor(
     override suspend fun updateCompanyPayment(payment: CompanyPayment) = db.withTransaction {
         val existing = companyPaymentDao.getById(payment.id)
             ?: throw NotFoundException("company payment ${payment.id}")
-        val issues = Validator.settlement(
-            additionalToman = payment.amountToman,
-            amountToman = Long.MAX_VALUE,
-            alreadySettledToman = 0L,
-        )
-        if (issues.isNotEmpty()) throw ValidationException(issues)
+        if (payment.amountToman <= 0L) {
+            throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_AMOUNT)))
+        }
+        val receipt = payment.receiptReference.trim()
+        val description = receipt.ifBlank { existing.note }
         companyPaymentDao.updateDetails(
             id = existing.id,
             amount = payment.amountToman,
             date = payment.dateEpochDay,
-            receipt = payment.receiptReference.trim(),
+            receipt = receipt,
         )
-        cashLedgerDao.updateReceipt(
-            originId = existing.id,
-            amount = payment.amountToman,
-            date = payment.dateEpochDay,
-            description = payment.receiptReference.trim().ifBlank { existing.note },
-        )
+        val ledgerEntry = cashLedgerDao.getReceipt(existing.id)
+        if (ledgerEntry != null) {
+            cashLedgerDao.updateReceipt(
+                originId = existing.id,
+                amount = payment.amountToman,
+                date = payment.dateEpochDay,
+                description = description,
+            )
+        } else {
+            cashLedgerDao.insert(CashLedgerEntryEntity(
+                uuid = UUID.randomUUID().toString(),
+                idempotencyKey = "receipt:${existing.uuid}",
+                originType = "RECEIPT",
+                originId = existing.id,
+                amountToman = payment.amountToman,
+                dateEpochDay = payment.dateEpochDay,
+                description = description,
+                createdAt = existing.createdAt,
+            ))
+        }
         Unit
     }
 
