@@ -178,8 +178,8 @@ class ReportSpecBuilderTest {
             listOf(ExpenseReportRow(expense)), listOf(receipt), DateRange(20_759L, 20_759L),
         )
         val entries = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
-        assertTrue(entries.any { it.first == "مانده صندوق پروژه" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
-        assertTrue(entries.any { it.first == "مطالبات از شرکت" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
+        assertTrue(entries.any { it.first == "خالص گردش نقدی دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
+        assertTrue(entries.any { it.first == "کسری خالص گردش دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
     }
 
 }

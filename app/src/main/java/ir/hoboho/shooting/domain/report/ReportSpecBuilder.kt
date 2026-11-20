@@ -325,11 +325,12 @@ object ReportSpecBuilder {
                 PdfBlock.KeyValueList(
                     listOf(
                         ReportText.TOTAL_EXPENSES to toman(total),
+                        "هزینه‌های تأییدشده" to toman(approvedExpenses),
                         "دریافتی ثبت‌شده از شرکت" to toman(received),
                         "مبلغ تخصیص‌یافته به هزینه‌ها" to toman(settled),
                         ReportText.TOTAL_OUTSTANDING to toman(outstanding),
-                        "مانده صندوق پروژه" to toman(cashBalance),
-                        "مطالبات از شرکت" to toman((-cashBalance).coerceAtLeast(0L)),
+                        "خالص گردش نقدی دوره" to toman(cashBalance),
+                        "کسری خالص گردش دوره" to toman((-cashBalance).coerceAtLeast(0L)),
                     ),
                     emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
                 ),
@@ -403,15 +404,20 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = "خلاصه مدیریتی مالی پروژه",
             subtitle = DateFormatter.formatRange(range),
-            headerLines = header() + listOf("شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}", "مبنای محاسبه: هزینه‌های تأییدشده و دریافتی‌های ثبت‌شده"),
+            headerLines = header() + listOf(
+                "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
+                "پروژه‌ها: " + rows.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "محدوده کار: " + rows.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "مبنای محاسبه: هزینه‌های تأییدشده و دریافتی‌های ثبت‌شده",
+            ),
             blocks = buildList {
                 add(PdfBlock.KeyValueList(listOf(
                     "جمع هزینه‌های تأییدشده" to toman(totalApproved),
                     "جمع دریافتی از شرکت" to toman(totalReceived),
-                    "مانده صندوق پروژه" to toman(balance),
-                    "مطالبات از شرکت" to toman((-balance).coerceAtLeast(0L)),
+                    "خالص گردش نقدی دوره" to toman(balance),
+                    "کسری خالص گردش دوره" to toman((-balance).coerceAtLeast(0L)),
                     "تعداد اسناد هزینه" to persianInt(approved.size),
-                ), emphasisedLabels = setOf("مانده صندوق پروژه", "مطالبات از شرکت")))
+                ), emphasisedLabels = setOf("خالص گردش نقدی دوره", "کسری خالص گردش دوره")))
                 add(PdfBlock.Table(
                     columns = listOf(PdfColumn(ReportText.CATEGORY, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
                     header = listOf(ReportText.CATEGORY, "تعداد", ReportText.AMOUNT),
