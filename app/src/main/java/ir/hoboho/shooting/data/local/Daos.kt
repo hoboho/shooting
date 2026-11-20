@@ -394,6 +394,9 @@ interface CashLedgerDao {
     suspend fun getByIdempotencyKey(key: String): CashLedgerEntryEntity?
     @Query("SELECT * FROM cash_ledger WHERE originType = 'EXPENSE' AND originId = :expenseId ORDER BY id DESC LIMIT 1")
     suspend fun latestExpenseDebit(expenseId: Long): CashLedgerEntryEntity?
+
+    @Query("SELECT * FROM cash_ledger WHERE originType = 'RECEIPT' AND originId = :paymentId LIMIT 1")
+    suspend fun getReceipt(paymentId: Long): CashLedgerEntryEntity?
     @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
     suspend fun insert(entry: CashLedgerEntryEntity): Long
     @Query("UPDATE cash_ledger SET amountToman = :amount, dateEpochDay = :date, description = :description WHERE originType = 'RECEIPT' AND originId = :originId")
