@@ -246,8 +246,11 @@ class PdfReportEngine @Inject constructor(
                     if (emphasised) color = ACCENT_DARK
                     textAlign = Paint.Align.RIGHT
                 }
-                val labelLayout = layoutFor(label, PdfTextStyle.Body, labelWidth)
-                canvas?.withTranslation(CONTENT_RIGHT - labelWidth, cursorY - 2f) { labelLayout.draw(this) }
+                // Labels are single-line identifiers (e.g. «یادداشت‌ها»).
+                // Ellipsize only when the whole label cannot fit; never split a Persian word.
+                val labelPaint = textPaint(PdfWeight.REGULAR, 10f).apply { textAlign = Paint.Align.RIGHT }
+                val safeLabel = ellipsize(label, labelPaint, labelWidth - 8f)
+                canvas?.drawText(safeLabel, CONTENT_RIGHT, cursorY + paint.textSize - 1f, labelPaint)
                 val clipped = ellipsize(value, valuePaint, valueWidth - 8f)
                 canvas?.drawText(clipped, CONTENT_RIGHT - labelWidth - 12f, cursorY + paint.textSize, valuePaint)
                 cursorY += rowHeight
