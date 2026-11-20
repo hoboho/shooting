@@ -31,7 +31,7 @@ data class ExpenseReportRow(
  */
 object ReportSpecBuilder {
 
-    private fun header() = listOf("${ReportText.BRAND} | ${ReportText.BRAND_LATIN}", ReportText.SUBTITLE)
+    private fun operatorHeader(name: String) = listOf("اپراتور: ${name.ifBlank { "ثبت نشده" }}")
 
     private fun persianInt(value: Int) = NumberFormatter.formatInteger(value)
     private fun persianLong(value: Long) = NumberFormatter.formatPersian(value)
@@ -95,7 +95,7 @@ object ReportSpecBuilder {
 
     // ------------------------------------------------------------- daily report
 
-    fun daily(workday: Workday, cableTypes: List<CableType>): PdfDocumentSpec {
+    fun daily(workday: Workday, cableTypes: List<CableType>, operatorName: String = ""): PdfDocumentSpec {
         val labels = cableTypes.associateBy { it.id }
         val rows = workday.operations.mapIndexed { index, op ->
             listOf(
@@ -121,7 +121,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = ReportText.TITLE_DAILY,
             subtitle = "${workday.projectName} — ${DateFormatter.format(workday.dateEpochDay)}",
-            headerLines = header(),
+            headerLines = operatorHeader(operatorName),
             blocks = buildList {
                 add(PdfBlock.KeyValueList(info))
                 add(PdfBlock.Divider())
@@ -161,7 +161,7 @@ object ReportSpecBuilder {
 
     // ------------------------------------------------------------ period report
 
-    fun period(report: PeriodReport): PdfDocumentSpec {
+    fun period(report: PeriodReport, operatorName: String = ""): PdfDocumentSpec {
         val dailyRows = report.dailyBreakdown.map { row ->
             listOf(DateFormatter.format(row.dateEpochDay), NumberFormatter.formatMetersValue(row.totalLengthMeters))
         }
@@ -221,6 +221,7 @@ object ReportSpecBuilder {
         project: Project,
         cableTypes: List<CableType>,
         range: DateRange,
+        operatorName: String = "",
     ): PdfDocumentSpec {
         val cableLabels = cableTypes.associateBy { it.id }
         val rows = workdays.sortedBy { it.dateEpochDay }.flatMap { workday ->
@@ -272,7 +273,7 @@ object ReportSpecBuilder {
 
     // ----------------------------------------------------------- expense report
 
-    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false, cashLedger: List<CashLedgerEntry> = emptyList()): PdfDocumentSpec {
+    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false, cashLedger: List<CashLedgerEntry> = emptyList(), operatorName: String = ""): PdfDocumentSpec {
         val approved = rows.filter { it.expense.companyApproved }
         val expenseRows = approved.mapIndexed { index, row ->
             val e = row.expense
@@ -296,12 +297,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
             subtitle = DateFormatter.formatRange(range),
-            headerLines = header() + listOf(
-                "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
-                "پروژه‌ها: " + approved.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
-                "محدوده کار: " + approved.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
-                "بازه گزارش: ${DateFormatter.formatRange(range)}",
-            ),
+            headerLines = operatorHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
             blocks = listOf(
                 PdfBlock.KeyValueList(
                     buildList {
@@ -342,7 +338,7 @@ object ReportSpecBuilder {
                     aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER),
                 ),
                 PdfBlock.Paragraph("دریافتی‌ها مستقل از هزینه‌ها ثبت شده‌اند و به هیچ سندی تخصیص داده نمی‌شوند.", PdfTextStyle.Small),
-                PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")),
+                PdfBlock.SignatureBlock(preparerName = operatorName),
                 PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small),
             ),
         )
@@ -355,6 +351,7 @@ object ReportSpecBuilder {
         range: DateRange,
         projectScoped: Boolean = false,
         cashLedger: List<CashLedgerEntry> = emptyList(),
+        operatorName: String = "",
     ): PdfDocumentSpec {
         val approved = rows.filter { it.expense.companyApproved }
         val totalApproved = approved.sumOf { it.expense.amountToman }
@@ -372,12 +369,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = "خلاصه مدیریتی مالی پروژه",
             subtitle = DateFormatter.formatRange(range),
-            headerLines = header() + listOf(
-                "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
-                "پروژه‌ها: " + rows.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
-                "محدوده کار: " + rows.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
-                "مبنای محاسبه: هزینه‌های تأییدشده و دریافتی‌های ثبت‌شده",
-            ),
+            headerLines = operatorHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
             blocks = buildList {
                 add(PdfBlock.KeyValueList(buildList {
                     add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
@@ -410,7 +402,7 @@ object ReportSpecBuilder {
                     rows = projectRows, caption = "تفکیک هزینه بر اساس پروژه",
                 ))
                 add(PdfBlock.Paragraph("این خلاصه بر مبنای همان اسناد گزارش تفصیلی تهیه شده است. هزینه‌های تأییدنشده در گردش نقدی منظور نشده‌اند.", PdfTextStyle.Small))
-                add(PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")))
+                add(PdfBlock.SignatureBlock(preparerName = operatorName))
             },
         )
     }
