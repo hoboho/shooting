@@ -1,5 +1,7 @@
 package ir.hoboho.shooting.ui.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -33,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
@@ -57,6 +62,16 @@ fun ShootingButton(
 ) {
     val effective = if (fullWidth) modifier.fillMaxWidth() else modifier
     val active = enabled && !loading
+    val interactionSource = androidx.compose.runtime.remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed && active) 0.975f else 1f,
+        label = "buttonPressScale",
+    )
+    val animatedModifier = effective.graphicsLayer {
+        scaleX = pressScale
+        scaleY = pressScale
+    }
     val content: @Composable RowScope.() -> Unit = {
         if (loading) {
             CircularProgressIndicator(
@@ -81,12 +96,12 @@ fun ShootingButton(
         }
     }
     when (level) {
-        ButtonLevel.Primary -> Button(onClick, enabled = active, modifier = effective, content = content)
-        ButtonLevel.Secondary -> FilledTonalButton(onClick, enabled = active, modifier = effective, content = content)
-        ButtonLevel.Outline -> OutlinedButton(onClick, enabled = active, modifier = effective, content = content)
-        ButtonLevel.Text -> TextButton(onClick, enabled = active, modifier = effective, content = content)
+        ButtonLevel.Primary -> Button(onClick, enabled = active, modifier = animatedModifier, interactionSource = interactionSource, content = content)
+        ButtonLevel.Secondary -> FilledTonalButton(onClick, enabled = active, modifier = animatedModifier, interactionSource = interactionSource, content = content)
+        ButtonLevel.Outline -> OutlinedButton(onClick, enabled = active, modifier = animatedModifier, interactionSource = interactionSource, content = content)
+        ButtonLevel.Text -> TextButton(onClick, enabled = active, modifier = animatedModifier, interactionSource = interactionSource, content = content)
         ButtonLevel.Danger -> Button(
-            onClick, enabled = active, modifier = effective, content = content,
+            onClick, enabled = active, modifier = animatedModifier, interactionSource = interactionSource, content = content,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError,
@@ -216,11 +231,12 @@ fun SectionCard(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    icon: ImageVector? = null,
     trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().animateContentSize(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -232,6 +248,16 @@ fun SectionCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (icon != null) {
+                    Surface(
+                        shape = RoundedCornerShape(13.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ) {
+                        Icon(icon, contentDescription = null, modifier = Modifier.padding(9.dp).size(20.dp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(title, style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary)
