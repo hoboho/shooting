@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -65,7 +66,7 @@ fun WorkdaysScreen(
                 )
             }
             item {
-                SectionCard(title = stringResource(R.string.search_and_filter)) {
+                SectionCard(title = stringResource(R.string.search_and_filter), icon = Icons.Filled.FilterList) {
                     ShootingTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -80,6 +81,7 @@ fun WorkdaysScreen(
             itemsIndexed(filtered, key = { _, item -> item.id }) { index, workday ->
                 SectionCard(
                     title = workday.projectName,
+                    icon = Icons.Filled.CalendarMonth,
                     subtitle = DateFormatter.formatLong(workday.dateEpochDay),
                     modifier = Modifier
                         .clickable { onOpenWorkday(workday.id) }
