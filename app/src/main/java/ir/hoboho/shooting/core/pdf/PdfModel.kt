@@ -31,6 +31,13 @@ sealed interface PdfBlock {
         val caption: String? = null,
     ) : PdfBlock
 
+    data class SignatureBlock(
+        val preparerTitle: String = "مسئول تهیه گزارش",
+        val preparerName: String = "",
+        val companyTitle: String = "نماینده شرکت",
+        val heightPt: Float = 92f,
+    ) : PdfBlock
+
     /** Two-column label/value list, right-aligned for Persian. */
     data class KeyValueList(
         val entries: List<Pair<String, String>>,
