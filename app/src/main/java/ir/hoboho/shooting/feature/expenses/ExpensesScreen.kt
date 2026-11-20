@@ -327,7 +327,13 @@ fun ExpensesScreen(
                     },
                     trailing = {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                NumberFormatter.formatToman(expense.amountToman),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
                             TagChip(stringResource(if (expense.companyApproved) R.string.expense_approved else R.string.expense_not_approved))
+                            TagChip(statusLabel(expense.status))
                             IconButton(onClick = { expanded = !expanded }) {
                                 Icon(
                                     if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
