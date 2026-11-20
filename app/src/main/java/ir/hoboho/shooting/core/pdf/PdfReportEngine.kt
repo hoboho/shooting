@@ -240,7 +240,7 @@ class PdfReportEngine @Inject constructor(
             val headerPaint = textPaint(PdfWeight.BOLD, 8.6f)
             val cellPaint = textPaint(PdfWeight.REGULAR, 8.6f)
             val headerHeight = headerPaint.textSize * 2.1f
-            val rowHeight = cellPaint.textSize * 1.95f
+            val minimumRowHeight = cellPaint.textSize * 1.95f
 
             if (pendingTableRow == 0) block.caption?.let { caption ->
                 val layout = layoutFor(caption, PdfTextStyle.SectionHeader, CONTENT_WIDTH)
@@ -258,18 +258,21 @@ class PdfReportEngine @Inject constructor(
             }
 
             while (pendingTableRow < block.rows.size) {
+                val index = pendingTableRow
+                val cells = block.rows[index]
+                val wrappedHeight = cells.indices.maxOfOrNull { cell ->
+                    val width = widths.getOrElse(cell) { CONTENT_WIDTH / cells.size }
+                    layoutFor(cells[cell], PdfTextStyle.TableCell, width - CELL_PADDING * 2).height.toFloat()
+                } ?: minimumRowHeight
+                val rowHeight = max(minimumRowHeight, wrappedHeight + CELL_PADDING * 2)
                 if (cursorY + rowHeight > bottom) {
-                    // Continues on the next page, where the header is repeated.
+                    // Continue on a fresh page; wrapped cell content remains intact.
                     return false
                 }
-                val index = pendingTableRow
                 if (index % 2 == 1) {
-                    canvas?.drawRect(
-                        MARGIN_LEFT, cursorY - 1f,
-                        CONTENT_RIGHT, cursorY + rowHeight - 1f, zebraPaint,
-                    )
+                    canvas?.drawRect(MARGIN_LEFT, cursorY - 1f, CONTENT_RIGHT, cursorY + rowHeight - 1f, zebraPaint)
                 }
-                drawRow(block.rows[index], widths, block.aligns, cellPaint, rowHeight, header = false)
+                drawRow(cells, widths, block.aligns, cellPaint, rowHeight, header = false)
                 canvas?.drawLine(MARGIN_LEFT, cursorY + rowHeight - 1f, CONTENT_RIGHT, cursorY + rowHeight - 1f, linePaint)
                 cursorY += rowHeight
                 pendingTableRow++
@@ -291,16 +294,19 @@ class PdfReportEngine @Inject constructor(
                 val width = widths.getOrElse(index) { CONTENT_WIDTH / cells.size }
                 val align = aligns.getOrElse(index) { PdfAlign.START }
                 val cellLeft = x - width
-                val clipped = ellipsize(cells[index], paint, width - CELL_PADDING * 2)
-                val textWidth = paint.measureText(clipped)
-                val textX = when (align) {
-                    PdfAlign.START -> x - CELL_PADDING - textWidth // right side of an RTL cell
-                    PdfAlign.END -> cellLeft + CELL_PADDING
-                    PdfAlign.CENTER -> cellLeft + (width - textWidth) / 2f
-                }
-                canvas?.drawText(clipped, textX, cursorY + rowHeight * 0.72f, paint)
                 if (header) {
+                    val clipped = ellipsize(cells[index], paint, width - CELL_PADDING * 2)
+                    val textWidth = paint.measureText(clipped)
+                    val textX = when (align) {
+                        PdfAlign.START -> x - CELL_PADDING - textWidth
+                        PdfAlign.END -> cellLeft + CELL_PADDING
+                        PdfAlign.CENTER -> cellLeft + (width - textWidth) / 2f
+                    }
+                    canvas?.drawText(clipped, textX, cursorY + rowHeight * 0.72f, paint)
                     canvas?.drawLine(cellLeft, cursorY - 2f, cellLeft, cursorY + rowHeight - 2f, linePaint)
+                } else {
+                    val layout = layoutFor(cells[index], PdfTextStyle.TableCell, width - CELL_PADDING * 2)
+                    canvas?.withTranslation(cellLeft + CELL_PADDING, cursorY + CELL_PADDING) { layout.draw(this) }
                 }
                 x = cellLeft
             }
@@ -348,7 +354,6 @@ class PdfReportEngine @Inject constructor(
                 .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
                 .setLineSpacing(2f, 1f)
                 .setIncludePad(false)
-                .setEllipsize(TextUtils.TruncateAt.END)
                 .build()
 
         private fun ellipsize(text: String, paint: TextPaint, maxWidth: Float): String {
