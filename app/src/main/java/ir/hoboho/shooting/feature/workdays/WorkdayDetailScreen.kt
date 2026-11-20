@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -85,7 +84,7 @@ fun WorkdayDetailScreen(
             modifier = Modifier.fillMaxSize().padding(padding).pointerInput(report.id, orderedWorkdays) {
                 var drag = 0f
                 detectHorizontalDragGestures(
-                    onHorizontalDrag = { change, amount -> change.consumeAllChanges(); drag += amount },
+                    onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
                     onDragEnd = {
                         val index = orderedWorkdays.indexOfFirst { it.id == report.id }
                         if (index >= 0 && drag < -80f && index < orderedWorkdays.lastIndex) {
