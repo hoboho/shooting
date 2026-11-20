@@ -26,6 +26,7 @@ class SettingsViewModel @Inject constructor(
     val updateState: StateFlow<AppUpdateState> = _updateState.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { repository.setThemeMode(mode) }
+    fun setOperatorName(value: String) = viewModelScope.launch { repository.setOperatorName(value) }
 
     fun checkForUpdates() {
         if (_updateState.value.isChecking) return
