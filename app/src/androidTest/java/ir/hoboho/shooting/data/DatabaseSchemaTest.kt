@@ -60,11 +60,11 @@ class DatabaseSchemaTest {
     }
 
     @Test
-    fun version5_createsEveryTable() {
-        assertThat(db.openHelper.writableDatabase.version).isEqualTo(5)
+    fun version6_createsEveryTable() {
+        assertThat(db.openHelper.writableDatabase.version).isEqualTo(6)
         assertThat(tableNames()).containsExactly(
             "projects", "workdays", "operations", "cable_types",
-            "expense_categories", "expenses", "settlements", "company_payments", "app_settings",
+            "expense_categories", "expenses", "settlements", "company_payments", "cash_ledger", "app_settings",
         )
     }
 
