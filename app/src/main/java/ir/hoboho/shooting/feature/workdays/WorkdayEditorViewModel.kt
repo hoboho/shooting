@@ -246,9 +246,8 @@ class WorkdayEditorViewModel @Inject constructor(
                 return@launch
             }
             val projectExists = projectRepository.getProject(current.projectId) != null
-            val duplicate = workdayRepository.duplicateExists(
-                current.projectId, current.dateEpochDay, current.workdayId,
-            )
+            // A project can have multiple separate reports on the same date.
+            val duplicate = false
             val workerCount = NumberFormatter.parseNonNegativeInt(current.workerCount) ?: -1
             val workdayIssues = Validator.workday(
                 projectId = current.projectId,

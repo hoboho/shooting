@@ -37,8 +37,7 @@ data class ProjectEntity(
     indices = [
         Index(value = ["uuid"], unique = true),
         Index(value = ["projectId"]),
-        // DB-level second line of defence against duplicate daily reports.
-        Index(value = ["projectId", "dateEpochDay"], unique = true),
+        // Multiple independent daily reports may exist for the same project and date.
     ],
 )
 data class WorkdayEntity(
