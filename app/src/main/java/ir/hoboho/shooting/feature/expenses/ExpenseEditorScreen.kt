@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -123,7 +124,7 @@ fun ExpenseEditorScreen(
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
 
-            SectionCard(title = stringResource(if (expenseId == 0L) R.string.expense_new else R.string.expense_edit)) {
+            SectionCard(title = stringResource(if (expenseId == 0L) R.string.expense_new else R.string.expense_edit), icon = Icons.Filled.ReceiptLong) {
                 ClickableField(
                     label = stringResource(R.string.expense_date),
                     value = DateFormatter.formatLong(state.dateEpochDay),
@@ -169,7 +170,7 @@ fun ExpenseEditorScreen(
                 )
             }
 
-            SectionCard(title = stringResource(R.string.expense_settlements)) {
+            SectionCard(title = stringResource(R.string.expense_settlements), icon = Icons.Filled.Payments) {
                 StatRow(stringResource(R.string.expense_amount),
                     NumberFormatter.formatToman(state.amountToman))
                 StatRow(stringResource(R.string.expense_reimbursed),
