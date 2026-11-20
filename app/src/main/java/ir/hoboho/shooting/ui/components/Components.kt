@@ -152,7 +152,7 @@ fun ShootingTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = MaterialTheme.shapes.medium,
         colors = fieldColors,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().animateContentSize(),
     )
 }
 
@@ -187,7 +187,7 @@ fun ShootingNumberField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         shape = MaterialTheme.shapes.medium,
         colors = fieldColors,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().animateContentSize(),
     )
 }
 
@@ -200,7 +200,7 @@ fun StatRow(
     hint: String? = null,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = modifier.fillMaxWidth().animateContentSize().padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -302,10 +302,15 @@ fun <T> ChoiceChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { option ->
+            val chipScale by animateFloatAsState(
+                targetValue = if (selected == option) 1.025f else 1f,
+                label = "choiceChipScale",
+            )
             FilterChip(
                 selected = selected == option,
                 onClick = { onSelected(option) },
                 label = { Text(labelOf(option)) },
+                modifier = Modifier.graphicsLayer { scaleX = chipScale; scaleY = chipScale },
             )
         }
     }
