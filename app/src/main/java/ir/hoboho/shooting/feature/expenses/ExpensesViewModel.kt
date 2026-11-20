@@ -72,6 +72,40 @@ class ExpensesViewModel @Inject constructor(
         }
     }
 
+    fun updateCompanyPayment(payment: CompanyPayment) {
+        if (_paymentSaving.value) return
+        _paymentSaving.value = true
+        viewModelScope.launch {
+            try {
+                if (payment.amountToman <= 0L) {
+                    _error.value = strings.validationMessage(ir.hoboho.shooting.domain.ValidationField.SETTLEMENT_AMOUNT)
+                    return@launch
+                }
+                repository.updateCompanyPayment(payment)
+            } catch (e: ValidationException) {
+                _error.value = strings.validationMessage(e.issues.first().field)
+            } catch (e: Exception) {
+                _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
+            } finally {
+                _paymentSaving.value = false
+            }
+        }
+    }
+
+    fun deleteCompanyPayment(id: Long) {
+        if (_paymentSaving.value) return
+        _paymentSaving.value = true
+        viewModelScope.launch {
+            try {
+                repository.deleteCompanyPayment(id)
+            } catch (e: Exception) {
+                _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
+            } finally {
+                _paymentSaving.value = false
+            }
+        }
+    }
+
     fun delete(id: Long) = viewModelScope.launch {
         try {
             repository.delete(id)
