@@ -55,11 +55,11 @@ class ShootingDatabaseTest {
         db, db.workdayDao(), db.operationDao(), db.projectDao(), db.cableTypeDao(), clock,
     )
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), db.cashLedgerDao(), clock,
     )
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.cashLedgerDao(), db.appSettingDao(),
     )
 
     @Test
