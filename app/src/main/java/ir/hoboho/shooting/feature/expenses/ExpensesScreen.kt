@@ -317,10 +317,6 @@ fun ExpensesScreen(
                                 TextButton(onClick = { onEditExpense(expense.id) }) {
                                     Text(stringResource(R.string.action_edit))
                                 }
-                                Text(stringResource(R.string.expense_settlements) + ": " +
-                                    NumberFormatter.formatInteger(expense.settlementCount),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.weight(1f))
                                 IconButton(onClick = { pendingDelete = expense.id }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete),
                                         tint = MaterialTheme.colorScheme.error)
