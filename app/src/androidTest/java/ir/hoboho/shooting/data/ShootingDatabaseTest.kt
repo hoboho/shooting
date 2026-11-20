@@ -8,6 +8,7 @@ import com.google.common.truth.Truth.assertThat
 import ir.hoboho.shooting.core.common.Clock
 import ir.hoboho.shooting.core.common.ValidationException
 import ir.hoboho.shooting.data.local.ShootingDatabase
+import ir.hoboho.shooting.data.local.CashLedgerEntryEntity
 import ir.hoboho.shooting.data.mapper.toDomain
 import ir.hoboho.shooting.data.repository.BackupRepositoryImpl
 import ir.hoboho.shooting.data.repository.ExpenseRepositoryImpl
@@ -305,6 +306,68 @@ class ShootingDatabaseTest {
         assertThat(rejected).isTrue()
         assertThat(repo.getExpense(id)!!.amountToman).isEqualTo(200L)
         assertThat(backups().snapshot().cashLedger).isEqualTo(current.cashLedger)
+    }
+
+
+    @Test
+    fun companyPayment_editAndDeleteAtomicallySynchronizeOnlyItsReceiptLedgerEntry() = runBlocking {
+        val repository = expenses()
+        val paymentId = repository.allocateCompanyPayment(
+            amountToman = 1_200L,
+            dateEpochDay = 20_200L,
+            receiptReference = "REC-OLD",
+            note = "واریز شرکت",
+        )
+        db.cashLedgerDao().insert(
+            CashLedgerEntryEntity(
+                uuid = "unrelated-positive",
+                idempotencyKey = "adjustment:unrelated-positive",
+                originType = "ADJUSTMENT",
+                originId = 999L,
+                amountToman = 300L,
+                dateEpochDay = 20_201L,
+                description = "تراکنش مثبت مستقل",
+                createdAt = clock.nowEpochMilli(),
+            ),
+        )
+
+        val before = repository.getAllCompanyPayments().single()
+        repository.updateCompanyPayment(
+            before.copy(
+                amountToman = 1_500L,
+                dateEpochDay = 20_202L,
+                receiptReference = "",
+            ),
+        )
+
+        val updated = repository.getAllCompanyPayments().single()
+        assertThat(updated.id).isEqualTo(paymentId)
+        assertThat(updated.amountToman).isEqualTo(1_500L)
+        assertThat(updated.dateEpochDay).isEqualTo(20_202L)
+        assertThat(updated.receiptReference).isEmpty()
+
+        val receiptLedger = repository.observeCashLedger().first()
+            .single { it.originType == "RECEIPT" && it.originId == paymentId }
+        assertThat(receiptLedger.amountToman).isEqualTo(1_500L)
+        assertThat(receiptLedger.dateEpochDay).isEqualTo(20_202L)
+        assertThat(receiptLedger.description).isEqualTo("واریز شرکت")
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(1_800L)
+
+        var rejected = false
+        try {
+            repository.updateCompanyPayment(updated.copy(amountToman = 0L))
+        } catch (expected: ValidationException) {
+            rejected = true
+        }
+        assertThat(rejected).isTrue()
+        assertThat(repository.getAllCompanyPayments().single().amountToman).isEqualTo(1_500L)
+
+        repository.deleteCompanyPayment(paymentId)
+        assertThat(repository.getAllCompanyPayments()).isEmpty()
+        val remainingLedger = repository.observeCashLedger().first()
+        assertThat(remainingLedger).hasSize(1)
+        assertThat(remainingLedger.single().originType).isEqualTo("ADJUSTMENT")
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(300L)
     }
 
 }
