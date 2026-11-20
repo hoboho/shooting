@@ -370,7 +370,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = "خلاصه مدیریتی مالی پروژه",
             subtitle = DateFormatter.formatRange(range),
-            headerLines = operatorHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
+            headerLines = preparerHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
             blocks = buildList {
                 add(PdfBlock.KeyValueList(buildList {
                     add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
