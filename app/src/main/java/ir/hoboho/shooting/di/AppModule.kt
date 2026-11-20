@@ -14,6 +14,7 @@ import ir.hoboho.shooting.core.common.SystemClock
 import ir.hoboho.shooting.data.local.AppSettingDao
 import ir.hoboho.shooting.data.local.CableTypeDao
 import ir.hoboho.shooting.data.local.CompanyPaymentDao
+import ir.hoboho.shooting.data.local.CashLedgerDao
 import ir.hoboho.shooting.data.local.ExpenseCategoryDao
 import ir.hoboho.shooting.data.local.ExpenseDao
 import ir.hoboho.shooting.data.local.OperationDao
@@ -48,6 +49,7 @@ object AppModule {
     @Provides fun provideExpenseDao(db: ShootingDatabase): ExpenseDao = db.expenseDao()
     @Provides fun provideSettlementDao(db: ShootingDatabase): SettlementDao = db.settlementDao()
     @Provides fun provideCompanyPaymentDao(db: ShootingDatabase): CompanyPaymentDao = db.companyPaymentDao()
+    @Provides fun provideCashLedgerDao(db: ShootingDatabase): CashLedgerDao = db.cashLedgerDao()
     @Provides fun provideAppSettingDao(db: ShootingDatabase): AppSettingDao = db.appSettingDao()
 }
 
