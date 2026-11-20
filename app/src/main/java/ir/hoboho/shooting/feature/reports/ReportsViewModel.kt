@@ -107,12 +107,12 @@ class ReportsViewModel @Inject constructor(
                         projectFilter = inputs.projectId,
                         projectFilterName = projectName,
                         workdays = workdays,
-                        expenses = expenses,
+                        expenses = expenses.filter { it.companyApproved },
                         cableTypes = inputs.cableTypes,
                     ),
-                    expenseRows = filteredExpenses.map { expense ->
+                    expenseRows = filteredExpenses.filter { it.companyApproved }.map { expense ->
                         ExpenseReportRow(
-                            expense, settlementsByExpense[expense.id].orEmpty(),
+                            expense, emptyList(),
                             filteredWorkdays.firstOrNull { it.id == expense.workdayId }?.workArea.orEmpty(),
                         )
                     },
