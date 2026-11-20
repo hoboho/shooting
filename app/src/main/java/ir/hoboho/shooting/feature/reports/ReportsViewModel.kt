@@ -10,7 +10,6 @@ import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.core.share.ReportFileWriter
 import ir.hoboho.shooting.domain.PeriodAggregator
-import ir.hoboho.shooting.domain.model.CashLedgerEntry
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.PeriodReport
@@ -68,7 +67,7 @@ class ReportsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val cashLedger = expenseRepository.observeCashLedger()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val tab = MutableStateFlow(ReportTab.DAILY)
     private val range = MutableStateFlow(DateRange.thisMonth())
