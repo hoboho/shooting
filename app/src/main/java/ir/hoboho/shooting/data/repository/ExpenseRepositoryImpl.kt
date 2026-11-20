@@ -108,9 +108,6 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun delete(id: Long) = db.withTransaction {
         val row = dao.getById(id) ?: throw NotFoundException("expense $id")
-        if (settlementDao.getByExpense(id).isNotEmpty()) {
-            throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
-        }
         if (row.expense.companyApproved) {
             val original = cashLedgerDao.latestExpenseDebit(id)
             val now = clock.nowEpochMilli()
