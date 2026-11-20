@@ -310,6 +310,9 @@ fun ExpensesScreen(
                                                         payment.receiptReference,
                                                         style = MaterialTheme.typography.labelSmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1,
+                                                        softWrap = false,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                                     )
                                                 }
                                             }
@@ -359,8 +362,12 @@ fun ExpensesScreen(
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 Text(
-                                                    "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                                    text = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                                    modifier = Modifier.weight(1f),
                                                     style = MaterialTheme.typography.bodyMedium,
+                                                    maxLines = 1,
+                                                    softWrap = false,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                                 )
                                                 Text(
                                                     "+${NumberFormatter.formatToman(entry.amountToman)}",
