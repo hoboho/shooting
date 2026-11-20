@@ -11,7 +11,6 @@ import ir.hoboho.shooting.core.backup.BackupIntegrityException
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.date.JalaliCalendar
 import ir.hoboho.shooting.core.format.DateFormatter
-import ir.hoboho.shooting.core.share.FileSharer
 import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.domain.backup.BackupInspection
 import ir.hoboho.shooting.domain.backup.RestoreStrategy
@@ -31,13 +30,11 @@ data class BackupUiState(
     val exportedAtText: String = "",
     val busy: Boolean = false,
     val message: String? = null,
-    val backupAvailable: Boolean = false,
 )
 
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     private val manager: BackupManager,
-    private val sharer: FileSharer,
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
@@ -45,7 +42,6 @@ class BackupViewModel @Inject constructor(
     private val _state = MutableStateFlow(BackupUiState())
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
     private var pendingText: String? = null
-    private var createdBackupFile: File? = null
 
     fun createBackup() {
         viewModelScope.launch {
@@ -55,8 +51,6 @@ class BackupViewModel @Inject constructor(
                 val saved = withContext(Dispatchers.IO) {
                     runCatching { saver.saveBackup(file, file.name) }.getOrNull()
                 }
-                createdBackupFile = file
-                _state.update { it.copy(backupAvailable = true) }
                 if (saved != null) {
                     show(R.string.backup_created, saved.displayPath)
                 } else {
@@ -67,13 +61,6 @@ class BackupViewModel @Inject constructor(
             } finally {
                 _state.update { it.copy(busy = false) }
             }
-        }
-    }
-
-    fun openCreatedBackup() {
-        createdBackupFile?.let { file ->
-            runCatching { sharer.openBackup(file) }
-                .onFailure { show(R.string.msg_backup_failed) }
         }
     }
 
