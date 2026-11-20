@@ -10,6 +10,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,6 +78,7 @@ fun DashboardScreen(
             SectionCard(
                 title = stringResource(R.string.dashboard_period_length),
                 subtitle = state.periodLabel,
+                icon = Icons.Filled.QueryStats,
             ) {
                 ChoiceChips(
                     options = DashboardPeriod.entries,
@@ -110,6 +114,7 @@ fun DashboardScreen(
         item {
             SectionCard(
                 title = stringResource(R.string.dashboard_recent_workdays),
+                icon = Icons.Filled.CalendarMonth,
             ) {
                 if (state.recentWorkdays.isEmpty()) {
                     EmptyState(stringResource(R.string.workdays_empty))
@@ -131,7 +136,7 @@ fun DashboardScreen(
         }
 
         item {
-            SectionCard(title = stringResource(R.string.dashboard_recent_operations)) {
+            SectionCard(title = stringResource(R.string.dashboard_recent_operations), icon = Icons.Filled.Route) {
                 if (state.recentOperations.isEmpty()) {
                     EmptyState(stringResource(R.string.label_no_data))
                 } else {
