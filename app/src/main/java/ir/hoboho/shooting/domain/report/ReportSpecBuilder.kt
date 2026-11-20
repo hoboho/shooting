@@ -280,7 +280,8 @@ object ReportSpecBuilder {
     // ----------------------------------------------------------- expense report
 
     fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false): PdfDocumentSpec {
-        val expenseRows = rows.mapIndexed { index, row ->
+        val approved = rows.filter { it.expense.companyApproved }
+        val expenseRows = approved.mapIndexed { index, row ->
             val e = row.expense
             listOf(
                 persianInt(index + 1),
@@ -289,52 +290,31 @@ object ReportSpecBuilder {
                 e.description.ifBlank { NumberFormatter.EM_DASH },
                 e.projectName ?: NumberFormatter.EM_DASH,
                 persianLong(e.amountToman),
-                persianLong(e.settledAmountToman),
-                persianLong(e.outstandingToman),
-                statusLabel(e.status),
             )
         }
-        val settlementRows = rows.flatMap { row ->
-            row.settlements.map { s ->
-                listOf(
-                    DateFormatter.format(s.dateEpochDay),
-                    row.expense.description.ifBlank { row.expense.categoryName },
-                    persianLong(s.amountToman),
-                    s.note.ifBlank { NumberFormatter.EM_DASH },
-                )
-            }
-        }
-        val total = rows.sumOf { it.expense.amountToman }
-        val settled = rows.sumOf { it.expense.settledAmountToman }
-        val outstanding = rows.sumOf { it.expense.outstandingToman }
+        val totalApproved = approved.sumOf { it.expense.amountToman }
         val receipts = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }
         val received = receipts.sumOf { it.amountToman }
-        val approvedExpenses = rows.filter { it.expense.companyApproved }.sumOf { it.expense.amountToman }
-        val cashBalance = received - approvedExpenses
+        val net = received - totalApproved
         val receiptRows = receipts.map { listOf(DateFormatter.format(it.dateEpochDay), it.receiptReference.ifBlank { NumberFormatter.EM_DASH }, persianLong(it.amountToman), it.note.ifBlank { NumberFormatter.EM_DASH }) }
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
             subtitle = DateFormatter.formatRange(range),
             headerLines = header() + listOf(
                 "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
-                "پروژه‌ها: " + rows.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
-                "محدوده کار: " + rows.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "پروژه‌ها: " + approved.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "محدوده کار: " + approved.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
                 "بازه گزارش: ${DateFormatter.formatRange(range)}",
             ),
             blocks = listOf(
                 PdfBlock.KeyValueList(
                     buildList {
-                        add(ReportText.TOTAL_EXPENSES to toman(total))
-                        add("هزینه‌های تأییدشده" to toman(approvedExpenses))
-                        add("دریافتی کل شرکت (همه پروژه‌ها)" to toman(received))
-                        add("مبلغ تخصیص‌یافته به هزینه‌ها" to toman(settled))
-                        add(ReportText.TOTAL_OUTSTANDING to toman(outstanding))
-                        if (!projectScoped) {
-                            add("خالص گردش نقدی دوره" to toman(cashBalance))
-                            add("کسری خالص گردش دوره" to toman((-cashBalance).coerceAtLeast(0L)))
-                        }
+                        add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
+                        add("دریافتی واقعی شرکت" to toman(received))
+                        if (!projectScoped) add("خالص گردش مالی" to toman(net))
+                        add("تعداد هزینه‌های تأییدشده" to persianInt(approved.size))
                     },
-                    emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
+                    emphasisedLabels = setOf("خالص گردش مالی"),
                 ),
                 PdfBlock.Table(
                     columns = listOf(
@@ -344,54 +324,26 @@ object ReportSpecBuilder {
                         PdfColumn(ReportText.DESCRIPTION, 1.5f),
                         PdfColumn(ReportText.PROJECT, 1.1f),
                         PdfColumn(ReportText.AMOUNT, 1.1f),
-                        PdfColumn(ReportText.REIMBURSED, 1.1f),
-                        PdfColumn(ReportText.OUTSTANDING, 1.1f),
-                        PdfColumn(ReportText.STATUS, 1f),
                     ),
-                    header = listOf(
-                        ReportText.ROW, ReportText.DATE, ReportText.CATEGORY,
-                        ReportText.DESCRIPTION, ReportText.PROJECT, ReportText.AMOUNT,
-                        ReportText.REIMBURSED, ReportText.OUTSTANDING, ReportText.STATUS,
-                    ),
+                    header = listOf(ReportText.ROW, ReportText.DATE, ReportText.CATEGORY, ReportText.DESCRIPTION, ReportText.PROJECT, ReportText.AMOUNT),
                     rows = expenseRows,
-                    caption = ReportText.EXPENSE_LIST,
-                    aligns = List(9) { PdfAlign.CENTER },
+                    caption = "هزینه‌های تأییدشده",
+                    aligns = List(6) { PdfAlign.CENTER },
                 ),
                 PdfBlock.Table(
                     columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.RECEIPT, 1.2f), PdfColumn(ReportText.AMOUNT, 1f), PdfColumn(ReportText.NOTES, 2f)),
                     header = listOf(ReportText.DATE, ReportText.RECEIPT, ReportText.AMOUNT, ReportText.NOTES),
                     rows = receiptRows,
-                    caption = "دریافتی‌های کل شرکت (همه پروژه‌ها)",
+                    caption = "دریافتی‌های واقعی شرکت",
                     aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER, PdfAlign.START),
                 ),
-                PdfBlock.Paragraph(
-                    if (projectScoped) "دریافتی‌ها کلی هستند و به پروژه تخصیص داده نشده‌اند؛ خالص گردش پروژه محاسبه نمی‌شود."
-                    else "دریافتی‌ها مربوط به همه پروژه‌ها هستند.",
-                    PdfTextStyle.Small,
-                ),
+                PdfBlock.Paragraph("دریافتی‌ها مستقل از هزینه‌ها ثبت شده‌اند و به هیچ سندی تخصیص داده نمی‌شوند.", PdfTextStyle.Small),
                 PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")),
-                PdfBlock.Table(
-                    columns = listOf(
-                        PdfColumn(ReportText.DATE, 1f),
-                        PdfColumn(ReportText.DESCRIPTION, 2f),
-                        PdfColumn(ReportText.AMOUNT, 1f),
-                        PdfColumn(ReportText.NOTES, 1.5f),
-                    ),
-                    header = listOf(ReportText.DATE, ReportText.DESCRIPTION, ReportText.AMOUNT, ReportText.NOTES),
-                    rows = settlementRows,
-                    caption = ReportText.SETTLEMENT_LIST,
-                    aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER, PdfAlign.START),
-                ),
                 PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small),
             ),
         )
     }
 
-    fun statusLabel(status: SettlementStatus): String = when (status) {
-        SettlementStatus.UNSETTLED -> ReportText.UNSETTLED
-        SettlementStatus.PARTIAL -> ReportText.PARTIAL
-        SettlementStatus.SETTLED -> ReportText.SETTLED
-    } 
     /** Concise executive view calculated from the same expense and receipt rows as the detailed report. */
     fun expensesExecutiveSummary(
         rows: List<ExpenseReportRow>,
