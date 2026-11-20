@@ -210,5 +210,33 @@ class ExpenseRepositoryImpl @Inject constructor(
         ))
         paymentId
     }
+
+    override suspend fun updateCompanyPayment(payment: CompanyPayment) = db.withTransaction {
+        if (payment.id <= 0L || payment.amountToman <= 0L) {
+            throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_AMOUNT)))
+        }
+        val existing = companyPaymentDao.getById(payment.id) ?: throw NotFoundException("company payment ${payment.id}")
+        companyPaymentDao.updateDetails(
+            id = existing.id,
+            amount = payment.amountToman,
+            date = payment.dateEpochDay,
+            receipt = payment.receiptReference.trim(),
+        )
+        cashLedgerDao.updateReceipt(
+            originId = existing.id,
+            amount = payment.amountToman,
+            date = payment.dateEpochDay,
+            description = payment.receiptReference.trim().ifBlank { existing.note },
+        )
+        Unit
+    }
+
+    override suspend fun deleteCompanyPayment(id: Long) = db.withTransaction {
+        val existing = companyPaymentDao.getById(id) ?: throw NotFoundException("company payment $id")
+        cashLedgerDao.deleteReceipt(existing.id)
+        companyPaymentDao.deleteById(existing.id)
+        Unit
+    }
+
     override suspend fun deleteSettlement(id: Long) = settlementDao.deleteById(id)
 }
