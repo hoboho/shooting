@@ -111,7 +111,10 @@ class ReportsViewModel @Inject constructor(
                         cableTypes = inputs.cableTypes,
                     ),
                     expenseRows = filteredExpenses.map { expense ->
-                        ExpenseReportRow(expense, settlementsByExpense[expense.id].orEmpty())
+                        ExpenseReportRow(
+                            expense, settlementsByExpense[expense.id].orEmpty(),
+                            filteredWorkdays.firstOrNull { it.id == expense.workdayId }?.workArea.orEmpty(),
+                        )
                     },
                     companyPayments = inputs.companyPayments.filter { it.dateEpochDay in inputs.range.startEpochDay..inputs.range.endEpochDay },
                 )

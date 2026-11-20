@@ -23,6 +23,7 @@ import ir.hoboho.shooting.domain.model.Workday
 data class ExpenseReportRow(
     val expense: Expense,
     val settlements: List<Settlement> = emptyList(),
+    val workArea: String = "",
 )
 
 /**
@@ -314,13 +315,18 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
             subtitle = DateFormatter.formatRange(range),
-            headerLines = header(),
+            headerLines = header() + listOf(
+                "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
+                "پروژه‌ها: " + rows.mapNotNull { it.expense.projectName }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "محدوده کار: " + rows.map { it.workArea }.filter { it.isNotBlank() }.distinct().joinToString("، ").ifBlank { NumberFormatter.EM_DASH },
+                "بازه گزارش: ${DateFormatter.formatRange(range)}",
+            ),
             blocks = listOf(
                 PdfBlock.KeyValueList(
                     listOf(
                         ReportText.TOTAL_EXPENSES to toman(total),
                         "دریافتی ثبت‌شده از شرکت" to toman(received),
-                        ReportText.TOTAL_SETTLED to toman(settled),
+                        "مبلغ تخصیص‌یافته به هزینه‌ها" to toman(settled),
                         ReportText.TOTAL_OUTSTANDING to toman(outstanding),
                         "مانده صندوق پروژه" to toman(cashBalance),
                         "مطالبات از شرکت" to toman((-cashBalance).coerceAtLeast(0L)),
@@ -389,11 +395,11 @@ object ReportSpecBuilder {
         val totalReceived = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }.sumOf { it.amountToman }
         val balance = totalReceived - totalApproved
         val categoryRows = approved.groupBy { it.expense.categoryName }.map { (name, items) ->
-            listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
-        }.sortedByDescending { it[2] }
+            items.sumOf { it.expense.amountToman } to listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
+        }.sortedByDescending { it.first }.map { it.second }
         val projectRows = approved.groupBy { it.expense.projectName ?: NumberFormatter.EM_DASH }.map { (name, items) ->
-            listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
-        }.sortedByDescending { it[2] }
+            items.sumOf { it.expense.amountToman } to listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
+        }.sortedByDescending { it.first }.map { it.second }
         return PdfDocumentSpec(
             title = "خلاصه مدیریتی مالی پروژه",
             subtitle = DateFormatter.formatRange(range),
