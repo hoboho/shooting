@@ -1,5 +1,6 @@
 package ir.hoboho.shooting.ui.navigation
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -104,6 +106,10 @@ fun ShootingApp(
                         val selected = backStackEntry?.destination?.hierarchy?.any {
                             it.route == destination.route
                         } ?: false
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (selected) 1.08f else 1f,
+                            label = "navigationIconScale",
+                        )
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
@@ -117,6 +123,10 @@ fun ShootingApp(
                                 Icon(
                                     if (selected) destination.selectedIcon else destination.icon,
                                     contentDescription = null,
+                                    modifier = Modifier.graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    },
                                 )
                             },
                             label = {
