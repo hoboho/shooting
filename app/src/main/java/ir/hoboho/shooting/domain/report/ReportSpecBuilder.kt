@@ -398,7 +398,7 @@ object ReportSpecBuilder {
                 add(PdfBlock.Table(
                     columns = listOf(PdfColumn(ReportText.PROJECT, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
                     header = listOf(ReportText.PROJECT, "تعداد", ReportText.AMOUNT),
-                    rows = projectRows, caption = "تخصیص هزینه بر اساس پروژه",
+                    rows = projectRows, caption = "تفکیک هزینه بر اساس پروژه",
                 ))
                 add(PdfBlock.Paragraph("این خلاصه بر مبنای همان اسناد گزارش تفصیلی تهیه شده است. هزینه‌های تأییدنشده در گردش نقدی منظور نشده‌اند.", PdfTextStyle.Small))
                 add(PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")))
