@@ -345,7 +345,8 @@ fun ExpensesScreen(
                         AnimatedVisibility(visible = cashLedgerExpanded) {
                             Column {
                                 cashLedger.forEach { entry ->
-                                    if (entry.originType == "RECEIPT") {
+                                    val isCompanyReceipt = entry.originType == "RECEIPT" && companyPayments.any { it.id == entry.originId }
+                                    if (isCompanyReceipt) {
                                         val incomeColor = if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844)
                                         Surface(
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
