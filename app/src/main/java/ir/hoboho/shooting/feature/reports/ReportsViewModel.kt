@@ -22,6 +22,7 @@ import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import ir.hoboho.shooting.domain.repository.ProjectRepository
 import ir.hoboho.shooting.domain.repository.ReferenceRepository
 import ir.hoboho.shooting.domain.repository.WorkdayRepository
+import ir.hoboho.shooting.domain.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -61,6 +62,7 @@ class ReportsViewModel @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val projectRepository: ProjectRepository,
     private val referenceRepository: ReferenceRepository,
+    private val settingsRepository: SettingsRepository,
     private val writer: ReportFileWriter,
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
@@ -150,7 +152,7 @@ class ReportsViewModel @Inject constructor(
                 val workday = workdayRepository.getWorkday(id)
                     ?: throw IllegalStateException("missing workday")
                 val cables = referenceRepository.getAllCableTypes()
-                val spec = ReportSpecBuilder.daily(workday, cables)
+                val spec = ReportSpecBuilder.daily(workday, cables, settingsRepository.getSettings().operatorName)
                 val name = "daily-${DateFormatter.format(workday.dateEpochDay, false).replace('/', '-')}-${workday.id}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -168,7 +170,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.period(report)
+                val spec = ReportSpecBuilder.period(report, settingsRepository.getSettings().operatorName)
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -188,7 +190,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range)
+                val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range, settingsRepository.getSettings().operatorName)
                 val name = ReportFileNames.project(project.id, current.range)
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -206,7 +208,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null, cashLedger.value)
+                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null, cashLedger.value, settingsRepository.getSettings().operatorName)
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -225,7 +227,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.expensesExecutiveSummary(
-                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null, cashLedger.value,
+                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null, cashLedger.value, settingsRepository.getSettings().operatorName,
                 )
                 val name = "financial-summary-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
