@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,9 +49,11 @@ fun WorkdayDetailScreen(
     workdayId: Long,
     onEdit: (Long) -> Unit,
     onBack: () -> Unit,
+    onNavigateWorkday: (Long) -> Unit,
     viewModel: WorkdayDetailViewModel = hiltViewModel(),
 ) {
     val workday by viewModel.workday.collectAsStateWithLifecycle()
+    val orderedWorkdays by viewModel.orderedWorkdays.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val exportPdf = rememberFileSaveAction(viewModel::exportPdf)
@@ -77,7 +82,22 @@ fun WorkdayDetailScreen(
             return@Scaffold
         }
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding).pointerInput(report.id, orderedWorkdays) {
+                var drag = 0f
+                detectHorizontalDragGestures(
+                    onHorizontalDrag = { change, amount -> change.consumeAllChanges(); drag += amount },
+                    onDragEnd = {
+                        val index = orderedWorkdays.indexOfFirst { it.id == report.id }
+                        if (index >= 0 && drag < -80f && index < orderedWorkdays.lastIndex) {
+                            onNavigateWorkday(orderedWorkdays[index + 1].id)
+                        } else if (index > 0 && drag > 80f) {
+                            onNavigateWorkday(orderedWorkdays[index - 1].id)
+                        }
+                        drag = 0f
+                    },
+                    onDragCancel = { drag = 0f },
+                )
+            },
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
