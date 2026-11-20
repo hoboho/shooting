@@ -68,7 +68,6 @@ fun ExpenseEditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
-    var showSettlementDatePicker by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     val savedText = stringResource(R.string.msg_expense_saved)
     val notSetText = stringResource(R.string.value_not_set)
@@ -85,9 +84,6 @@ fun ExpenseEditorScreen(
 
     if (showDatePicker) {
         JalaliDatePickerDialog(state.dateEpochDay, { showDatePicker = false }, viewModel::setDate)
-    }
-    if (showSettlementDatePicker) {
-        JalaliDatePickerDialog(state.settlementDate, { showSettlementDatePicker = false }, viewModel::setSettlementDate)
     }
     if (confirmDelete) {
         ConfirmDialog(
@@ -168,59 +164,6 @@ fun ExpenseEditorScreen(
                     onSelected = { viewModel.setWorkday(it.value?.id) },
                     labelOf = { it.value?.let(::workdayLabel) ?: notSetText },
                 )
-            }
-
-            SectionCard(title = stringResource(R.string.expense_settlements), icon = Icons.Filled.Payments) {
-                StatRow(stringResource(R.string.expense_amount),
-                    NumberFormatter.formatToman(state.amountToman))
-                StatRow(stringResource(R.string.expense_reimbursed),
-                    NumberFormatter.formatToman(state.settledAmountToman))
-                StatRow(stringResource(R.string.expense_outstanding),
-                    NumberFormatter.formatToman(state.outstandingToman), emphasised = true)
-                state.settlements.forEach { settlement ->
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                    Row {
-                        Text(
-                            "${DateFormatter.format(settlement.dateEpochDay)} — " +
-                                NumberFormatter.formatToman(settlement.amountToman),
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(onClick = { viewModel.editSettlement(settlement.id) }) {
-                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
-                        }
-                        IconButton(onClick = { viewModel.deleteSettlement(settlement.id) }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
-                        }
-                    }
-                    if (settlement.note.isNotBlank()) {
-                        Text(settlement.note,
-                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
-                    }
-                }
-                ShootingNumberField(
-                    value = state.settlementAmount,
-                    onValueChange = viewModel::setSettlementAmount,
-                    label = stringResource(R.string.label_amount),
-                    suffix = stringResource(R.string.toman),
-                )
-                ClickableField(
-                    label = stringResource(R.string.label_settlement_date),
-                    value = DateFormatter.format(state.settlementDate),
-                    onClick = { showSettlementDatePicker = true },
-                )
-                ShootingTextField(state.settlementNote, viewModel::setSettlementNote,
-                    stringResource(R.string.label_settlement_note))
-                ShootingButton(
-                    text = stringResource(if (state.editingSettlementId == null) R.string.expense_settlement_new else R.string.expense_settlement_update),
-                    onClick = viewModel::addSettlement,
-                    level = ButtonLevel.Secondary,
-                    enabled = state.id != 0L && state.companyApproved,
-                )
-                if (state.editingSettlementId != null) {
-                    TextButton(onClick = viewModel::cancelSettlementEdit) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                }
             }
 
             ShootingButton(
