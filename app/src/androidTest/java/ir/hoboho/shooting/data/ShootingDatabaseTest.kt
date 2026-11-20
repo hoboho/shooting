@@ -117,7 +117,7 @@ class ShootingDatabaseTest {
     }
 
     @Test
-    fun settlements_neverExceedOutstanding_andDeletionIsGuarded() = runBlocking {
+    fun legacySettlements_doNotBlockExpenseDeletion() = runBlocking {
         val categoryId = db.expenseCategoryDao().getAll().first().id
         val expenseId = expenses().save(
             Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 1_000L, companyApproved = true),
@@ -137,18 +137,12 @@ class ShootingDatabaseTest {
         assertThat(rejected).isTrue()
         assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(400L)
 
-        var deleteRejected = false
-        try {
-            expenses().delete(expenseId)
-        } catch (e: ValidationException) {
-            deleteRejected = true
-        }
-        assertThat(deleteRejected).isTrue()
-        assertThat(expenses().getExpense(expenseId)).isNotNull()
+        expenses().delete(expenseId)
+        assertThat(expenses().getExpense(expenseId)).isNull()
     }
 
     @Test
-    fun companyPayment_allocatesOldestApprovedFirst_andAllowsManualAdjustment() = runBlocking {
+    fun companyPayment_isRecordedIndependentlyWithoutAllocations() = runBlocking {
         val categoryId = db.expenseCategoryDao().getAll().first().id
         val oldestId = expenses().save(
             Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 1_000L, companyApproved = true),
@@ -163,18 +157,14 @@ class ShootingDatabaseTest {
         expenses().allocateCompanyPayment(1_250L, 20_003L, "RCPT-001", "واریز شرکت")
         assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-001")
         assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_250L)
-        assertThat(expenses().getExpense(oldestId)!!.settledAmountToman).isEqualTo(1_000L)
-        assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(250L)
+        assertThat(expenses().getExpense(oldestId)!!.settledAmountToman).isEqualTo(0L)
+        assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(0L)
         assertThat(expenses().getExpense(unapprovedId)!!.settledAmountToman).isEqualTo(0L)
-
-        val nextAllocation = expenses().getAllSettlements().single { it.expenseId == nextId }
-        expenses().updateSettlement(nextAllocation.copy(amountToman = 150L))
-        assertThat(expenses().getExpense(nextId)!!.settledAmountToman).isEqualTo(150L)
-        assertThat(expenses().getExpense(nextId)!!.outstandingToman).isEqualTo(1_350L)
+        assertThat(expenses().getAllSettlements()).isEmpty()
     }
 
     @Test
-    fun companyPaymentAboveReceivables_isRecordedAndExcessRemainsUnallocated() = runBlocking {
+    fun companyPayment_isRecordedWithoutChangingExpenseRecords() = runBlocking {
         val categoryId = db.expenseCategoryDao().getAll().first().id
         val expenseId = expenses().save(
             Expense(dateEpochDay = 20_100L, categoryId = categoryId, amountToman = 500L, companyApproved = true),
@@ -185,8 +175,9 @@ class ShootingDatabaseTest {
         assertThat(expenses().getAllCompanyPayments()).hasSize(1)
         assertThat(expenses().getAllCompanyPayments().single().amountToman).isEqualTo(1_500L)
         assertThat(expenses().getAllCompanyPayments().single().receiptReference).isEqualTo("RCPT-OVER")
-        assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(500L)
-        assertThat(expenses().getExpense(expenseId)!!.outstandingToman).isEqualTo(0L)
+        assertThat(expenses().getExpense(expenseId)!!.settledAmountToman).isEqualTo(0L)
+        assertThat(expenses().getExpense(expenseId)!!.outstandingToman).isEqualTo(500L)
+        assertThat(expenses().getAllSettlements()).isEmpty()
 
         val snapshot = backups().snapshot()
         assertThat(snapshot.companyPayments).hasSize(1)
@@ -230,6 +221,7 @@ class ShootingDatabaseTest {
             categoryId = categoryId,
             amountToman = 13_000_000L,
             description = "هزینه تأییدنشده",
+            companyApproved = false,
         )
         val expenseId = repository.save(unapproved)
         assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
