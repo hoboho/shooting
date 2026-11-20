@@ -62,6 +62,8 @@ interface ExpenseRepository {
     suspend fun addSettlement(settlement: Settlement): Long
     suspend fun updateSettlement(settlement: Settlement)
     suspend fun allocateCompanyPayment(amountToman: Long, dateEpochDay: Long, receiptReference: String, note: String): Long
+    suspend fun updateCompanyPayment(payment: CompanyPayment)
+    suspend fun deleteCompanyPayment(id: Long)
     suspend fun deleteSettlement(id: Long)
 }
 
