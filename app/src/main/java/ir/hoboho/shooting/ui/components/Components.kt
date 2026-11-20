@@ -210,6 +210,9 @@ fun StatRow(
                 style = if (emphasised) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
                 fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Normal,
                 color = if (emphasised) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             if (hint != null) {
                 Text(text = hint, style = MaterialTheme.typography.labelSmall,
