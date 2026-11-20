@@ -1,6 +1,8 @@
 package ir.hoboho.shooting.ui.navigation
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -19,9 +21,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.sign
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -162,33 +170,58 @@ fun ShootingApp(
             }
         },
     ) { innerPadding ->
+        val swipeOffset = remember { Animatable(0f) }
+        val swipeScope = rememberCoroutineScope()
         Surface(
-            modifier = Modifier.fillMaxSize().pointerInput(currentRoute) {
-                if (currentRoute in setOf(Routes.DASHBOARD, Routes.PROJECTS, Routes.SETTINGS)) {
-                    var drag = 0f
-                    detectHorizontalDragGestures(
-                        onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
-                        onDragEnd = {
-                            val destinations = TopLevelDestination.entries
-                            val index = destinations.indexOfFirst { it.route == currentRoute }
-                            val target = when {
-                                drag < -80f && index >= 0 && index < destinations.lastIndex -> destinations[index + 1]
-                                drag > 80f && index > 0 -> destinations[index - 1]
-                                else -> null
-                            }
-                            target?.let { destination ->
-                                navController.navigate(destination.route) {
-                                    popUpTo(Routes.DASHBOARD) { inclusive = false }
-                                    launchSingleTop = true
-                                    restoreState = false
-                                }
-                            }
-                            drag = 0f
-                        },
-                        onDragCancel = { drag = 0f },
-                    )
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    translationX = swipeOffset.value
+                    val fraction = if (size.width > 0f) abs(swipeOffset.value) / size.width else 0f
+                    scaleX = 1f - (fraction * 0.025f)
                 }
-            },
+                .pointerInput(currentRoute) {
+                    if (TopLevelDestination.entries.any { it.route == currentRoute }) {
+                        var drag = 0f
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, amount ->
+                                change.consume()
+                                drag += amount
+                                val destinations = TopLevelDestination.entries
+                                val index = destinations.indexOfFirst { it.route == currentRoute }
+                                val atEdge = (drag < 0f && index == 0) ||
+                                    (drag > 0f && index == destinations.lastIndex)
+                                val visualOffset = if (atEdge) {
+                                    val limit = size.width * 0.22f
+                                    sign(drag) * limit * (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.55f)))
+                                } else drag.coerceIn(-size.width.toFloat(), size.width.toFloat())
+                                swipeScope.launch { swipeOffset.snapTo(visualOffset) }
+                            },
+                            onDragEnd = {
+                                val destinations = TopLevelDestination.entries
+                                val index = destinations.indexOfFirst { it.route == currentRoute }
+                                val target = when {
+                                    drag > size.width * 0.22f && index >= 0 && index < destinations.lastIndex -> destinations[index + 1]
+                                    drag < -size.width * 0.22f && index > 0 -> destinations[index - 1]
+                                    else -> null
+                                }
+                                target?.let { destination ->
+                                    navController.navigate(destination.route) {
+                                        popUpTo(Routes.DASHBOARD) { inclusive = false }
+                                        launchSingleTop = true
+                                        restoreState = false
+                                    }
+                                }
+                                swipeScope.launch { swipeOffset.animateTo(0f, spring(dampingRatio = 0.72f, stiffness = 420f)) }
+                                drag = 0f
+                            },
+                            onDragCancel = {
+                                swipeScope.launch { swipeOffset.animateTo(0f, spring()) }
+                                drag = 0f
+                            },
+                        )
+                    }
+                },
             color = MaterialTheme.colorScheme.background,
         ) {
             ShootingNavHost(

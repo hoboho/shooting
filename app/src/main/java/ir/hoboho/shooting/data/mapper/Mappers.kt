@@ -187,6 +187,7 @@ object SettingKeys {
     const val THEME_MODE = "theme_mode"
     const val DEFAULT_PROJECT_ID = "default_project_id"
     const val LAST_BACKUP_EPOCH_MILLI = "last_backup_epoch_milli"
+    const val OPERATOR_NAME = "operator_name"
 }
 
 fun List<AppSettingEntity>.toDomain(): AppSettings {
@@ -196,6 +197,7 @@ fun List<AppSettingEntity>.toDomain(): AppSettings {
             .getOrDefault(ThemeMode.SYSTEM),
         defaultProjectId = map[SettingKeys.DEFAULT_PROJECT_ID]?.toLongOrNull(),
         lastBackupEpochMilli = map[SettingKeys.LAST_BACKUP_EPOCH_MILLI]?.toLongOrNull() ?: 0L,
+        operatorName = map[SettingKeys.OPERATOR_NAME].orEmpty(),
     )
 }
 
@@ -203,4 +205,5 @@ fun AppSettings.toEntities(): List<AppSettingEntity> = listOf(
     AppSettingEntity(SettingKeys.THEME_MODE, themeMode.name),
     AppSettingEntity(SettingKeys.DEFAULT_PROJECT_ID, defaultProjectId?.toString() ?: ""),
     AppSettingEntity(SettingKeys.LAST_BACKUP_EPOCH_MILLI, lastBackupEpochMilli.toString()),
+    AppSettingEntity(SettingKeys.OPERATOR_NAME, operatorName),
 )

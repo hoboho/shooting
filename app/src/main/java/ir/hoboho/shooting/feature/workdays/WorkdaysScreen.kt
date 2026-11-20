@@ -2,10 +2,13 @@
 
 package ir.hoboho.shooting.feature.workdays
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.sign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ir.hoboho.shooting.R
@@ -79,22 +87,61 @@ fun WorkdaysScreen(
                 item { EmptyState(stringResource(R.string.label_no_data)) }
             }
             itemsIndexed(filtered, key = { _, item -> item.id }) { index, workday ->
+                val swipeOffset = remember(workday.id) { Animatable(0f) }
+                val swipeScope = rememberCoroutineScope()
                 SectionCard(
                     title = workday.projectName,
                     icon = Icons.Filled.CalendarMonth,
                     subtitle = DateFormatter.formatLong(workday.dateEpochDay),
                     modifier = Modifier
+                        .graphicsLayer {
+                            translationX = swipeOffset.value
+                            val progress = (abs(swipeOffset.value) / 320f).coerceIn(0f, 1f)
+                            scaleX = 1f - progress * 0.025f
+                            alpha = 1f - progress * 0.12f
+                        }
                         .clickable { onOpenWorkday(workday.id) }
-                        .pointerInput(workday.id, filtered) {
+                        .pointerInput(workday.id, filtered.size, index) {
                             var drag = 0f
                             detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
+                                onHorizontalDrag = { change, amount ->
+                                    change.consume()
+                                    drag += amount
+                                    val atEdge = (drag > 0f && index == 0) ||
+                                        (drag < 0f && index == filtered.lastIndex)
+                                    val visualOffset = if (atEdge) {
+                                        val limit = size.width * 0.22f
+                                        sign(drag) * limit * (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.55f)))
+                                    } else {
+                                        drag.coerceIn(-size.width.toFloat(), size.width.toFloat())
+                                    }
+                                    swipeScope.launch { swipeOffset.snapTo(visualOffset) }
+                                },
                                 onDragEnd = {
-                                    if (drag < -80f && index < filtered.lastIndex) onOpenWorkday(filtered[index + 1].id)
-                                    else if (drag > 80f && index > 0) onOpenWorkday(filtered[index - 1].id)
+                                    val target = when {
+                                        drag < -size.width * 0.22f && index < filtered.lastIndex -> filtered[index + 1].id
+                                        drag > size.width * 0.22f && index > 0 -> filtered[index - 1].id
+                                        else -> null
+                                    }
+                                    if (target != null) {
+                                        swipeScope.launch {
+                                            swipeOffset.animateTo(
+                                                targetValue = sign(drag) * size.width * 0.85f,
+                                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 360f),
+                                            )
+                                            onOpenWorkday(target)
+                                        }
+                                    } else {
+                                        swipeScope.launch {
+                                            swipeOffset.animateTo(0f, spring(dampingRatio = 0.68f, stiffness = 420f))
+                                        }
+                                    }
                                     drag = 0f
                                 },
-                                onDragCancel = { drag = 0f },
+                                onDragCancel = {
+                                    swipeScope.launch { swipeOffset.animateTo(0f, spring()) }
+                                    drag = 0f
+                                },
                             )
                         },
                 ) {

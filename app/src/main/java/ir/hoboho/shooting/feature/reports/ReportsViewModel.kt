@@ -22,7 +22,10 @@ import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import ir.hoboho.shooting.domain.repository.ProjectRepository
 import ir.hoboho.shooting.domain.repository.ReferenceRepository
 import ir.hoboho.shooting.domain.repository.WorkdayRepository
+import ir.hoboho.shooting.domain.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,10 +62,14 @@ class ReportsViewModel @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val projectRepository: ProjectRepository,
     private val referenceRepository: ReferenceRepository,
+    private val settingsRepository: SettingsRepository,
     private val writer: ReportFileWriter,
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
+
+    val cashLedger = expenseRepository.observeCashLedger()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val tab = MutableStateFlow(ReportTab.DAILY)
     private val range = MutableStateFlow(DateRange.thisMonth())
@@ -77,7 +84,6 @@ class ReportsViewModel @Inject constructor(
                 projectRepository.observeProjects(),
                 workdayRepository.observeWorkdaysWithOperations(),
                 expenseRepository.observeExpenses(),
-                expenseRepository.observeAllSettlements(),
                 combine(
                     expenseRepository.observeCompanyPayments(),
                     combine(
@@ -88,10 +94,9 @@ class ReportsViewModel @Inject constructor(
                         referenceRepository.observeCableTypes(),
                     ) { t, r, p, s, cables -> ReportsInputs(t, r, p, s, cables) },
                 ) { companyPayments, inputs -> inputs.copy(companyPayments = companyPayments) },
-            ) { projects, workdays, expenses, settlements, inputs ->
+            ) { projects, workdays, expenses, inputs ->
                 val filteredWorkdays = PeriodAggregator.filterWorkdays(workdays, inputs.range, inputs.projectId)
                 val filteredExpenses = PeriodAggregator.filterExpenses(expenses, inputs.range, inputs.projectId)
-                val settlementsByExpense = settlements.groupBy { it.expenseId }
                 val projectName = inputs.projectId?.let { id -> projects.firstOrNull { it.id == id }?.name }
                 val chosenId = selectVisibleWorkday(inputs.selectedId, filteredWorkdays.map { it.id })
                 ReportsUiState(
@@ -107,12 +112,12 @@ class ReportsViewModel @Inject constructor(
                         projectFilter = inputs.projectId,
                         projectFilterName = projectName,
                         workdays = workdays,
-                        expenses = expenses,
+                        expenses = expenses.filter { it.companyApproved },
                         cableTypes = inputs.cableTypes,
                     ),
-                    expenseRows = filteredExpenses.map { expense ->
+                    expenseRows = filteredExpenses.filter { it.companyApproved }.map { expense ->
                         ExpenseReportRow(
-                            expense, settlementsByExpense[expense.id].orEmpty(),
+                            expense,
                             filteredWorkdays.firstOrNull { it.id == expense.workdayId }?.workArea.orEmpty(),
                         )
                     },
@@ -147,7 +152,7 @@ class ReportsViewModel @Inject constructor(
                 val workday = workdayRepository.getWorkday(id)
                     ?: throw IllegalStateException("missing workday")
                 val cables = referenceRepository.getAllCableTypes()
-                val spec = ReportSpecBuilder.daily(workday, cables)
+                val spec = ReportSpecBuilder.daily(workday, cables, settingsRepository.getSettings().operatorName)
                 val name = "daily-${DateFormatter.format(workday.dateEpochDay, false).replace('/', '-')}-${workday.id}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -165,7 +170,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.period(report)
+                val spec = ReportSpecBuilder.period(report, settingsRepository.getSettings().operatorName)
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -185,7 +190,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range)
+                val spec = ReportSpecBuilder.projectOperations(current.workdays, project, current.cableTypes, current.range, settingsRepository.getSettings().operatorName)
                 val name = ReportFileNames.project(project.id, current.range)
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -203,7 +208,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null)
+                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null, cashLedger.value, settingsRepository.getSettings().operatorName)
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -222,7 +227,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.expensesExecutiveSummary(
-                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null,
+                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null, cashLedger.value, settingsRepository.getSettings().operatorName,
                 )
                 val name = "financial-summary-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }

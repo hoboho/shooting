@@ -246,7 +246,6 @@ fun SectionCard(
         Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (icon != null) {
@@ -262,12 +261,24 @@ fun SectionCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(title, style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary)
-                    if (subtitle != null) {
-                        Text(subtitle, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                 }
-                trailing?.invoke()
+            }
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (trailing != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    trailing()
+                }
             }
             Spacer(Modifier.size(10.dp))
             content()

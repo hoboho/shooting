@@ -46,7 +46,8 @@ class ReportSpecBuilderTest {
             operations = listOf(operation(cableId = 3L, length = 800)),
             totalLengthMeters = 800,
         )
-        val spec = ReportSpecBuilder.daily(workday, cableTypes)
+        val spec = ReportSpecBuilder.daily(workday, cableTypes, operatorName = "علی رضایی")
+        assertTrue(spec.headerLines.single().contains("اپراتور: علی رضایی"))
         assertEquals(ReportText.TITLE_DAILY, spec.title)
         assertTrue(spec.blocks.filterIsInstance<PdfBlock.KeyValueList>()
             .flatMap { it.entries }.any { it.first == ReportText.DAILY_TOTAL && it.second.contains("۸۰۰") })
@@ -103,6 +104,7 @@ class ReportSpecBuilderTest {
             cableTypes = cableTypes,
             range = DateRange(20_759L, 20_759L),
         )
+        assertTrue(spec.headerLines.single().startsWith("اپراتور:"))
         val table = spec.blocks.filterIsInstance<PdfBlock.Table>().single()
         assertEquals(listOf(
             ReportText.DATE, ReportText.WORK_AREA, ReportText.START_POINT, ReportText.START_METER,
@@ -140,30 +142,37 @@ class ReportSpecBuilderTest {
         assertTrue(tables.any { it.caption == ReportText.CABLE_BREAKDOWN && it.rows.single()[3] == "۵۲۰" })
         val kvLabels = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
         assertTrue(kvLabels.any { it.first == ReportText.PERIOD_TOTAL && it.second.contains("۵۲۰") })
-        assertTrue(kvLabels.any { it.first == ReportText.TOTAL_OUTSTANDING && it.second.contains("تومان") })
+        assertTrue(kvLabels.none { it.first == ReportText.TOTAL_OUTSTANDING })
     }
 
     @Test
-    fun expenseReport_listsSettlementsAndIntegerToman() {
+    fun expenseReport_listsApprovedExpensesReceiptsAndReversalsWithoutSettlements() {
         val expense = Expense(
             dateEpochDay = 20_759L, categoryId = 1L, categoryName = "سوخت خودرو",
-            amountToman = 1_000_000L, settledAmountToman = 400_000L, description = "بنزین",
-            companyApproved = true,
+            amountToman = 1_000_000L, description = "بنزین", companyApproved = true,
         )
-        val rows = listOf(ExpenseReportRow(expense, listOf(
-            ir.hoboho.shooting.domain.model.Settlement(
-                expenseId = 1L, amountToman = 400_000L, dateEpochDay = 20_760L, note = "واریز",
-            ),
-        )))
-        val spec = ReportSpecBuilder.expenses(rows, DateRange(20_759L, 20_760L))
+        val reversal = ir.hoboho.shooting.domain.model.CashLedgerEntry(
+            uuid = "reversal", idempotencyKey = "expense:one:reversal:1",
+            originType = "REVERSAL", originId = 1L, amountToman = 1_000_000L,
+            dateEpochDay = 20_759L, description = "برگشت هزینه", createdAt = 1L,
+        )
+        val spec = ReportSpecBuilder.expenses(
+            listOf(ExpenseReportRow(expense)), DateRange(20_759L, 20_760L),
+            cashLedger = listOf(reversal),
+        )
         assertEquals(ReportText.TITLE_EXPENSES, spec.title)
+        assertTrue(spec.headerLines.first().contains("مسئول تهیه گزارش"))
+        assertTrue(spec.blocks.any { it is PdfBlock.SignatureBlock })
         val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
-        assertEquals(3, tables.size) // expenses, company receipts, and settlement allocations
+        assertEquals(3, tables.size)
         assertEquals("۱٬۰۰۰٬۰۰۰", tables[0].rows.single()[5])
-        assertEquals("۶۰۰٬۰۰۰", tables[0].rows.single()[7])
-        assertEquals(ReportText.PARTIAL, tables[0].rows.single()[8])
-        assertEquals("۴۰۰٬۰۰۰", tables[2].rows.single()[2])
+        assertEquals("۱٬۰۰۰٬۰۰۰", tables[2].rows.single()[2])
+        val labels = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }.map { it.first }
+        assertTrue(labels.contains("مجموع برگشتی‌ها"))
+        assertTrue(labels.contains("خالص گردش مالی دفترکل"))
+        assertTrue(labels.none { it.contains("تسویه") || it.contains("تخصیص") || it.contains("مانده") })
     }
+
     @Test
     fun financialExecutiveSummaryUsesApprovedExpensesAndCompanyReceipts() {
         val expense = Expense(
@@ -178,6 +187,8 @@ class ReportSpecBuilderTest {
             listOf(ExpenseReportRow(expense)), listOf(receipt), DateRange(20_759L, 20_759L),
         )
         val entries = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
+        assertTrue(spec.headerLines.first().contains("مسئول تهیه گزارش"))
+        assertTrue(spec.blocks.any { it is PdfBlock.SignatureBlock })
         assertTrue(entries.any { it.first == "خالص گردش نقدی دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
         assertTrue(entries.any { it.first == "کسری خالص گردش دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
     }
@@ -193,7 +204,7 @@ class ReportSpecBuilderTest {
         val summary = ReportSpecBuilder.expensesExecutiveSummary(rows, listOf(receipt), range, projectScoped = true)
         for (report in listOf(detailed, summary)) {
             val entries = report.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
-            assertTrue(entries.any { it.first.contains("دریافتی") && it.first.contains("همه پروژه‌ها") })
+            assertTrue(entries.any { it.first.contains("دریافتی") })
             assertTrue(entries.none { it.first == "خالص گردش نقدی دوره" || it.first == "کسری خالص گردش دوره" })
         }
     }

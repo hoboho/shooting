@@ -115,7 +115,7 @@ data class Expense(
     val settlementCount: Int = 0,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
-    val companyApproved: Boolean = false,
+    val companyApproved: Boolean = true,
 ) {
     val outstandingToman: Long
         get() = if (companyApproved) ir.hoboho.shooting.domain.ExpenseCalculator.outstanding(amountToman, settledAmountToman) else 0L
@@ -152,6 +152,7 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val defaultProjectId: Long? = null,
     val lastBackupEpochMilli: Long = 0L,
+    val operatorName: String = "",
 )
 
 /** Seed values for the two manageable reference tables. */

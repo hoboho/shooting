@@ -30,6 +30,10 @@ class SettingsRepositoryImpl @Inject constructor(
         put(SettingKeys.DEFAULT_PROJECT_ID, id?.toString() ?: "")
     }
 
+    override suspend fun setOperatorName(value: String) {
+        put(SettingKeys.OPERATOR_NAME, value.trim())
+    }
+
     override suspend fun setLastBackupEpochMilli(value: Long) {
         put(SettingKeys.LAST_BACKUP_EPOCH_MILLI, value.toString())
     }

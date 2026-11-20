@@ -47,6 +47,7 @@ data class SettingsDto(
     val themeMode: String = ThemeMode.SYSTEM.name,
     val defaultProjectUuid: String = "",
     val lastBackupEpochMilli: Long = 0L,
+    val operatorName: String = "",
 )
 
 data class ProjectDto(

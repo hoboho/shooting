@@ -35,7 +35,7 @@ data class ExpenseEditorState(
     val amount: String = "",
     val description: String = "",
     val receiptReference: String = "",
-    val companyApproved: Boolean = false,
+    val companyApproved: Boolean = true,
     val projectId: Long? = null,
     val workdayId: Long? = null,
     val categories: List<ExpenseCategory> = emptyList(),
@@ -121,11 +121,7 @@ class ExpenseEditorViewModel @Inject constructor(
     fun setAmount(value: String) = _state.update { it.copy(amount = value, error = null) }
     fun setDescription(value: String) = _state.update { it.copy(description = value) }
     fun setReceipt(value: String) = _state.update { it.copy(receiptReference = value) }
-    fun setCompanyApproved(value: Boolean) = _state.update { state ->
-        if (!value && state.settledAmountToman > 0L) state.copy(
-            error = strings.get(ir.hoboho.shooting.R.string.msg_expense_has_settlements),
-        ) else state.copy(companyApproved = value, error = null)
-    }
+    fun setCompanyApproved(value: Boolean) = _state.update { it.copy(companyApproved = value, error = null) }
     fun setProject(value: Long?) = _state.update { it.copy(projectId = value) }
     fun setWorkday(value: Long?) = _state.update { it.copy(workdayId = value) }
     fun setSettlementAmount(value: String) = _state.update { it.copy(settlementAmount = value, error = null) }

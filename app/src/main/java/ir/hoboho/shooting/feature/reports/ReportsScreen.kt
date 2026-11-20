@@ -70,6 +70,7 @@ private data class ProjectFilterChoice(val project: Project?)
 @Composable
 fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val cashLedger by viewModel.cashLedger.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val allProjectsText = stringResource(R.string.label_all_projects)
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
@@ -250,10 +251,6 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         SectionCard(title = stringResource(R.string.label_expense_summary), icon = Icons.Filled.AccountBalanceWallet) {
                             StatRow(stringResource(R.string.reports_expense_totals),
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
-                            StatRow(stringResource(R.string.reports_settled),
-                                NumberFormatter.formatToman(state.periodReport.settledToman))
-                            StatRow(stringResource(R.string.reports_outstanding),
-                                NumberFormatter.formatToman(state.periodReport.outstandingToman), emphasised = true)
                             Text(stringResource(R.string.reports_note_length_money),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -299,12 +296,17 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 ReportTab.EXPENSES -> {
                     item {
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
-                            StatRow(stringResource(R.string.reports_expense_totals),
+                            val periodLedger = cashLedger.filter {
+                                it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay
+                            }
+                            StatRow("هزینه‌های تأییدشده",
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
-                            StatRow(stringResource(R.string.reports_settled),
-                                NumberFormatter.formatToman(state.periodReport.settledToman))
-                            StatRow(stringResource(R.string.reports_outstanding),
-                                NumberFormatter.formatToman(state.periodReport.outstandingToman), emphasised = true)
+                            StatRow("دریافتی واقعی شرکت",
+                                NumberFormatter.formatToman(state.companyPayments.sumOf { it.amountToman }))
+                            StatRow("مجموع برگشتی‌ها",
+                                NumberFormatter.formatToman(periodLedger.filter { it.originType == "REVERSAL" }.sumOf { it.amountToman }))
+                            StatRow("خالص گردش مالی دفترکل",
+                                NumberFormatter.formatToman(periodLedger.sumOf { it.amountToman }), emphasised = true)
                         }
                     }
                     item {
@@ -315,7 +317,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                 state.expenseRows.forEach { row ->
                                     StatRow(
                                         label = "${DateFormatter.format(row.expense.dateEpochDay)} — ${row.expense.categoryName}",
-                                        value = NumberFormatter.formatToman(row.expense.outstandingToman),
+                                        value = NumberFormatter.formatToman(row.expense.amountToman),
                                     )
                                 }
                             }

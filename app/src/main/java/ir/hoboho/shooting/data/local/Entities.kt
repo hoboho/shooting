@@ -156,7 +156,7 @@ data class ExpenseEntity(
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     @ColumnInfo(defaultValue = "0")
-    val companyApproved: Boolean = false,
+    val companyApproved: Boolean = true,
 )
 
 @Entity(

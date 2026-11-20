@@ -56,22 +56,12 @@ import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.core.date.JalaliCalendar
 import ir.hoboho.shooting.ui.components.ClickableField
 import ir.hoboho.shooting.ui.components.JalaliDatePickerDialog
-import ir.hoboho.shooting.domain.model.SettlementStatus
 import ir.hoboho.shooting.ui.components.ConfirmDialog
 import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.StatRow
 import ir.hoboho.shooting.ui.components.TagChip
-
-@Composable
-private fun statusLabel(status: SettlementStatus): String = stringResource(
-    when (status) {
-        SettlementStatus.UNSETTLED -> R.string.status_unsettled
-        SettlementStatus.PARTIAL -> R.string.status_partial
-        SettlementStatus.SETTLED -> R.string.status_settled
-    },
-)
 
 @Composable
 fun ExpensesScreen(
@@ -95,7 +85,6 @@ fun ExpensesScreen(
     var showPaymentDatePicker by remember { mutableStateOf(false) }
     var companyPaymentsExpanded by remember { mutableStateOf(false) }
     var cashLedgerExpanded by remember { mutableStateOf(false) }
-    var financialDetailsExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(error) { error?.let { snackbar.showSnackbar(it); viewModel.consumeError() } }
     if (showPaymentDialog) {
@@ -195,36 +184,8 @@ fun ExpensesScreen(
                     )
                     StatRow("موجودی صندوق پروژه",
                         NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
-                    StatRow("مطالبات از شرکت",
-                        NumberFormatter.formatToman(cashPosition.companyReceivableToman))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            financialDetailsExpanded = !financialDetailsExpanded
-                        }.padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            if (financialDetailsExpanded) "پنهان کردن جزئیات تسویه" else "جزئیات تسویه و مطالبات",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Icon(
-                            if (financialDetailsExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    AnimatedVisibility(visible = financialDetailsExpanded) {
-                        Column {
-                            StatRow(stringResource(R.string.label_allocated_company_payments),
-                                NumberFormatter.formatToman(overview.totalReimbursedToman))
-                            StatRow(stringResource(R.string.label_unallocated_company_payments),
-                                NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
-                            StatRow(stringResource(R.string.label_outstanding_receivables),
-                                NumberFormatter.formatToman(overview.outstandingToman))
-                        }
-                    }
+                    StatRow("خالص گردش مالی",
+                        NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
                 }
             }
             if (companyPayments.isNotEmpty()) {
@@ -339,7 +300,6 @@ fun ExpensesScreen(
                                 fontWeight = FontWeight.Bold,
                             )
                             TagChip(stringResource(if (expense.companyApproved) R.string.expense_approved else R.string.expense_not_approved))
-                            TagChip(statusLabel(expense.status))
                             IconButton(onClick = { expanded = !expanded }) {
                                 Icon(
                                     if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
@@ -353,18 +313,10 @@ fun ExpensesScreen(
                         Column {
                             StatRow(stringResource(R.string.expense_amount),
                                 NumberFormatter.formatToman(expense.amountToman))
-                            StatRow(stringResource(R.string.expense_reimbursed),
-                                NumberFormatter.formatToman(expense.settledAmountToman))
-                            StatRow(stringResource(R.string.expense_outstanding),
-                                NumberFormatter.formatToman(expense.outstandingToman), emphasised = true)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { onEditExpense(expense.id) }) {
                                     Text(stringResource(R.string.action_edit))
                                 }
-                                Text(stringResource(R.string.expense_settlements) + ": " +
-                                    NumberFormatter.formatInteger(expense.settlementCount),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.weight(1f))
                                 IconButton(onClick = { pendingDelete = expense.id }) {
                                     Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete),
                                         tint = MaterialTheme.colorScheme.error)

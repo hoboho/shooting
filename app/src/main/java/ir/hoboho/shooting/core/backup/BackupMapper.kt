@@ -50,6 +50,7 @@ object BackupMapper {
                 themeMode = data.settings.themeMode.name,
                 defaultProjectUuid = data.settings.defaultProjectId?.let { projectUuid[it] }.orEmpty(),
                 lastBackupEpochMilli = data.settings.lastBackupEpochMilli,
+                operatorName = data.settings.operatorName,
             ),
             projects = data.projects.map {
                 ProjectDto(it.uuid, it.name, it.workArea, it.employer, it.supervisor,
@@ -181,6 +182,7 @@ object BackupMapper {
             defaultProjectId = payload.settings.defaultProjectUuid.takeIf { it.isNotBlank() }
                 ?.let { projectIds[it] },
             lastBackupEpochMilli = payload.settings.lastBackupEpochMilli,
+            operatorName = payload.settings.operatorName,
         )
         return BackupData(
             settings = settings,

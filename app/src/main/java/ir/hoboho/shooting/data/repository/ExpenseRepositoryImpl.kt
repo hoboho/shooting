@@ -65,11 +65,6 @@ class ExpenseRepositoryImpl @Inject constructor(
         }
         if (issues.isNotEmpty()) throw ValidationException(issues)
         val existing = if (expense.id > 0L) dao.getById(expense.id) else null
-        if (expense.id > 0L) {
-            val settled = settlementDao.totalForExpense(expense.id)
-            if (settled > 0L && !expense.companyApproved) throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
-            if (settled > expense.amountToman) throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_EXCEEDS_OUTSTANDING)))
-        }
         val now = clock.nowEpochMilli()
         val entity = expense.copy(
             uuid = existing?.expense?.uuid ?: expense.uuid.ifBlank { UUID.randomUUID().toString() },
@@ -79,25 +74,30 @@ class ExpenseRepositoryImpl @Inject constructor(
         val inserted = dao.upsert(entity)
         val id = if (inserted == -1L) expense.id else inserted
         val previous = existing?.expense
+        val ledgerEntries = cashLedgerDao.getAll().filter { it.originId == id && it.originType in setOf("EXPENSE", "REVERSAL") }
         val reversePrevious = previous?.companyApproved == true &&
             (!expense.companyApproved || previous.amountToman != expense.amountToman)
         if (reversePrevious) {
             val original = cashLedgerDao.latestExpenseDebit(id)
-            val reversalUuid = UUID.randomUUID().toString()
-            cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = reversalUuid,
-                idempotencyKey = "expense-reversal:${original?.id ?: id}:$reversalUuid",
-                originType = "REVERSAL", originId = id, amountToman = previous!!.amountToman,
-                dateEpochDay = expense.dateEpochDay, description = "برگشت ثبت هزینه تأییدشده #$id",
-                createdAt = now, reversalOfEntryId = original?.id,
-            ))
+            if (original != null) {
+                val sequence = ledgerEntries.count { it.originType == "REVERSAL" } + 1
+                cashLedgerDao.insert(CashLedgerEntryEntity(
+                    uuid = UUID.randomUUID().toString(),
+                    idempotencyKey = "expense:${entity.uuid}:reversal:$sequence",
+                    originType = "REVERSAL", originId = id, amountToman = previous!!.amountToman,
+                    dateEpochDay = previous.dateEpochDay,
+                    description = "برگشت هزینه تأییدنشده #$id",
+                    createdAt = now, reversalOfEntryId = original.id,
+                ))
+            }
         }
         val addDebit = expense.companyApproved &&
             (previous?.companyApproved != true || previous.amountToman != expense.amountToman)
         if (addDebit) {
-            val debitUuid = UUID.randomUUID().toString()
+            val sequence = ledgerEntries.count { it.originType == "EXPENSE" } + 1
             cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = debitUuid, idempotencyKey = "expense:${entity.uuid}:$debitUuid",
+                uuid = UUID.randomUUID().toString(),
+                idempotencyKey = "expense:${entity.uuid}:approval:$sequence",
                 originType = "EXPENSE", originId = id, amountToman = -expense.amountToman,
                 dateEpochDay = expense.dateEpochDay,
                 description = expense.description.ifBlank { "هزینه تأییدشده #$id" }, createdAt = now,
@@ -108,9 +108,6 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun delete(id: Long) = db.withTransaction {
         val row = dao.getById(id) ?: throw NotFoundException("expense $id")
-        if (settlementDao.getByExpense(id).isNotEmpty()) {
-            throw ValidationException(listOf(ValidationIssue(ValidationField.EXPENSE_HAS_SETTLEMENTS)))
-        }
         if (row.expense.companyApproved) {
             val original = cashLedgerDao.latestExpenseDebit(id)
             val now = clock.nowEpochMilli()
@@ -211,21 +208,6 @@ class ExpenseRepositoryImpl @Inject constructor(
             originType = "RECEIPT", originId = paymentId, amountToman = amountToman,
             dateEpochDay = dateEpochDay, description = receiptReference.ifBlank { note }, createdAt = now,
         ))
-        val approved = dao.getApprovedOldest().map { it.toDomain() }
-        val allocations = ExpenseCalculator.fifoAllocations(approved, amountToman)
-        allocations.forEach { allocation ->
-            settlementDao.upsert(
-                Settlement(
-                    uuid = UUID.randomUUID().toString(),
-                    expenseId = allocation.expenseId,
-                    amountToman = allocation.amountToman,
-                    dateEpochDay = dateEpochDay,
-                    note = note,
-                    createdAt = now,
-                ).toEntity(),
-            )
-        }
-        // Any excess remains recorded as an unallocated company advance.
         paymentId
     }
     override suspend fun deleteSettlement(id: Long) = settlementDao.deleteById(id)
