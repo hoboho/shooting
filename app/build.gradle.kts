@@ -129,7 +129,7 @@ android {
     }
 }
 
-// Room schema JSON is committed so migration tests can validate every version.
+// Export the current Room schema; historical exports and upgrade tests are still needed.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")

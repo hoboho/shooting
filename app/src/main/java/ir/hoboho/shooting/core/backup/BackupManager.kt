@@ -85,7 +85,7 @@ class BackupManager @Inject constructor(
             incoming = BackupCounts.from(payload),
             existing = repository.counts(),
             strategy = strategy,
-            formatSupported = payload.formatVersion == BackupCodec.FORMAT_VERSION,
+            formatSupported = payload.formatVersion in 1..BackupCodec.FORMAT_VERSION,
             warnings = warnings.distinct(),
         )
         return BackupInspection(preview, warnings.distinct())

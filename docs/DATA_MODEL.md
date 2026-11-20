@@ -7,20 +7,22 @@
 | تاریخ | `Long` = Gregorian `epochDay` | تبدیل به جلالی فقط هنگام نمایش/گزارش |
 | مبلغ | `Long` = تومانِ عدد صحیح | بدون `Float`/`Double`، بدون ریال، بدون تبدیل خاموش |
 | طول | `Int` متر | `L = abs(endMeter − startMeter)`، جمع با حساب `Long` و بررسی سرریز |
-| هویت پایدار | `String uuid` | همهٔ موجودیت ها بهجز تنظیمات؛ مبنای تطبیق در بازیابی |
+| هویت پایدار | `String uuid` | پروژه، گزارش، عملیات، هزینه، تسویه و دریافتی؛ داده‌های مرجع با کلید طبیعی تطبیق می‌یابند |
 | وضعیت | مشتقشده | `SettlementStatus` و مبالغ تسویه شده از روی ردیف ها محاسبه می شوند، کش نمی شوند |
 
-## جداول (Room v1، `shooting.db`)
+## جداول (Room v6، `shooting.db`)
 
 | جدول | ستون های کلیدی | محدودیت ها |
 | --- | --- | --- |
 | `projects` | `id`, `uuid`, `name`, `workArea`, `employer`, `supervisor`, `description`, `active`, `createdAt`, `updatedAt` | ایندکس یکتا روی `uuid` و `name` |
-| `workdays` | `id`, `uuid`, `projectId`, `dateEpochDay`, `workArea`, `employer`, `supervisor`, `workerCount`, `notes`, `totalLengthMeters`, timestamps | FK→projects `CASCADE`؛ **ایندکس یکتا `(projectId, dateEpochDay)`** |
+| `workdays` | `id`, `uuid`, `projectId`, `dateEpochDay`, `workArea`, `employer`, `supervisor`, `workerCount`, `notes`, `totalLengthMeters`, timestamps | FK→projects `CASCADE`؛ چند گزارش برای یک پروژه و تاریخ مجاز است |
 | `cable_types` | `id`, `coreCount`, `label`, `active`, `sortOrder` | ایندکس یکتا `coreCount` |
 | `operations` | `id`, `uuid`, `workdayId`, `startType`, `startCode`, `startMeter`, `endType`, `endCode`, `endMeter`, `cableTypeId`, `lengthMeters`, timestamps | FK→workdays `CASCADE`، FK→cable_types `RESTRICT` |
 | `expense_categories` | `id`, `name`, `active`, `sortOrder` | ایندکس یکتا `name` |
-| `expenses` | `id`, `uuid`, `dateEpochDay`, `categoryId`, `amountToman`, `description`, `receiptReference`, `projectId?`, `workdayId?`, timestamps | FK→categories `RESTRICT`، →projects/workdays `SET_NULL` |
+| `expenses` | `id`, `uuid`, `dateEpochDay`, `categoryId`, `amountToman`, `description`, `receiptReference`, `projectId?`, `workdayId?`, `companyApproved`, timestamps | FK→categories `RESTRICT`، →projects/workdays `SET_NULL` |
 | `settlements` | `id`, `uuid`, `expenseId`, `amountToman`, `dateEpochDay`, `note`, `createdAt` | FK→expenses `CASCADE` |
+| `company_payments` | `id`, `uuid`, `amountToman`, `dateEpochDay`, `receiptReference`, `note`, `createdAt` | ایندکس یکتا روی `uuid` |
+| `cash_ledger` | `id`, `uuid`, `idempotencyKey`, `originType`, `originId`, `amountToman`, `dateEpochDay`, `description`, `createdAt`, `reversalOfEntryId?` | ایندکس یکتا روی `idempotencyKey`؛ گردش مثبت یا منفی نقدی |
 | `app_settings` | `key` (PK), `value` | `theme_mode`, `default_project_id`, `last_backup_epoch_milli` |
 
 مقادیر اولیه: کور های استاندارد `۲/۴/۶/۱۲/۲۴/۳۶/۴۸/۷۲/۹۶/۱۴۴/۲۸۸` و هفت دستهٔ
@@ -40,15 +42,15 @@ L(operation)          = abs(endMeter - startMeter)      // اختلاف منفی
 DailyTotal(workday)   = Σ L(operation)
 PeriodTotal           = Σ DailyTotal(workday در بازه/فیلتر پروژه)
 TotalSettlements      = Σ settlement.amountToman
-Outstanding(expense)  = expense.amountToman - TotalSettlements(expense)   // >= 0
-PeriodOutstanding     = Σ expense.amountToman - Σ settlements
+Outstanding(expense)  = amountToman - TotalSettlements(expense) برای هزینهٔ تأییدشده؛ وگرنه ۰
+PeriodOutstanding     = Σ Outstanding(expense) در بازه و فیلتر
 ```
 
 * `CableLengthRow` طول و تعداد عملیات ها را به تفکیک نوع کابل نگه می دارد؛
  `PeriodReport.cableBreakdown` و جدول PDF از آن ساخته می شوند.
 * اعتبارسنجی هزینه/تسویه: مبلغ > ۰، دسته معتبر، تسویه ≤ مانده.
 * حذف هزینه ای که تسویه دارد با `EXPENSE_HAS_SETTLEMENTS` رد می شود.
-* هزینهٔ حذفشدهٔ مرتبط با گزارش روزانه: FK `SET_NULL` تاریخچه را نگه میدارد.
+* با حذف گزارش یا پروژه، FK مربوط در هزینه `SET_NULL` می‌شود و هزینه باقی می‌ماند.
 * `Workday.operations` از `WorkdayDetailRow` (`@Relation`) خوانده می شود؛
  `WorkdayRow` برای لیست ها فقط نام پروژه را join می کند.
 * `ExpenseRow` مبالغ تسویه شده و تعداد تسویه ها را با subquery محاسبه می کند
@@ -57,24 +59,16 @@ PeriodOutstanding     = Σ expense.amountToman - Σ settlements
 > پشتیبان گیری خودکار ابری سیستمعامل غیر فعال است (`allowBackup=false`)؛ صادرات
 > داده فقط از طریق فایل نسخهدار درون برنامه ای و با اقدام کاربر انجام می شود.
 
-## مهاجرت ها
+## مهاجرت‌ها
 
-نسخهٔ فعلی **۱** است؛ `Migrations.ALL` خالی و `fallbackToDestructiveMigration()`
-هرگز فراخوانی نشده است. اسکیمای JSON با `exportSchema=true` و
-`room.schemaLocation=$projectDir/schemas` در هر اجرای KSP تولید می شود (شامل
-`identityHash` محاسبه شدهٔ Room، بنابراین دستینویس نمی شود)؛ CI آن را بهعنوان
-artifact بارگذاری می کند. فایل نسخهٔ ۱ هنوز در مخزن کامیت نشده است و پیش از
-نخستین تغییر اسکیما باید همان خروجی تولیدشده اضافه شود
-([`app/schemas/README.md`](../app/schemas/README.md)).
+نسخهٔ فعلی پایگاه داده **۶** است. `Migrations.ALL` مسیرهای صریح ۱→۲، ۲→۳،
+۳→۴، ۴→۵ و ۵→۶ را ثبت می‌کند و fallback مخرب استفاده نمی‌شود. مهاجرت ۴→۵
+ایندکس یکتای پروژه/تاریخ را حذف می‌کند و ۵→۶ جدول دفتر نقدی را ایجاد و از
+دریافتی‌ها و هزینه‌های تأییدشده مقداردهی می‌کند.
 
-سیاست برای نسخه های بعدی:
-
-1. فقط تغییر **افزودنی** (`ALTER TABLE ... ADD COLUMN ... NOT NULL DEFAULT ...`
- یا جدول جدید).
-2. افزودن `Migration(from, to)` صریح به `Migrations.ALL`؛ حذف/بازسازی جدول ممنوع.
-3. کامیت فایل JSON نسخهٔ قدیم و جدید + آزمون `MigrationTestHelper` که از JSON
- نسخهٔ قدیم شروع می کند و صحت داده ها را بعد از مهاجرت بررسی می کند.
-4. `DatabaseSchemaTest` شکل نسخهٔ ۱ (جداول/ستون ها/ایندکس یکتا/FK) را روی SQLite
- واقعی بررسی می کند؛ `WorkflowIntegrationTest` نیز نگاشت پشتیبان/بازیابی، نسخه،
- پیش نمایش، نسخهٔ ایمنی و رد checksum دستکاریشده را در همان اجرای on-device
- تأیید مینماید.
+خروجی KSP فعلی اسکیمای نسخهٔ ۶ را تولید می‌کند؛ JSON هیچ نسخه‌ای در مخزن ثبت
+نشده است. بازیابی اسکیماهای تاریخی معتبر و افزودن آزمون `MigrationTestHelper`
+برای مسیرهای واقعی ارتقا هنوز لازم است. `DatabaseSchemaTest` پایگاه جدید v6 را
+بررسی می‌کند و `LegacyFatCodeMigrationTest` و `CashLedgerMigrationTest` فقط SQL
+مهاجرت‌های ۳→۴ و ۵→۶ را روی جداول حداقلی اجرا می‌کنند؛ هیچ‌یک آزمون کامل ارتقا نیست. روند پیشنهادی و جزئیات در
+[`app/schemas/README.md`](../app/schemas/README.md) آمده است.

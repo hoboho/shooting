@@ -279,7 +279,7 @@ object ReportSpecBuilder {
 
     // ----------------------------------------------------------- expense report
 
-    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList()): PdfDocumentSpec {
+    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false): PdfDocumentSpec {
         val expenseRows = rows.mapIndexed { index, row ->
             val e = row.expense
             listOf(
@@ -323,15 +323,17 @@ object ReportSpecBuilder {
             ),
             blocks = listOf(
                 PdfBlock.KeyValueList(
-                    listOf(
-                        ReportText.TOTAL_EXPENSES to toman(total),
-                        "هزینه‌های تأییدشده" to toman(approvedExpenses),
-                        "دریافتی ثبت‌شده از شرکت" to toman(received),
-                        "مبلغ تخصیص‌یافته به هزینه‌ها" to toman(settled),
-                        ReportText.TOTAL_OUTSTANDING to toman(outstanding),
-                        "خالص گردش نقدی دوره" to toman(cashBalance),
-                        "کسری خالص گردش دوره" to toman((-cashBalance).coerceAtLeast(0L)),
-                    ),
+                    buildList {
+                        add(ReportText.TOTAL_EXPENSES to toman(total))
+                        add("هزینه‌های تأییدشده" to toman(approvedExpenses))
+                        add("دریافتی کل شرکت (همه پروژه‌ها)" to toman(received))
+                        add("مبلغ تخصیص‌یافته به هزینه‌ها" to toman(settled))
+                        add(ReportText.TOTAL_OUTSTANDING to toman(outstanding))
+                        if (!projectScoped) {
+                            add("خالص گردش نقدی دوره" to toman(cashBalance))
+                            add("کسری خالص گردش دوره" to toman((-cashBalance).coerceAtLeast(0L)))
+                        }
+                    },
                     emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
                 ),
                 PdfBlock.Table(
@@ -359,8 +361,13 @@ object ReportSpecBuilder {
                     columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.RECEIPT, 1.2f), PdfColumn(ReportText.AMOUNT, 1f), PdfColumn(ReportText.NOTES, 2f)),
                     header = listOf(ReportText.DATE, ReportText.RECEIPT, ReportText.AMOUNT, ReportText.NOTES),
                     rows = receiptRows,
-                    caption = "دریافتی‌های ثبت‌شده از شرکت",
+                    caption = "دریافتی‌های کل شرکت (همه پروژه‌ها)",
                     aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER, PdfAlign.START),
+                ),
+                PdfBlock.Paragraph(
+                    if (projectScoped) "دریافتی‌ها کلی هستند و به پروژه تخصیص داده نشده‌اند؛ خالص گردش پروژه محاسبه نمی‌شود."
+                    else "دریافتی‌ها مربوط به همه پروژه‌ها هستند.",
+                    PdfTextStyle.Small,
                 ),
                 PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")),
                 PdfBlock.Table(
@@ -390,6 +397,7 @@ object ReportSpecBuilder {
         rows: List<ExpenseReportRow>,
         companyPayments: List<CompanyPayment>,
         range: DateRange,
+        projectScoped: Boolean = false,
     ): PdfDocumentSpec {
         val approved = rows.filter { it.expense.companyApproved }
         val totalApproved = approved.sumOf { it.expense.amountToman }
@@ -411,13 +419,19 @@ object ReportSpecBuilder {
                 "مبنای محاسبه: هزینه‌های تأییدشده و دریافتی‌های ثبت‌شده",
             ),
             blocks = buildList {
-                add(PdfBlock.KeyValueList(listOf(
-                    "جمع هزینه‌های تأییدشده" to toman(totalApproved),
-                    "جمع دریافتی از شرکت" to toman(totalReceived),
-                    "خالص گردش نقدی دوره" to toman(balance),
-                    "کسری خالص گردش دوره" to toman((-balance).coerceAtLeast(0L)),
-                    "تعداد اسناد هزینه" to persianInt(approved.size),
-                ), emphasisedLabels = setOf("خالص گردش نقدی دوره", "کسری خالص گردش دوره")))
+                add(PdfBlock.KeyValueList(buildList {
+                    add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
+                    add("جمع دریافتی کل شرکت (همه پروژه‌ها)" to toman(totalReceived))
+                    if (!projectScoped) {
+                        add("خالص گردش نقدی دوره" to toman(balance))
+                        add("کسری خالص گردش دوره" to toman((-balance).coerceAtLeast(0L)))
+                    }
+                    add("تعداد اسناد هزینه" to persianInt(approved.size))
+                }, emphasisedLabels = setOf("خالص گردش نقدی دوره", "کسری خالص گردش دوره")))
+                if (projectScoped) add(PdfBlock.Paragraph(
+                    "دریافتی‌ها به پروژه تخصیص داده نشده‌اند؛ خالص گردش نقدی برای پروژه محاسبه نمی‌شود.",
+                    PdfTextStyle.Small,
+                ))
                 add(PdfBlock.Table(
                     columns = listOf(PdfColumn(ReportText.CATEGORY, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
                     header = listOf(ReportText.CATEGORY, "تعداد", ReportText.AMOUNT),

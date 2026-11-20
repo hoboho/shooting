@@ -182,4 +182,20 @@ class ReportSpecBuilderTest {
         assertTrue(entries.any { it.first == "کسری خالص گردش دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
     }
 
+    @Test
+    fun projectScopedFinancialReportsDoNotMixGlobalReceiptsIntoCashBalance() {
+        val expense = Expense(dateEpochDay = 20_759L, categoryId = 1L, amountToman = 100L,
+            companyApproved = true, projectName = "الف")
+        val receipt = ir.hoboho.shooting.domain.model.CompanyPayment(amountToman = 1000L, dateEpochDay = 20_759L)
+        val rows = listOf(ExpenseReportRow(expense))
+        val range = DateRange(20_759L, 20_759L)
+        val detailed = ReportSpecBuilder.expenses(rows, range, listOf(receipt), projectScoped = true)
+        val summary = ReportSpecBuilder.expensesExecutiveSummary(rows, listOf(receipt), range, projectScoped = true)
+        for (report in listOf(detailed, summary)) {
+            val entries = report.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
+            assertTrue(entries.any { it.first.contains("دریافتی") && it.first.contains("همه پروژه‌ها") })
+            assertTrue(entries.none { it.first == "خالص گردش نقدی دوره" || it.first == "کسری خالص گردش دوره" })
+        }
+    }
+
 }

@@ -33,6 +33,7 @@ class BackupMapperTest {
             Settlement(1L, "s1", 1L, 250_000L, 20_760L, "واریز اول", 11L),
             Settlement(2L, "s2", 1L, 150_000L, 20_761L, "واریز دوم", 12L),
         ),
+        cashLedger = listOf(CashLedgerDto("l1", "expense:e1:l1", "EXPENSE", "e1", -1_000_000L, 20_759L, "", 10L)),
     )
 
     @Test
@@ -98,6 +99,10 @@ class BackupMapperTest {
         val good = BackupMapper.toPayload(sampleData(), "1.0.0", 1, 1L)
         assertTrue(BackupMapper.validate(good).isEmpty())
 
+        assertTrue(BackupMapper.validate(good.copy(cashLedger = emptyList())).any { it.contains("گردش نقدی") })
+        val wrongLedger = good.copy(cashLedger = good.cashLedger.map { it.copy(amountToman = -1L) })
+        assertTrue(BackupMapper.validate(wrongLedger).any { it.contains("گردش نقدی") })
+
         val orphan = good.copy(operations = good.operations.map { it.copy(workdayUuid = "missing") })
         assertTrue(BackupMapper.validate(orphan).any { it.contains("عملیات بدون گزارش") })
 
@@ -109,7 +114,7 @@ class BackupMapperTest {
         val badLength = good.copy(operations = good.operations.map { it.copy(lengthMeters = 1) })
         assertTrue(BackupMapper.validate(badLength).any { it.contains("ناسازگار") })
 
-        assertTrue(BackupMapper.validate(good.copy(formatVersion = 2)).any { it.contains("نسخه قالب") })
+        assertTrue(BackupMapper.validate(good.copy(formatVersion = 99)).any { it.contains("نسخه قالب") })
     }
 
     @Test

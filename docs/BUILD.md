@@ -24,7 +24,7 @@
 ```bash
 chmod +x gradlew                              # در صورت نیاز
 ./gradlew :app:kspDebugKotlin                # تولید کد Room/Hilt + JSON اسکیما
-./gradlew :app:testDebugUnitTest             # ۱۳ فایل آزمون JUnit روی JVM
+./gradlew :app:testDebugUnitTest             # آزمون‌های JUnit روی JVM
 ./gradlew :app:lintDebug                     # تحلیل ایستای Android lint
 ./gradlew :app:assembleDebug                 # APK دیباگ
 ./gradlew :app:connectedDebugAndroidTest     # آزمونهای Room/اسکیما و جریانهای کاری روی امولاتور
@@ -35,16 +35,14 @@ chmod +x gradlew                              # در صورت نیاز
 * `app/build/outputs/apk/debug/app-debug.apk`
 * `app/build/reports/tests/testDebugUnitTest/`
 * `app/build/reports/lint-results-debug.html`
-* `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/4.json`
+* `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/6.json`
 * `app/build/reports/androidTests/` و `app/build/outputs/androidTest-results/`
 * artifact CI `qa-pdf-samples/` (سه PDF نمونهٔ تولیدشده توسط `WorkflowIntegrationTest`)
 
-اسکیمای JSON توسط Room/KSP تولید می شود و در مخزن فقط
-[`app/schemas/README.md`](../app/schemas/README.md) کامیت شده است؛ فایل `1.json`
-در اجرا های [PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
-و [push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
-بهصورت artifact `room-schema` موجود است. پیش از نخستین تغییر اسکیما، همان فایل
-تولیدشده را کامیت کنید تا مبنای `MigrationTestHelper` باشد.
+اسکیمای JSON توسط Room/KSP تولید می‌شود؛ در حال حاضر هیچ فایل JSON نسخه‌داری
+در مخزن ثبت نشده است. اجرای KSP روی کد فعلی فقط اسکیمای نسخهٔ ۶ را تولید
+می‌کند، نه اسکیماهای تاریخی. دربارهٔ بازیابی فایل‌های تاریخی، artifactهای CI و
+آزمون مهاجرت به [`app/schemas/README.md`](../app/schemas/README.md) مراجعه کنید.
 
 ## نسخه گذاری
 
@@ -66,7 +64,7 @@ shooting.versionBuild=3
 دیگر نیازی به هماهنگ کردن دستی چند فایل نیست. مقادیر پیش فرض فیلد های نسخه در
 `BackupPayload` فقط مربوط به فایل های قدیمی/ناقص اند و نسخهٔ جاری برنامه
 نیستند. نسخهٔ قالب پشتیبان (`BackupCodec.FORMAT_VERSION`) و نسخهٔ پایگاه داده
-(`ShootingDatabase` v1) اعداد جداگانه ای هستند و ربطی به نسخهٔ APK ندارند.
+(`ShootingDatabase` v6) اعداد جداگانه ای هستند و ربطی به نسخهٔ APK ندارند.
 
 نسخهٔ جاری برنامه `2.2.3` با `versionCode=2020003` است. گردشکار CI مقدار build را روی ۳ ثابت نگه می دارد تا نام نسخه در تمام jobها دقیقاً `2.2.3` بماند. نسخهٔ قالب پشتیبان و نسخهٔ پایگاه داده مستقل از شمارهٔ APK هستند.
 
@@ -136,23 +134,7 @@ export RELEASE_KEYSTORE_FILE="$HOME/.shooting-signing/shooting-release.jks"
 
 ## وضعیت اجرا
 
-> **توجه:** وضعیت زیر مربوط به کامیت پیش از تغییرات اخیر (کیبورد عددی، ذخیرهٔ
-> فایل ها، کور های استاندارد، تفکیک نوع کابل و اصلاح نگارشی) است؛ اجرا های تازهٔ
-> این شاخه در برگهٔ Actions مخزن قابل بررسی اند.
-
-در محیط توسعهٔ محلی، `services.gradle.org`، `dl.google.com` و
-`repo.maven.apache.org` در دسترس نبودند و Android SDK/Gradle نصب نیست؛ بنابراین
-`./gradlew` در آن محیط قابل اجرا نیست. ابزار های `scripts/run-offline-tests.sh`،
-`scripts/check_sources.py` و `scripts/offline-compile-check/` فقط بررسی کمکیاند.
-
-دستورات بالا روی runner دارای Android SDK در
-[PR run 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
-و [push run 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
-اجرا و همگی با موفقیت کامل شدند: `testDebugUnitTest`، `lintDebug`,
-`assembleDebug`، `kspDebugKotlin` و `connectedDebugAndroidTest` (API 34، ۱۲ آزمون
-بدون شکست). artifactها شامل APK دیباگ، گزارش JUnit/lint/instrumentation،
-اسکیمای Room و سه نمونهٔ PDFاند. اجرای قدیمی
-[41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-نخستین ساخت کامل را ثبت می کند. جزئیات دقیق و موارد باقیماندهٔ بررسی انسانی در
-[`QA.md`](QA.md) و [`TESTING.md`](TESTING.md) ثبت شده است؛ عبور CI بهمعنای تأیید
-بصری صفحات/PDF یا آمادگی انتشار نیست.
+دستورات بالا نیازمند پیش‌نیازهای همین سند هستند. نتیجهٔ اجرای هر دستور را برای
+کامیت موردنظر در گزارش محلی یا Actions بررسی کنید؛ نتایج اجراهای قدیمی به‌معنای
+موفقیت نسخهٔ فعلی نیستند. تفکیک اجراهای تاریخی، محدودیت‌ها و بررسی‌های باقی‌مانده
+در [`QA.md`](QA.md) و [`TESTING.md`](TESTING.md) آمده است.

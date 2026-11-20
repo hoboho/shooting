@@ -26,16 +26,23 @@ class AppUpdater @javax.inject.Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     suspend fun checkAndPrepare(): AppUpdateState = withContext(Dispatchers.IO) {
-        val releases = requestJson("https://api.github.com/repos/hoboho/shooting/releases?per_page=100")
-        val release = (0 until releases.length())
-            .asSequence()
-            .mapNotNull { releases.optJSONObject(it) }
-            .firstOrNull { item ->
-                !item.optBoolean("draft", true) &&
-                    !item.optBoolean("prerelease", true) &&
-                    item.optString("tag_name").endsWith("-release") &&
+        val candidates = mutableListOf<org.json.JSONObject>()
+        var page = 1
+        var pageSize: Int
+        do {
+            val releases = requestJson("https://api.github.com/repos/hoboho/shooting/releases?per_page=100&page=$page")
+            for (i in 0 until releases.length()) {
+                val item = releases.optJSONObject(i) ?: continue
+                if (!item.optBoolean("draft", true) && !item.optBoolean("prerelease", true) &&
                     item.optJSONArray("assets")?.hasAsset("Shooting-release.apk") == true
-            } ?: return@withContext AppUpdateState(
+                ) candidates.add(item)
+            }
+            pageSize = releases.length()
+            page++
+        } while (pageSize == 100)
+        val latestTag = latestReleaseTag(candidates.map { it.optString("tag_name") })
+        val release = candidates.firstOrNull { it.optString("tag_name") == latestTag }
+            ?: return@withContext AppUpdateState(
                 message = "هنوز نسخهٔ انتشار امضاشده‌ای برای به‌روزرسانی منتشر نشده است.",
             )
 
@@ -70,7 +77,9 @@ class AppUpdater @javax.inject.Inject constructor(
         } else {
             packageInfo.versionCode.toLong()
         }
-        if (downloadedVersionCode <= BuildConfig.APP_VERSION_CODE.toLong()) {
+        if (packageInfo.versionName != latestVersion ||
+            downloadedVersionCode <= BuildConfig.APP_VERSION_CODE.toLong()
+        ) {
             apk.delete()
             throw IllegalStateException("نسخهٔ APK با نسخهٔ اعلام‌شده در انتشار GitHub مطابقت ندارد.")
         }
@@ -158,21 +167,4 @@ class AppUpdater @javax.inject.Inject constructor(
         }
     }
 
-}
-
-internal fun compareAppVersions(left: String, right: String): Int {
-    fun parts(value: String): List<Int> {
-        val parsed = value.trim().removePrefix("v").split(".").map { it.toIntOrNull() }
-        require(parsed.size == 3 && parsed.all { it != null }) {
-            "شمارهٔ نسخه معتبر نیست: $value"
-        }
-        return parsed.filterNotNull()
-    }
-    val a = parts(left)
-    val b = parts(right)
-    for (index in 0..2) {
-        val compared = a[index].compareTo(b[index])
-        if (compared != 0) return compared
-    }
-    return 0
 }

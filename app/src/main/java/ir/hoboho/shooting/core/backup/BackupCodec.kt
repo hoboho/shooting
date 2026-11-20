@@ -21,7 +21,7 @@ sealed interface BackupReadResult {
 object BackupCodec {
 
     const val MAGIC = "SHOOTING-BACKUP"
-    const val FORMAT_VERSION = 1
+    const val FORMAT_VERSION = 2
 
     fun encode(payload: BackupPayload): String {
         val canonicalPayload = SimpleJson.stringify(payloadToJson(payload))
@@ -55,7 +55,10 @@ object BackupCodec {
             return BackupReadResult.ChecksumMismatch
         }
         return try {
-            BackupReadResult.Success(payloadFromJson(payloadNode), version)
+            val payload = payloadFromJson(payloadNode)
+            require(payload.formatVersion == version)
+            if (version >= 2) require(payloadNode.field("cashLedger").asArr() != null)
+            BackupReadResult.Success(payload, version)
         } catch (t: Throwable) {
             BackupReadResult.Malformed
         }
@@ -88,6 +91,7 @@ object BackupCodec {
         "expenses" to arrOf(p.expenses.map(::expenseToJson)),
         "settlements" to arrOf(p.settlements.map(::settlementToJson)),
         "companyPayments" to arrOf(p.companyPayments.map(::companyPaymentToJson)),
+        "cashLedger" to arrOf(p.cashLedger.map(::cashLedgerToJson)),
     )
 
     private fun settingsToJson(s: SettingsDto) = objOf(
@@ -146,6 +150,7 @@ object BackupCodec {
         "projectUuid" to JsonValue.Str(e.projectUuid), "workdayUuid" to JsonValue.Str(e.workdayUuid),
         "createdAt" to JsonValue.Num(e.createdAt.toString()),
         "updatedAt" to JsonValue.Num(e.updatedAt.toString()),
+        "companyApproved" to JsonValue.Bool(e.companyApproved),
     )
 
     private fun settlementToJson(s: SettlementDto) = objOf(
@@ -162,6 +167,15 @@ object BackupCodec {
         "receiptReference" to JsonValue.Str(p.receiptReference),
         "note" to JsonValue.Str(p.note),
         "createdAt" to JsonValue.Num(p.createdAt.toString()),
+    )
+
+    private fun cashLedgerToJson(e: CashLedgerDto) = objOf(
+        "uuid" to JsonValue.Str(e.uuid), "idempotencyKey" to JsonValue.Str(e.idempotencyKey),
+        "originType" to JsonValue.Str(e.originType), "originUuid" to JsonValue.Str(e.originUuid),
+        "amountToman" to JsonValue.Num(e.amountToman.toString()),
+        "dateEpochDay" to JsonValue.Num(e.dateEpochDay.toString()),
+        "description" to JsonValue.Str(e.description), "createdAt" to JsonValue.Num(e.createdAt.toString()),
+        "reversalOfUuid" to JsonValue.Str(e.reversalOfUuid),
     )
 
     private fun payloadFromJson(o: JsonValue.Obj): BackupPayload = BackupPayload(
@@ -200,9 +214,12 @@ object BackupCodec {
         } ?: emptyList(),
         expenses = o.field("expenses").asArr()?.values?.map { v ->
             val x = v.asObj()!!
+            val approved = x.field("companyApproved").asBoolean()
+            if (o.int("formatVersion") >= 2) require(approved != null)
             ExpenseDto(x.string("uuid"), x.long("dateEpochDay"), x.string("categoryName"),
                 x.long("amountToman"), x.string("description"), x.string("receiptReference"),
-                x.string("projectUuid"), x.string("workdayUuid"), x.long("createdAt"), x.long("updatedAt"))
+                x.string("projectUuid"), x.string("workdayUuid"), x.long("createdAt"), x.long("updatedAt"),
+                approved ?: true)
         } ?: emptyList(),
         settlements = o.field("settlements").asArr()?.values?.map { v ->
             val x = v.asObj()!!
@@ -215,6 +232,12 @@ object BackupCodec {
                 x.string("uuid"), x.long("amountToman"), x.long("dateEpochDay"),
                 x.string("receiptReference"), x.string("note"), x.long("createdAt"),
             )
+        } ?: emptyList(),
+        cashLedger = o.field("cashLedger").asArr()?.values?.map { v ->
+            val x = v.asObj()!!
+            CashLedgerDto(x.string("uuid"), x.string("idempotencyKey"), x.string("originType"),
+                x.string("originUuid"), x.long("amountToman"), x.long("dateEpochDay"),
+                x.string("description"), x.long("createdAt"), x.string("reversalOfUuid"))
         } ?: emptyList(),
     )
 }

@@ -371,6 +371,11 @@ interface AppSettingDao {
 
 @Dao
 interface CashLedgerDao {
+    @Query("SELECT * FROM cash_ledger ORDER BY id ASC")
+    suspend fun getAll(): List<CashLedgerEntryEntity>
+    @Query("SELECT COALESCE(MIN(originId), 0) FROM cash_ledger WHERE originId < 0")
+    suspend fun minimumSyntheticOriginId(): Long
+
     @Query("SELECT * FROM cash_ledger ORDER BY dateEpochDay DESC, id DESC")
     fun observeAll(): Flow<List<CashLedgerEntryEntity>>
 
@@ -386,6 +391,6 @@ interface CashLedgerDao {
     suspend fun deleteAll()
     @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'receipt:' || uuid, 'RECEIPT', id, amountToman, dateEpochDay, note, createdAt, NULL FROM company_payments""")
     suspend fun seedReceipts()
-    @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'expense:' || uuid, 'EXPENSE', id, -amountToman, dateEpochDay, description, createdAt, NULL FROM expenses WHERE companyApproved = 1""")
+    @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'expense:' || uuid, 'EXPENSE', id, -amountToman, dateEpochDay, description, createdAt, NULL FROM expenses e WHERE companyApproved = 1 AND NOT EXISTS (SELECT 1 FROM cash_ledger l WHERE l.originType = 'EXPENSE' AND l.originId = e.id)""")
     suspend fun seedApprovedExpenses()
 }

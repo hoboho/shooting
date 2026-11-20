@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.hoboho.shooting.R
 import ir.hoboho.shooting.core.backup.BackupException
 import ir.hoboho.shooting.core.backup.BackupManager
+import ir.hoboho.shooting.core.backup.BackupIntegrityException
 import ir.hoboho.shooting.core.common.StringProvider
 import ir.hoboho.shooting.core.date.JalaliCalendar
 import ir.hoboho.shooting.core.format.DateFormatter
@@ -131,6 +132,8 @@ class BackupViewModel @Inject constructor(
                 } else {
                     show(R.string.backup_restored)
                 }
+            } catch (e: BackupIntegrityException) {
+                show(R.string.backup_restore_conflict)
             } catch (t: Throwable) {
                 show(R.string.msg_restore_failed)
             } finally {

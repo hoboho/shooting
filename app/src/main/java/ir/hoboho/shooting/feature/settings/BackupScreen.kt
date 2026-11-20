@@ -110,6 +110,11 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         val preview = inspection.preview
                         StatRow(stringResource(R.string.backup_format_version),
                             NumberFormatter.formatInteger(preview.formatVersion))
+                        if (preview.formatVersion == 1) {
+                            Text(stringResource(R.string.backup_legacy_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error)
+                        }
                         StatRow(stringResource(R.string.backup_exported_at), state.exportedAtText)
                         StatRow(stringResource(R.string.backup_preview_incoming),
                             countsText(preview.incoming))
