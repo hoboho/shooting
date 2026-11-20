@@ -213,7 +213,7 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun updateCompanyPayment(payment: CompanyPayment) = db.withTransaction {
         if (payment.id <= 0L || payment.amountToman <= 0L) {
-            throw ValidationException(listOf(ValidationIssue(ValidationField.SETTLEMENT_AMOUNT)))
+            require(payment.id > 0L && payment.amountToman > 0L) { "Company payment amount must be positive" }
         }
         val existing = companyPaymentDao.getById(payment.id) ?: throw NotFoundException("company payment ${payment.id}")
         companyPaymentDao.updateDetails(
