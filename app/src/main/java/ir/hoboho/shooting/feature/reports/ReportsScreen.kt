@@ -70,6 +70,7 @@ private data class ProjectFilterChoice(val project: Project?)
 @Composable
 fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val cashLedger by viewModel.cashLedger.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val allProjectsText = stringResource(R.string.label_all_projects)
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
@@ -295,8 +296,17 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 ReportTab.EXPENSES -> {
                     item {
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
-                            StatRow(stringResource(R.string.reports_expense_totals),
+                            val periodLedger = cashLedger.filter {
+                                it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay
+                            }
+                            StatRow("هزینه‌های تأییدشده",
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
+                            StatRow("دریافتی واقعی شرکت",
+                                NumberFormatter.formatToman(state.companyPayments.sumOf { it.amountToman }))
+                            StatRow("مجموع برگشتی‌ها",
+                                NumberFormatter.formatToman(periodLedger.filter { it.originType == "REVERSAL" }.sumOf { it.amountToman }))
+                            StatRow("خالص گردش مالی دفترکل",
+                                NumberFormatter.formatToman(periodLedger.sumOf { it.amountToman }), emphasised = true)
                         }
                     }
                     item {
