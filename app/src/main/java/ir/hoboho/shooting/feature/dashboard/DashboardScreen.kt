@@ -29,14 +29,13 @@ import ir.hoboho.shooting.ui.components.EmptyState
 import ir.hoboho.shooting.ui.components.SectionCard
 import ir.hoboho.shooting.ui.components.ShootingButton
 import ir.hoboho.shooting.ui.components.StatRow
-import ir.hoboho.shooting.ui.components.TagChip
 
 @Composable
 fun DashboardScreen(
     onNewWorkday: () -> Unit,
     onOpenWorkday: (Long) -> Unit,
     onOpenReports: () -> Unit,
-    onOpenProjects: () -> Unit,
+    onOpenOperations: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -111,7 +110,6 @@ fun DashboardScreen(
         item {
             SectionCard(
                 title = stringResource(R.string.dashboard_recent_workdays),
-                trailing = { TagChip(stringResource(R.string.action_open)) },
             ) {
                 if (state.recentWorkdays.isEmpty()) {
                     EmptyState(stringResource(R.string.workdays_empty))
@@ -124,8 +122,8 @@ fun DashboardScreen(
                         )
                     }
                     ShootingButton(
-                        text = stringResource(R.string.nav_projects),
-                        onClick = onOpenProjects,
+                        text = stringResource(R.string.dashboard_view_operations),
+                        onClick = onOpenOperations,
                         level = ButtonLevel.Text,
                     )
                 }
