@@ -170,17 +170,11 @@ fun ExpensesScreen(
             },
             confirmButton = {
                 TextButton(enabled = !paymentSaving, onClick = {
-                    val amount = NumberFormatter.parseToman(editPaymentAmount)
-                    if (amount == null || amount <= 0L) {
-                        snackbar.currentSnackbarData?.dismiss()
-                        return@TextButton
-                    }
                     selectedCompanyPayment?.let { payment ->
                         viewModel.updateCompanyPayment(payment.copy(
-                            amountToman = amount,
                             dateEpochDay = editPaymentDateEpochDay,
                             receiptReference = editPaymentReceipt.trim(),
-                        ))
+                        ), editPaymentAmount)
                     }
                     selectedCompanyPayment = null
                 }) { Text("ذخیره تغییرات") }
@@ -293,7 +287,7 @@ fun ExpensesScreen(
                                     Surface(
                                         modifier = Modifier.fillMaxWidth().clickable {
                                             selectedCompanyPayment = payment
-                                            editPaymentAmount = NumberFormatter.formatToman(payment.amountToman)
+                                            editPaymentAmount = payment.amountToman.toString()
                                             editPaymentDateEpochDay = payment.dateEpochDay
                                             editPaymentReceipt = payment.receiptReference
                                         },
