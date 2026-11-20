@@ -82,7 +82,6 @@ class ReportsViewModel @Inject constructor(
                 projectRepository.observeProjects(),
                 workdayRepository.observeWorkdaysWithOperations(),
                 expenseRepository.observeExpenses(),
-                expenseRepository.observeAllSettlements(),
                 combine(
                     expenseRepository.observeCompanyPayments(),
                     combine(
@@ -93,10 +92,9 @@ class ReportsViewModel @Inject constructor(
                         referenceRepository.observeCableTypes(),
                     ) { t, r, p, s, cables -> ReportsInputs(t, r, p, s, cables) },
                 ) { companyPayments, inputs -> inputs.copy(companyPayments = companyPayments) },
-            ) { projects, workdays, expenses, settlements, inputs ->
+            ) { projects, workdays, expenses, inputs ->
                 val filteredWorkdays = PeriodAggregator.filterWorkdays(workdays, inputs.range, inputs.projectId)
                 val filteredExpenses = PeriodAggregator.filterExpenses(expenses, inputs.range, inputs.projectId)
-                val settlementsByExpense = settlements.groupBy { it.expenseId }
                 val projectName = inputs.projectId?.let { id -> projects.firstOrNull { it.id == id }?.name }
                 val chosenId = selectVisibleWorkday(inputs.selectedId, filteredWorkdays.map { it.id })
                 ReportsUiState(
