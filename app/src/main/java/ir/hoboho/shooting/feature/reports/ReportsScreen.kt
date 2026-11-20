@@ -152,8 +152,8 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                             change.consume()
                                             drag += amount
                                             val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
-                                            val hasTarget = (drag < 0f && index > 0) ||
-                                                (drag > 0f && index in 0 until state.workdays.lastIndex)
+                                            val hasTarget = (drag < 0f && index in 0 until state.workdays.lastIndex) ||
+                                                (drag > 0f && index > 0)
                                             val visual = if (hasTarget) {
                                                 drag.coerceIn(-size.width.toFloat() * 0.72f, size.width.toFloat() * 0.72f)
                                             } else {
@@ -165,10 +165,10 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                         onDragEnd = {
                                             val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
                                             when {
-                                                drag < -size.width * 0.18f && index > 0 ->
-                                                    viewModel.setSelectedWorkday(state.workdays[index - 1].id)
-                                                drag > size.width * 0.18f && index >= 0 && index < state.workdays.lastIndex ->
+                                                drag < -size.width * 0.18f && index >= 0 && index < state.workdays.lastIndex ->
                                                     viewModel.setSelectedWorkday(state.workdays[index + 1].id)
+                                                drag > size.width * 0.18f && index > 0 ->
+                                                    viewModel.setSelectedWorkday(state.workdays[index - 1].id)
                                             }
                                             dailySwipeScope.launch {
                                                 dailySwipeOffset.animateTo(0f, spring(dampingRatio = 0.72f, stiffness = 420f))
@@ -326,6 +326,39 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                     }
                 }
                 ReportTab.EXPENSES -> {
+                    item {
+                        SectionCard(title = "دفتر گردش مالی", icon = Icons.Filled.AccountBalanceWallet) {
+                            if (state.companyPayments.isEmpty()) {
+                                EmptyState(stringResource(R.string.label_no_data))
+                            } else {
+                                state.companyPayments
+                                    .filter { it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay }
+                                    .sortedByDescending { it.dateEpochDay }
+                                    .forEach { payment ->
+                                        androidx.compose.foundation.layout.Row(
+                                            modifier = Modifier.fillMaxSize().padding(vertical = 7.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                        ) {
+                                            androidx.compose.foundation.layout.Column {
+                                                Text(DateFormatter.format(payment.dateEpochDay), style = MaterialTheme.typography.bodyMedium)
+                                                if (payment.receiptReference.isNotBlank()) {
+                                                    Text("رسید: ${payment.receiptReference}", style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
+                                            Text(
+                                                NumberFormatter.formatToman(payment.amountToman),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = if (androidx.compose.foundation.isSystemInDarkTheme())
+                                                    androidx.compose.ui.graphics.Color(0xFF69F0AE)
+                                                else androidx.compose.ui.graphics.Color(0xFF00A85A),
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                            }
+                        }
+                    }
                     item {
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
                             val periodLedger = cashLedger.filter {
