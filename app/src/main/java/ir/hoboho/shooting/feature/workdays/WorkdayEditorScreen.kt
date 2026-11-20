@@ -69,6 +69,7 @@ private fun pointTypeLabel(type: PointType): String = stringResource(
 fun WorkdayEditorScreen(
     workdayId: Long,
     initialProjectId: Long,
+    forceNew: Boolean = true,
     onDone: () -> Unit,
     viewModel: WorkdayEditorViewModel = hiltViewModel(),
 ) {
@@ -76,7 +77,7 @@ fun WorkdayEditorScreen(
     val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(workdayId, initialProjectId) { viewModel.load(workdayId, initialProjectId) }
+    LaunchedEffect(workdayId, initialProjectId, forceNew) { viewModel.load(workdayId, initialProjectId, forceNew) }
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
     LaunchedEffect(state.error) { state.error?.let { snackbar.showSnackbar(it) } }
 
