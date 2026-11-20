@@ -329,13 +329,13 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 ReportTab.EXPENSES -> {
                     item {
                         SectionCard(title = "دفتر گردش مالی", icon = Icons.Filled.AccountBalanceWallet) {
-                            if (state.companyPayments.isEmpty()) {
+                            val visiblePayments = state.companyPayments.filter {
+                                it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay
+                            }.sortedByDescending { it.dateEpochDay }
+                            if (visiblePayments.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
                             } else {
-                                state.companyPayments
-                                    .filter { it.dateEpochDay in state.range.startEpochDay..state.range.endEpochDay }
-                                    .sortedByDescending { it.dateEpochDay }
-                                    .forEach { payment ->
+                                visiblePayments.forEach { payment ->
                                         androidx.compose.foundation.layout.Row(
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
