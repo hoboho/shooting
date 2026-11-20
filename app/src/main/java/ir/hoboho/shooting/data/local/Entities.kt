@@ -197,3 +197,19 @@ data class AppSettingEntity(
     @PrimaryKey val key: String,
     val value: String,
 )
+
+
+/** Immutable cash movement. Positive values increase project cash; negative values decrease it. */
+@Entity(tableName = "cash_ledger", indices = [Index(value = ["idempotencyKey"], unique = true), Index(value = ["originType", "originId"]), Index(value = ["dateEpochDay"])])
+data class CashLedgerEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val uuid: String,
+    val idempotencyKey: String,
+    val originType: String,
+    val originId: Long,
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val description: String = "",
+    val createdAt: Long,
+    val reversalOfEntryId: Long? = null,
+)

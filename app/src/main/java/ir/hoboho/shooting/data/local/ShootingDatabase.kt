@@ -23,9 +23,10 @@ import androidx.room.RoomDatabase
         ExpenseEntity::class,
         SettlementEntity::class,
         CompanyPaymentEntity::class,
+        CashLedgerEntryEntity::class,
         AppSettingEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class ShootingDatabase : RoomDatabase() {
@@ -38,6 +39,7 @@ abstract class ShootingDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun settlementDao(): SettlementDao
     abstract fun companyPaymentDao(): CompanyPaymentDao
+    abstract fun cashLedgerDao(): CashLedgerDao
     abstract fun appSettingDao(): AppSettingDao
 
     companion object {
