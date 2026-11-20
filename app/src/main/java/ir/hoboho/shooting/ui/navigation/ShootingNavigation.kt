@@ -175,7 +175,7 @@ fun ShootingNavHost(
                 onNewWorkday = { navController.navigate(Routes.workdayEditor(0L)) },
                 onOpenWorkday = { id -> navController.navigate(Routes.workdayDetail(id)) },
                 onOpenReports = { navController.navigate(Routes.REPORTS) },
-                onOpenProjects = { navController.navigate(Routes.PROJECTS) },
+                onOpenOperations = { navController.navigate(Routes.WORKDAYS) },
             )
         }
         composable(Routes.PROJECTS) {
