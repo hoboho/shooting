@@ -83,9 +83,10 @@ class ExpenseRepositoryImpl @Inject constructor(
             (!expense.companyApproved || previous.amountToman != expense.amountToman)
         if (reversePrevious) {
             val original = cashLedgerDao.latestExpenseDebit(id)
+            val reversalUuid = UUID.randomUUID().toString()
             cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = UUID.randomUUID().toString(),
-                idempotencyKey = "expense-reversal:${original?.id ?: id}:$now",
+                uuid = reversalUuid,
+                idempotencyKey = "expense-reversal:${original?.id ?: id}:$reversalUuid",
                 originType = "REVERSAL", originId = id, amountToman = previous!!.amountToman,
                 dateEpochDay = expense.dateEpochDay, description = "برگشت ثبت هزینه تأییدشده #$id",
                 createdAt = now, reversalOfEntryId = original?.id,
@@ -94,8 +95,9 @@ class ExpenseRepositoryImpl @Inject constructor(
         val addDebit = expense.companyApproved &&
             (previous?.companyApproved != true || previous.amountToman != expense.amountToman)
         if (addDebit) {
+            val debitUuid = UUID.randomUUID().toString()
             cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = UUID.randomUUID().toString(), idempotencyKey = "expense:${entity.uuid}:$now",
+                uuid = debitUuid, idempotencyKey = "expense:${entity.uuid}:$debitUuid",
                 originType = "EXPENSE", originId = id, amountToman = -expense.amountToman,
                 dateEpochDay = expense.dateEpochDay,
                 description = expense.description.ifBlank { "هزینه تأییدشده #$id" }, createdAt = now,
@@ -112,9 +114,10 @@ class ExpenseRepositoryImpl @Inject constructor(
         if (row.expense.companyApproved) {
             val original = cashLedgerDao.latestExpenseDebit(id)
             val now = clock.nowEpochMilli()
+            val reversalUuid = UUID.randomUUID().toString()
             cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = UUID.randomUUID().toString(),
-                idempotencyKey = "expense-delete-reversal:${original?.id ?: id}:$now",
+                uuid = reversalUuid,
+                idempotencyKey = "expense-delete-reversal:${original?.id ?: id}:$reversalUuid",
                 originType = "REVERSAL", originId = id, amountToman = row.expense.amountToman,
                 dateEpochDay = row.expense.dateEpochDay, description = "برگشت حذف هزینه تأییدشده #$id",
                 createdAt = now, reversalOfEntryId = original?.id,

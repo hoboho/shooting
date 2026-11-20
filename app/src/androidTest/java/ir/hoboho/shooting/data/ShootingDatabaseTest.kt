@@ -22,6 +22,7 @@ import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -214,4 +215,46 @@ class ShootingDatabaseTest {
         assertThat(db.workdayDao().getAll().single().totalLengthMeters).isEqualTo(75)
         assertThat(db.operationDao().getAll()).hasSize(1)
     }
+    @Test
+    fun cashLedger_postsOnlyApprovedExpenses_andUsesCompensatingEntries() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val repository = expenses()
+        repository.allocateCompanyPayment(
+            amountToman = 10_000_000L,
+            dateEpochDay = 20_100L,
+            receiptReference = "ADV-100",
+            note = "پیش‌پرداخت شرکت",
+        )
+        val unapproved = Expense(
+            dateEpochDay = 20_100L,
+            categoryId = categoryId,
+            amountToman = 13_000_000L,
+            description = "هزینه تأییدنشده",
+        )
+        val expenseId = repository.save(unapproved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+
+        val approved = unapproved.copy(id = expenseId, companyApproved = true)
+        repository.save(approved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-3_000_000L)
+        assertThat(repository.observeCashPosition().first().companyReceivableToman).isEqualTo(3_000_000L)
+
+        // Re-saving an unchanged approved expense must not create a second debit.
+        repository.save(approved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-3_000_000L)
+
+        val revised = approved.copy(amountToman = 14_000_000L)
+        repository.save(revised)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-4_000_000L)
+
+        repository.save(revised.copy(companyApproved = false))
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+        assertThat(repository.observeCashPosition().first().companyReceivableToman).isEqualTo(0L)
+
+        repository.save(revised)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-4_000_000L)
+        repository.delete(expenseId)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+    }
+
 }
