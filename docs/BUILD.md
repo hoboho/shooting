@@ -35,7 +35,7 @@ chmod +x gradlew                              # در صورت نیاز
 * `app/build/outputs/apk/debug/app-debug.apk`
 * `app/build/reports/tests/testDebugUnitTest/`
 * `app/build/reports/lint-results-debug.html`
-* `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/1.json`
+* `app/schemas/ir.hoboho.shooting.data.local.ShootingDatabase/4.json`
 * `app/build/reports/androidTests/` و `app/build/outputs/androidTest-results/`
 * artifact CI `qa-pdf-samples/` (سه PDF نمونهٔ تولیدشده توسط `WorkflowIntegrationTest`)
 
@@ -51,15 +51,15 @@ chmod +x gradlew                              # در صورت نیاز
 همهٔ مقادیر نسخه فقط در `gradle.properties` تعریف می شوند:
 
 ```properties
-shooting.versionBase=2.0
-shooting.versionCodeBase=2000000
-shooting.versionBuild=0
+shooting.versionBase=2.2
+shooting.versionCodeBase=2020000
+shooting.versionBuild=3
 ```
 
 `app/build.gradle.kts` از روی آن ها حساب می کند:
 
-* `versionName = 2.0.0 (release baseline; CI build number fixed to 0)`
-* `versionCode = 2000000`
+* `versionName = 2.2.3 (release baseline; CI build number fixed to 3)`
+* `versionCode = 2020003`
 
 همان دو مقدار از طریق فیلد های تولید شدهٔ `BuildConfig` به `AppInfo` می رسند؛
 صفحهٔ تنظیمات و metadata فایل پشتیبان دقیقاً نسخهٔ همان APK را نشان می دهند و
@@ -68,7 +68,7 @@ shooting.versionBuild=0
 نیستند. نسخهٔ قالب پشتیبان (`BackupCodec.FORMAT_VERSION`) و نسخهٔ پایگاه داده
 (`ShootingDatabase` v1) اعداد جداگانه ای هستند و ربطی به نسخهٔ APK ندارند.
 
-نسخهٔ جاری برنامه `2.0.0` با `versionCode=2000000` است. گردشکار CI مقدار build را روی صفر ثابت نگه می دارد تا نام نسخه در تمام jobها دقیقاً `2.0.0` بماند. نسخهٔ قالب پشتیبان و نسخهٔ پایگاه داده مستقل از شمارهٔ APK هستند.
+نسخهٔ جاری برنامه `2.2.3` با `versionCode=2020003` است. گردشکار CI مقدار build را روی ۳ ثابت نگه می دارد تا نام نسخه در تمام jobها دقیقاً `2.2.3` بماند. نسخهٔ قالب پشتیبان و نسخهٔ پایگاه داده مستقل از شمارهٔ APK هستند.
 
 پیش انتشار `debug-latest` همواره حاوی APK **دیباگ** است و نباید به عنوان نصب نهایی استفاده شود. نسخهٔ Release امضا
 شده مسیر جداگانه ای دارد: job `release` در CI آن را می سازد و با `apksigner`
@@ -118,7 +118,7 @@ export RELEASE_KEYSTORE_FILE="$HOME/.shooting-signing/shooting-release.jks"
  `MissingTranslation` در `lint.xml` خاموش است، چون فارسی زبان پایه است.
 * `testOptions.unitTests { isIncludeAndroidResources = true; isReturnDefaultValues = true }`
 * `ksp { arg("room.schemaLocation", "$projectDir/schemas"); arg("room.generateKotlin", "true") }`
-* مانیفست: **بدون `INTERNET`**؛ `FileProvider` با authorities
+* مانیفست: دسترسی `INTERNET` فقط برای بررسی دستی به‌روزرسانی؛ `FileProvider` با authorities
  `${applicationId}.fileprovider` و `res/xml/file_paths.xml` فقط `filesDir` را
  در معرض اشتراک میگذارد.
 * فونت های Vazirmatn (Regular/Medium/Bold) در `app/src/main/res/font` و

@@ -232,6 +232,7 @@ object ReportSpecBuilder {
             workday.operations.mapIndexed { index, operation ->
                 listOf(
                     DateFormatter.format(workday.dateEpochDay),
+                    workday.workArea.ifBlank { NumberFormatter.EM_DASH },
                     "${operation.startType.label}_${operation.startCode}",
                     persianInt(operation.startMeter),
                     "${operation.endType.label}_${operation.endCode}",
@@ -249,25 +250,25 @@ object ReportSpecBuilder {
             blocks = buildList {
                 add(PdfBlock.KeyValueList(listOf(
                     ReportText.PROJECT to project.name,
-                    ReportText.WORK_AREA to (first?.workArea?.takeIf { it.isNotBlank() } ?: NumberFormatter.EM_DASH),
                     ReportText.EMPLOYER to (project.employer.ifBlank { first?.employer ?: NumberFormatter.EM_DASH }),
                     ReportText.SUPERVISOR to (project.supervisor.ifBlank { first?.supervisor ?: NumberFormatter.EM_DASH }),
                     ReportText.RANGE to DateFormatter.formatRange(range),
                 )))
                 add(PdfBlock.Table(
                     columns = listOf(
-                        PdfColumn(ReportText.DATE, 1.1f),
-                        PdfColumn(ReportText.START_POINT, 1.25f),
-                        PdfColumn(ReportText.START_METER, 0.7f),
-                        PdfColumn(ReportText.END_POINT, 1.25f),
-                        PdfColumn(ReportText.END_METER, 0.7f),
-                        PdfColumn(ReportText.CABLE, 0.9f),
-                        PdfColumn(ReportText.LENGTH, 0.8f),
+                        PdfColumn(ReportText.DATE, 1f),
+                        PdfColumn(ReportText.WORK_AREA, 1.2f),
+                        PdfColumn(ReportText.START_POINT, 1.2f),
+                        PdfColumn(ReportText.START_METER, 0.65f),
+                        PdfColumn(ReportText.END_POINT, 1.2f),
+                        PdfColumn(ReportText.END_METER, 0.65f),
+                        PdfColumn(ReportText.CABLE, 0.85f),
+                        PdfColumn(ReportText.LENGTH, 0.75f),
                     ),
-                    header = listOf(ReportText.DATE, ReportText.START_POINT, ReportText.START_METER, ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH),
+                    header = listOf(ReportText.DATE, ReportText.WORK_AREA, ReportText.START_POINT, ReportText.START_METER, ReportText.END_POINT, ReportText.END_METER, ReportText.CABLE, ReportText.LENGTH),
                     rows = rows,
                     caption = ReportText.OPERATIONS,
-                    aligns = List(7) { PdfAlign.CENTER },
+                    aligns = List(8) { PdfAlign.CENTER },
                 ))
                 add(PdfBlock.Paragraph(ReportText.LENGTH_NOTE, style = PdfTextStyle.Small))
             },

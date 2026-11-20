@@ -14,7 +14,6 @@ import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.OperationDraft
-import ir.hoboho.shooting.domain.model.PointType
 import ir.hoboho.shooting.domain.model.Project
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.repository.ProjectRepository
@@ -191,12 +190,7 @@ class WorkdayEditorViewModel @Inject constructor(
                         ) {
                             updated = updated.copy(endMeter = "")
                         }
-                        val startChanged = updated.startCode != draft.startCode
-                        if (startChanged && updated.startType == PointType.ODC &&
-                            updated.endType == PointType.FAT && updated.endCode.startsWith(draft.startCode)
-                        ) {
-                            updated.copy(endCode = updated.startCode + updated.endCode.removePrefix(draft.startCode))
-                        } else updated
+                        updated
                     }
                 },
                 invalidRows = state.invalidRows - key,
