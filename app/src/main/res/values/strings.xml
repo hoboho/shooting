@@ -121,6 +121,7 @@
     <string name="dashboard_greeting">نمای کلی عملیات شوتینگ</string>
     <string name="dashboard_active_projects">پروژه‌های فعال</string>
     <string name="dashboard_recent_workdays">گزارش‌های اخیر</string>
+    <string name="dashboard_view_operations">مشاهده عملیات‌ها</string>
     <string name="dashboard_recent_operations">آخرین عملیات‌ها</string>
     <string name="dashboard_period_length">طول شوتینگ بازه</string>
     <string name="dashboard_outstanding">طلب تسویه نشده از شرکت</string>
