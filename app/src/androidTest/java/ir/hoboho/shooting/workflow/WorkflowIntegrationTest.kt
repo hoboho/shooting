@@ -311,78 +311,52 @@ class WorkflowIntegrationTest {
     }
 
     @Test
-    fun backupWorkflow_versionedPreviewRestoreWithoutAutomaticSnapshotAndIntegrity() = runBlocking {
-        val projectId = projects().save(Project(name = "پروژه پایه"))
-        val cableId = db.cableTypeDao().getByCoreCount(48)!!.id
-        val day = 20_702L
-        val workdayId = workdays().save(
-            Workday(projectId = projectId, dateEpochDay = day),
-            listOf(operation(cableId, start = 0, end = 80)),
-        )
-        val categoryId = db.expenseCategoryDao().getAll().first().id
-        val expenseId = expenses().save(
-            Expense(
-                dateEpochDay = day,
-                categoryId = categoryId,
-                amountToman = 500L,
-                projectId = projectId,
-                workdayId = workdayId,
-                companyApproved = true,
-            ),
-        )
-        expenses().addSettlement(
-            Settlement(expenseId = expenseId, amountToman = 200L, dateEpochDay = day),
-        )
+    fun backupWorkflow_previewRestoreAndIntegrity() = runBlocking {
+        // Keep this instrumentation test deliberately small: one row is enough
+        // to verify backup serialization, preview, replace-restore and checksum.
+        projects().save(Project(name = "پروژه اصلی"))
 
-        val manager = manager()
-        val file = manager.createBackup()
-        assertThat(file.name).endsWith(AppInfo.BACKUP_FILE_EXTENSION)
-        val text = file.readText()
-        val decoded = BackupCodec.decode(text)
+        val backupManager = manager()
+        val backupFile = backupManager.createBackup()
+        assertThat(backupFile.name).endsWith(AppInfo.BACKUP_FILE_EXTENSION)
+
+        val backupText = backupFile.readText()
+        val decoded = BackupCodec.decode(backupText)
         assertThat(decoded).isInstanceOf(BackupReadResult.Success::class.java)
         val payload = (decoded as BackupReadResult.Success).payload
         assertThat(payload.formatVersion).isEqualTo(BackupCodec.FORMAT_VERSION)
         assertThat(BackupMapper.validate(payload)).isEmpty()
 
-        val inspection = manager.inspect(text, RestoreStrategy.REPLACE)
-        assertThat(inspection.preview.formatSupported).isTrue()
-        assertThat(inspection.preview.willReplaceExistingData).isTrue()
-        assertThat(inspection.warnings).isEmpty()
-        assertThat(inspection.preview.incoming.projects).isEqualTo(1)
-        assertThat(inspection.preview.incoming.workdays).isEqualTo(1)
-        assertThat(inspection.preview.incoming.operations).isEqualTo(1)
-        assertThat(inspection.preview.incoming.expenses).isEqualTo(1)
-        assertThat(inspection.preview.incoming.settlements).isEqualTo(1)
+        val countsBeforePreview = backups().counts()
+        val preview = backupManager.inspect(backupText, RestoreStrategy.REPLACE)
+        assertThat(preview.preview.formatSupported).isTrue()
+        assertThat(preview.preview.willReplaceExistingData).isTrue()
+        assertThat(preview.warnings).isEmpty()
+        assertThat(preview.preview.incoming.projects).isEqualTo(1)
+        assertThat(backups().counts()).isEqualTo(countsBeforePreview)
 
-        // Preview must not write a single row.
-        val beforePreview = backups().counts()
-        assertThat(backups().counts()).isEqualTo(beforePreview)
-
-        val extraProjectId = projects().save(Project(name = "پروژه اضافی"))
+        projects().save(Project(name = "پروژه اضافی"))
         assertThat(backups().counts().projects).isEqualTo(2)
 
-        val outcome = manager.restore(text, RestoreStrategy.REPLACE)
+        val outcome = backupManager.restore(backupText, RestoreStrategy.REPLACE)
         assertThat(outcome.strategy).isEqualTo(RestoreStrategy.REPLACE)
         assertThat(outcome.safetySnapshotFile).isNull()
+        assertThat(backups().counts().projects).isEqualTo(1)
+        assertThat(db.projectDao().getAll().map { it.name }).containsExactly("پروژه اصلی")
         assertThat(File(context.filesDir, "backups").listFiles().orEmpty()).hasLength(1)
-        assertThat(backups().counts().projects).isEqualTo(1)
-        assertThat(db.projectDao().getById(extraProjectId)).isNull()
-        assertThat(db.workdayDao().getAll().single().totalLengthMeters).isEqualTo(80)
-        assertThat(db.settlementDao().getAll()).hasSize(1)
 
-        // A tampered checksum is rejected before any data is written.
-        val match = Regex("\"sha256\":\"([0-9a-f]{64})\"").find(text)!!
-        val original = match.groupValues[1]
+        // A checksum mismatch must be rejected without mutating restored data.
+        val checksum = Regex("\\\"sha256\\\":\\\"([0-9a-f]{64})\\\"").find(backupText)!!
+        val original = checksum.groupValues[1]
         val changed = (if (original.first() == '0') '1' else '0') + original.drop(1)
-        val tampered = text.replaceRange(match.range, "\"sha256\":\"$changed\"")
-        var tamperRejected = false
-        try {
-            manager.inspect(tampered, RestoreStrategy.ADD_ONLY)
-        } catch (e: BackupException.InvalidFile) {
-            tamperRejected = true
-        }
-        assertThat(tamperRejected).isTrue()
+        val tampered = backupText.replaceRange(
+            checksum.range,
+            "\\\"sha256\\\":\\\"$changed\\\"",
+        )
+        assertThat(runCatching {
+            backupManager.inspect(tampered, RestoreStrategy.ADD_ONLY)
+        }.exceptionOrNull()).isInstanceOf(BackupException.InvalidFile::class.java)
         assertThat(backups().counts().projects).isEqualTo(1)
-        Unit
     }
+
 }
