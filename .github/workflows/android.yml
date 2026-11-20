@@ -366,7 +366,7 @@ jobs:
           TAG="v${VERSION_NAME}-release"
           APK="Shooting-release.apk"
           cp "$(find release-apk -name '*.apk' -type f | head -n 1)" "$APK"
-          NOTES="رفع ایرادات"
+          NOTES="## تغییرات نسخه 2.3.1\n\n- افکت سوایپ پیوسته و بازگشت فنری بین گزارش‌های روزانه\n- جلوگیری از شکستن عنوان‌های فارسی از جمله یادداشت‌ها در کارت‌ها و PDF\n- نمایش سبز و برجسته دریافتی‌های واقعی شرکت در دفتر گردش مالی\n- حذف دکمه شناور + از صفحه گزارش‌ها\n- به‌روزرسانی README و ساده‌سازی Android CI"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --clobber
             gh release edit "$TAG" --notes "$NOTES"
