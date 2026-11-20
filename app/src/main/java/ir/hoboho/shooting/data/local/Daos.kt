@@ -371,6 +371,9 @@ interface AppSettingDao {
 
 @Dao
 interface CashLedgerDao {
+    @Query("SELECT * FROM cash_ledger ORDER BY dateEpochDay DESC, id DESC")
+    fun observeAll(): Flow<List<CashLedgerEntryEntity>>
+
     @Query("SELECT COALESCE(SUM(amountToman), 0) FROM cash_ledger")
     fun observeBalance(): Flow<Long>
     @Query("SELECT * FROM cash_ledger WHERE idempotencyKey = :key LIMIT 1")
