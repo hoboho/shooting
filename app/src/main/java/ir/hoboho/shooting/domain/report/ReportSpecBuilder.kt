@@ -313,7 +313,7 @@ object ReportSpecBuilder {
                         if (!projectScoped) add("خالص گردش مالی دفترکل" to toman(net))
                         add("تعداد هزینه‌های تأییدشده" to persianInt(approved.size))
                     },
-                    emphasisedLabels = setOf("خالص گردش مالی"),
+                    emphasisedLabels = setOf("خالص گردش مالی دفترکل"),
                 ),
                 PdfBlock.Table(
                     columns = listOf(
@@ -356,11 +356,15 @@ object ReportSpecBuilder {
         companyPayments: List<CompanyPayment>,
         range: DateRange,
         projectScoped: Boolean = false,
+        cashLedger: List<CashLedgerEntry> = emptyList(),
     ): PdfDocumentSpec {
         val approved = rows.filter { it.expense.companyApproved }
         val totalApproved = approved.sumOf { it.expense.amountToman }
         val totalReceived = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }.sumOf { it.amountToman }
-        val balance = totalReceived - totalApproved
+        val periodLedger = cashLedger.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }
+        val reversals = periodLedger.filter { it.originType == "REVERSAL" }
+        val reversedTotal = reversals.sumOf { it.amountToman }
+        val balance = if (periodLedger.isNotEmpty()) periodLedger.sumOf { it.amountToman } else totalReceived - totalApproved
         val categoryRows = approved.groupBy { it.expense.categoryName }.map { (name, items) ->
             items.sumOf { it.expense.amountToman } to listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
         }.sortedByDescending { it.first }.map { it.second }
@@ -380,6 +384,7 @@ object ReportSpecBuilder {
                 add(PdfBlock.KeyValueList(buildList {
                     add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
                     add("جمع دریافتی کل شرکت (همه پروژه‌ها)" to toman(totalReceived))
+                    add("مجموع برگشتی‌ها" to toman(reversedTotal))
                     if (!projectScoped) {
                         add("خالص گردش نقدی دوره" to toman(balance))
                         add("کسری خالص گردش دوره" to toman((-balance).coerceAtLeast(0L)))
@@ -389,6 +394,12 @@ object ReportSpecBuilder {
                 if (projectScoped) add(PdfBlock.Paragraph(
                     "دریافتی‌ها به پروژه تخصیص داده نشده‌اند؛ خالص گردش نقدی برای پروژه محاسبه نمی‌شود.",
                     PdfTextStyle.Small,
+                ))
+                add(PdfBlock.Table(
+                    columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.DESCRIPTION, 2f), PdfColumn(ReportText.AMOUNT, 1f)),
+                    header = listOf(ReportText.DATE, ReportText.DESCRIPTION, ReportText.AMOUNT),
+                    rows = reversals.map { listOf(DateFormatter.format(it.dateEpochDay), it.description.ifBlank { "برگشت هزینه" }, toman(it.amountToman)) },
+                    caption = "اسناد برگشت هزینه",
                 ))
                 add(PdfBlock.Table(
                     columns = listOf(PdfColumn(ReportText.CATEGORY, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
