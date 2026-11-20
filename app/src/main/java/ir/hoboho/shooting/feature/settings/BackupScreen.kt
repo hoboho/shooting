@@ -2,6 +2,8 @@
 
 package ir.hoboho.shooting.feature.settings
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -83,7 +85,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SectionCard(title = stringResource(R.string.backup_create)) {
+                SectionCard(title = stringResource(R.string.backup_create), icon = Icons.Filled.Save) {
                     Text(stringResource(R.string.backup_magic_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -103,7 +105,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.backup_preview)) {
+                SectionCard(title = stringResource(R.string.backup_preview), icon = Icons.Filled.Visibility) {
                     ShootingButton(
                         text = stringResource(R.string.backup_pick),
                         onClick = { picker.launch(arrayOf("*/*")) },
@@ -138,7 +140,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.backup_strategy)) {
+                SectionCard(title = stringResource(R.string.backup_strategy), icon = Icons.Filled.Security) {
                     ChoiceChips(
                         options = RestoreStrategy.entries,
                         selected = state.strategy,
