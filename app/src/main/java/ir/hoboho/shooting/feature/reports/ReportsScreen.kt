@@ -80,6 +80,7 @@ private data class ProjectFilterChoice(val project: Project?)
 fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val cashLedger by viewModel.cashLedger.collectAsStateWithLifecycle()
+    val pdfReady by viewModel.pdfReady.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val allProjectsText = stringResource(R.string.label_all_projects)
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
@@ -403,6 +404,16 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }
+                }
+            }
+            if (pdfReady) {
+                item {
+                    ShootingButton(
+                        text = "باز کردن فایل PDF",
+                        onClick = viewModel::openGeneratedPdf,
+                        level = ir.hoboho.shooting.ui.components.ButtonLevel.Outline,
+                        icon = Icons.Filled.PictureAsPdf,
+                    )
                 }
             }
         }
