@@ -15,14 +15,12 @@ import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
 import ir.hoboho.shooting.domain.model.Project
-import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 
-/** One expense with its settlement lines, for the expense PDF. */
+/** One approved expense with its optional work-area context, for financial reporting. */
 data class ExpenseReportRow(
     val expense: Expense,
-    val settlements: List<Settlement> = emptyList(),
     val workArea: String = "",
 )
 
