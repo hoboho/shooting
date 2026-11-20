@@ -181,6 +181,8 @@ class ReportsViewModel @Inject constructor(
                 val name = "period-${DateFormatter.format(report.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
+                generatedPdf = file
+                _pdfReady.value = true
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -201,6 +203,8 @@ class ReportsViewModel @Inject constructor(
                 val name = ReportFileNames.project(project.id, current.range)
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
+                generatedPdf = file
+                _pdfReady.value = true
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -219,6 +223,8 @@ class ReportsViewModel @Inject constructor(
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
+                generatedPdf = file
+                _pdfReady.value = true
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
@@ -239,6 +245,8 @@ class ReportsViewModel @Inject constructor(
                 val name = "financial-summary-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
+                generatedPdf = file
+                _pdfReady.value = true
                 showMessage(pdfSavedMessage(saved))
             } catch (t: Throwable) {
                 showMessage(strings.get(R.string.msg_pdf_failed))
