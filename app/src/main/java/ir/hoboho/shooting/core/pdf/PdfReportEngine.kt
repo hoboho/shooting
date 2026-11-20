@@ -197,8 +197,30 @@ class PdfReportEngine @Inject constructor(
                     true
                 }
                 is PdfBlock.KeyValueList -> drawKeyValueList(block, bottom)
+                is PdfBlock.SignatureBlock -> drawSignatureBlock(block, bottom)
                 is PdfBlock.Table -> drawTable(block, bottom)
             }
+        }
+
+        private fun drawSignatureBlock(block: PdfBlock.SignatureBlock, bottom: Float): Boolean {
+            val height = block.heightPt
+            if (cursorY + height > bottom) return false
+            val gap = 24f
+            val columnWidth = (CONTENT_WIDTH - gap) / 2f
+            val topPaint = textPaint(PdfWeight.BOLD, 10f)
+            val namePaint = textPaint(PdfWeight.REGULAR, 9f).apply { color = MUTED }
+            val lineY = cursorY + height - 20f
+            val leftStart = MARGIN_LEFT
+            val rightStart = MARGIN_LEFT + columnWidth + gap
+            // RTL document: company approval on the right, report preparer on the left.
+            canvas?.drawText(block.companyTitle, CONTENT_RIGHT, cursorY + 14f, topPaint.apply { textAlign = Paint.Align.RIGHT })
+            canvas?.drawLine(rightStart, lineY, CONTENT_RIGHT, lineY, linePaint)
+            canvas?.drawText("نام، امضا و مهر", CONTENT_RIGHT, lineY + 13f, namePaint.apply { textAlign = Paint.Align.RIGHT })
+            canvas?.drawText(block.preparerTitle, leftStart + columnWidth, cursorY + 14f, topPaint.apply { textAlign = Paint.Align.RIGHT })
+            canvas?.drawLine(leftStart, lineY, leftStart + columnWidth, lineY, linePaint)
+            canvas?.drawText(block.preparerName.ifBlank { "نام و امضا" }, leftStart + columnWidth, lineY + 13f, namePaint.apply { textAlign = Paint.Align.RIGHT })
+            cursorY += height
+            return true
         }
 
         private fun drawKeyValueList(block: PdfBlock.KeyValueList, bottom: Float): Boolean {
