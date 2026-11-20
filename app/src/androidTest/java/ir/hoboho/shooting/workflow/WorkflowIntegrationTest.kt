@@ -54,7 +54,7 @@ import java.io.File
  * End-to-end on-device verification of the workflows the brief calls out:
  * daily reporting (including a reversed reel), partial/full settlements,
  * separation of length and money, all three PDF exports and a versioned,
- * previewed, safety-snapshot backup/restore round trip.
+ * previewed backup/restore round trip.
  *
  * These are automated integration checks, not a human visual inspection.
  */
@@ -64,7 +64,7 @@ class WorkflowIntegrationTest {
     private lateinit var context: Context
     private lateinit var db: ShootingDatabase
 
-    /** Advances on every read so backup and safety-snapshot filenames differ. */
+    /** Advances on every read so generated backup filenames remain deterministic. */
     private var now = 1_700_000_000_000L
     private val clock = object : Clock {
         override fun nowEpochMilli(): Long = now.also { now += 1_000L }
@@ -311,7 +311,7 @@ class WorkflowIntegrationTest {
     }
 
     @Test
-    fun backupWorkflow_versionedPreviewSafetySnapshotAndIntegrity() = runBlocking {
+    fun backupWorkflow_versionedPreviewRestoreWithoutAutomaticSnapshotAndIntegrity() = runBlocking {
         val projectId = projects().save(Project(name = "پروژه پایه"))
         val cableId = db.cableTypeDao().getByCoreCount(48)!!.id
         val day = 20_702L
@@ -363,11 +363,8 @@ class WorkflowIntegrationTest {
 
         val outcome = manager.restore(text, RestoreStrategy.REPLACE)
         assertThat(outcome.strategy).isEqualTo(RestoreStrategy.REPLACE)
-        assertThat(outcome.safetySnapshotFile).isNotNull()
-        val safety = File(File(context.filesDir, "backups"), outcome.safetySnapshotFile!!)
-        assertThat(safety.exists()).isTrue()
-        assertThat(BackupCodec.decode(safety.readText()))
-            .isInstanceOf(BackupReadResult.Success::class.java)
+        assertThat(outcome.safetySnapshotFile).isNull()
+        assertThat(File(context.filesDir, "backups").listFiles().orEmpty()).hasLength(1)
         assertThat(backups().counts().projects).isEqualTo(1)
         assertThat(db.projectDao().getById(extraProjectId)).isNull()
         assertThat(db.workdayDao().getAll().single().totalLengthMeters).isEqualTo(80)
