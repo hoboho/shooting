@@ -72,6 +72,7 @@ fun ExpensesScreen(
     val overview by viewModel.overview.collectAsStateWithLifecycle()
     val companyPayments by viewModel.companyPayments.collectAsStateWithLifecycle()
     val cashPosition by viewModel.cashPosition.collectAsStateWithLifecycle()
+    val cashLedger by viewModel.cashLedger.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val paymentSaving by viewModel.paymentSaving.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -193,6 +194,20 @@ fun ExpensesScreen(
                                 DateFormatter.format(payment.dateEpochDay) +
                                     if (payment.receiptReference.isBlank()) "" else " — ${payment.receiptReference}",
                                 NumberFormatter.formatToman(payment.amountToman),
+                            )
+                        }
+                    }
+                }
+            }
+            if (cashLedger.isNotEmpty()) {
+                item {
+                    SectionCard(title = "دفتر گردش نقدی و سوابق مالی") {
+                        cashLedger.forEach { entry ->
+                            StatRow(
+                                label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
+                                hint = "شناسه سند: ${entry.originType} #${entry.originId}" +
+                                    (entry.reversalOfEntryId?.let { " | برگشت سند #$it" } ?: ""),
                             )
                         }
                     }

@@ -10,6 +10,7 @@ import ir.hoboho.shooting.domain.ExpenseOverview
 import ir.hoboho.shooting.core.format.NumberFormatter
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.CompanyPayment
+import ir.hoboho.shooting.domain.model.CashLedgerEntry
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +28,9 @@ class ExpensesViewModel @Inject constructor(
 ) : ViewModel() {
 
     val expenses: StateFlow<List<Expense>> = repository.observeExpenses()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val cashLedger: StateFlow<List<CashLedgerEntry>> = repository.observeCashLedger()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val cashPosition = repository.observeCashPosition()

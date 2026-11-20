@@ -19,6 +19,7 @@ import ir.hoboho.shooting.domain.ValidationField
 import ir.hoboho.shooting.domain.ValidationIssue
 import ir.hoboho.shooting.domain.Validator
 import ir.hoboho.shooting.domain.model.Expense
+import ir.hoboho.shooting.domain.model.CashLedgerEntry
 import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.repository.ExpenseRepository
@@ -94,7 +95,7 @@ class ExpenseRepositoryImpl @Inject constructor(
             (previous?.companyApproved != true || previous.amountToman != expense.amountToman)
         if (addDebit) {
             cashLedgerDao.insert(CashLedgerEntryEntity(
-                uuid = UUID.randomUUID().toString(), idempotencyKey = "expense:$id:$now",
+                uuid = UUID.randomUUID().toString(), idempotencyKey = "expense:${entity.uuid}:$now",
                 originType = "EXPENSE", originId = id, amountToman = -expense.amountToman,
                 dateEpochDay = expense.dateEpochDay,
                 description = expense.description.ifBlank { "هزینه تأییدشده #$id" }, createdAt = now,
@@ -130,6 +131,10 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun getAllSettlements(): List<Settlement> =
         settlementDao.getAll().map { it.toDomain() }
+
+    override fun observeCashLedger(): Flow<List<CashLedgerEntry>> = cashLedgerDao.observeAll().map { rows ->
+        rows.map { CashLedgerEntry(it.id, it.uuid, it.idempotencyKey, it.originType, it.originId, it.amountToman, it.dateEpochDay, it.description, it.createdAt, it.reversalOfEntryId) }
+    }
 
     override fun observeCashPosition(): Flow<ir.hoboho.shooting.domain.model.CashPosition> =
         cashLedgerDao.observeBalance().map { ir.hoboho.shooting.domain.model.CashPosition(it) }
