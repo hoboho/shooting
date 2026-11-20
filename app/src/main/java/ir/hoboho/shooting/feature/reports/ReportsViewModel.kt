@@ -66,7 +66,7 @@ class ReportsViewModel @Inject constructor(
     private val strings: StringProvider,
 ) : ViewModel() {
 
-    private val cashLedger = expenseRepository.observeCashLedger()
+    val cashLedger = expenseRepository.observeCashLedger()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val tab = MutableStateFlow(ReportTab.DAILY)
