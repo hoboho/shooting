@@ -243,7 +243,7 @@ class WorkflowIntegrationTest {
     }
 
     @Test
-    fun expenseWorkflow_partialAndFullSettlement_andSeparatePeriodAndExpensePdfs() = runBlocking {
+    fun expenseWorkflow_approvalReversalAndIndependentFinancialPdfs() = runBlocking {
         val projectId = projects().save(Project(name = "پروژه ب"))
         val cableId = db.cableTypeDao().getByCoreCount(12)!!.id
         val day = 20_701L
@@ -254,59 +254,42 @@ class WorkflowIntegrationTest {
         val categoryId = db.expenseCategoryDao().getAll().first().id
         val expenseId = expenses().save(
             Expense(
-                dateEpochDay = day,
-                categoryId = categoryId,
-                amountToman = 1_000L,
-                description = "سوخت خودرو",
-                projectId = projectId,
-                workdayId = workdayId,
+                dateEpochDay = day, categoryId = categoryId, amountToman = 1_000L,
+                description = "سوخت خودرو", projectId = projectId, workdayId = workdayId,
                 companyApproved = true,
             ),
         )
 
-        expenses().addSettlement(Settlement(expenseId = expenseId, amountToman = 300L, dateEpochDay = day))
-        expenses().addSettlement(Settlement(expenseId = expenseId, amountToman = 200L, dateEpochDay = day + 1))
-        val partial = expenses().getExpense(expenseId)!!
-        assertThat(partial.settledAmountToman).isEqualTo(500L)
-        assertThat(partial.outstandingToman).isEqualTo(500L)
-        assertThat(partial.status).isEqualTo(SettlementStatus.PARTIAL)
+        val repo = expenses()
+        repo.save(repo.getExpense(expenseId)!!.copy(companyApproved = false))
+        val afterRejection = repo.observeCashLedger().first().filter { it.originId == expenseId }
+        assertThat(afterRejection).hasSize(2)
+        val originalDebit = afterRejection.single { it.originType == "EXPENSE" }
+        val reversal = afterRejection.single { it.originType == "REVERSAL" }
+        assertThat(reversal.amountToman).isEqualTo(1_000L)
+        assertThat(reversal.dateEpochDay).isEqualTo(day)
+        assertThat(reversal.reversalOfEntryId).isEqualTo(originalDebit.id)
 
-        expenses().addSettlement(Settlement(expenseId = expenseId, amountToman = 500L, dateEpochDay = day + 2))
-        val settled = expenses().getExpense(expenseId)!!
-        assertThat(settled.settledAmountToman).isEqualTo(1_000L)
-        assertThat(settled.outstandingToman).isEqualTo(0L)
-        assertThat(settled.status).isEqualTo(SettlementStatus.SETTLED)
-
-        var excessRejected = false
-        try {
-            expenses().addSettlement(
-                Settlement(expenseId = expenseId, amountToman = 1L, dateEpochDay = day + 3),
-            )
-        } catch (e: ValidationException) {
-            excessRejected = true
-        }
-        assertThat(excessRejected).isTrue()
+        repo.save(repo.getExpense(expenseId)!!.copy(companyApproved = true))
+        val afterReapproval = repo.observeCashLedger().first().filter { it.originId == expenseId }
+        assertThat(afterReapproval).hasSize(3)
+        assertThat(afterReapproval.count { it.originType == "EXPENSE" }).isEqualTo(2)
 
         val range = DateRange(day - 1, day + 3)
         val allWorkdays = workdays().getAllWorkdaysWithOperations()
-        val allExpenses = expenses().getAllExpenses()
+        val allExpenses = repo.getAllExpenses()
         val report = PeriodAggregator.build(
-            range = range,
-            workdays = allWorkdays,
-            expenses = allExpenses,
+            range = range, workdays = allWorkdays, expenses = allExpenses,
             cableTypes = references().getAllCableTypes(),
         )
         assertThat(report.totalLengthMeters).isEqualTo(300)
         assertThat(report.totalExpensesToman).isEqualTo(1_000L)
-        assertThat(report.settledToman).isEqualTo(1_000L)
-        assertThat(report.outstandingToman).isEqualTo(0L)
         render(ReportSpecBuilder.period(report), "period-workflow.pdf")
 
-        val settlements = expenses().getAllSettlements()
-        val rows = allExpenses.map { expense ->
-            ExpenseReportRow(expense, settlements.filter { it.expenseId == expense.id })
-        }
-        render(ReportSpecBuilder.expenses(rows, range), "expenses-workflow.pdf")
+        val rows = allExpenses.map { expense -> ExpenseReportRow(expense) }
+        val ledger = repo.observeCashLedger().first()
+        render(ReportSpecBuilder.expenses(rows, range, cashLedger = ledger), "expenses-workflow.pdf")
+        render(ReportSpecBuilder.expensesExecutiveSummary(rows, emptyList(), range, cashLedger = ledger), "financial-summary-workflow.pdf")
         Unit
     }
 
