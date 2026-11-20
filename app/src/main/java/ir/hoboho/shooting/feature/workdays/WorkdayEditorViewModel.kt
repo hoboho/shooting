@@ -91,7 +91,7 @@ class WorkdayEditorViewModel @Inject constructor(
         }
     }
 
-    fun load(workdayId: Long, initialProjectId: Long) {
+    fun load(workdayId: Long, initialProjectId: Long, forceNew: Boolean = true) {
         viewModelScope.launch {
             if (workdayId > 0L) {
                 workdayRepository.getWorkday(workdayId)?.let { workday ->
