@@ -29,6 +29,9 @@ class ExpensesViewModel @Inject constructor(
     val expenses: StateFlow<List<Expense>> = repository.observeExpenses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val cashPosition = repository.observeCashPosition()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ir.hoboho.shooting.domain.model.CashPosition(0L))
+
     val companyPayments: StateFlow<List<CompanyPayment>> = repository.observeCompanyPayments()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

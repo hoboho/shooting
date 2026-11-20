@@ -71,6 +71,7 @@ fun ExpensesScreen(
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val overview by viewModel.overview.collectAsStateWithLifecycle()
     val companyPayments by viewModel.companyPayments.collectAsStateWithLifecycle()
+    val cashPosition by viewModel.cashPosition.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Long?>(null) }
@@ -177,8 +178,10 @@ fun ExpensesScreen(
                         NumberFormatter.formatToman(overview.totalReimbursedToman))
                     StatRow(stringResource(R.string.label_unallocated_company_payments),
                         NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
+                    StatRow("موجودی صندوق پروژه", NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
+                    StatRow("مطالبات از شرکت", NumberFormatter.formatToman(cashPosition.companyReceivableToman))
                     StatRow(stringResource(R.string.label_outstanding_receivables),
-                        NumberFormatter.formatToman(overview.outstandingToman), emphasised = true)
+                        NumberFormatter.formatToman(overview.outstandingToman))
                 }
             }
             if (companyPayments.isNotEmpty()) {
