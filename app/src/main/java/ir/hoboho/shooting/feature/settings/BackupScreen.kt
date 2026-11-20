@@ -94,14 +94,6 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                         onClick = createBackup,
                         enabled = !state.busy,
                     )
-                    if (state.backupAvailable) {
-                        ShootingButton(
-                            text = "باز کردن فایل پشتیبان",
-                            onClick = viewModel::openCreatedBackup,
-                            level = ir.hoboho.shooting.ui.components.ButtonLevel.Outline,
-                            enabled = !state.busy,
-                        )
-                    }
                 }
             }
             item {
