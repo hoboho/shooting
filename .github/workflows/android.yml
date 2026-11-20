@@ -18,8 +18,8 @@ concurrency:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx3g
-  # Version build component for the 2.3.1 release.
-  SHOOTING_VERSION_BUILD: 1
+  # Version build component for the 2.3.4 release.
+  SHOOTING_VERSION_BUILD: 4
 
 permissions:
   contents: read
@@ -367,11 +367,11 @@ jobs:
           APK="Shooting-release.apk"
           cp "$(find release-apk -name '*.apk' -type f | head -n 1)" "$APK"
           NOTES="$(cat <<'RELEASE_NOTES'
-          ## تغییرات نسخه 2.3.1
+          ## تغییرات نسخه 2.3.4
 
           - افکت سوایپ پیوسته و بازگشت فنری بین گزارش‌های روزانه
           - جلوگیری از شکستن عنوان‌های فارسی از جمله یادداشت‌ها در کارت‌ها و PDF
-          - نمایش سبز و برجسته دریافتی‌های واقعی شرکت در دفتر گردش مالی
+          - نمایش سبز دریافتی‌های واقعی شرکت با کوتاه‌سازی نقطه‌چین توضیحات طولانی
           - حذف دکمه شناور + از صفحه گزارش‌ها
           - به‌روزرسانی README و ساده‌سازی Android CI
           RELEASE_NOTES
