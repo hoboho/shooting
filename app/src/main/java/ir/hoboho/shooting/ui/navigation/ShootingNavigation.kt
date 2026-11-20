@@ -219,6 +219,12 @@ fun ShootingNavHost(
                 workdayId = entry.arguments?.getLong("workdayId") ?: 0L,
                 onEdit = { id -> navController.navigate(Routes.workdayEditor(id)) },
                 onBack = { navController.popBackStack() },
+                onNavigateWorkday = { id ->
+                    navController.navigate(Routes.workdayDetail(id)) {
+                        popUpTo(Routes.WORKDAY_DETAIL) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(Routes.EXPENSES) {
