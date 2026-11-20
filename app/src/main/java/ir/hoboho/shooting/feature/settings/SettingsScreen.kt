@@ -2,6 +2,8 @@
 
 package ir.hoboho.shooting.feature.settings
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,7 +45,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SectionCard(title = stringResource(R.string.settings_appearance)) {
+                SectionCard(title = stringResource(R.string.settings_appearance), icon = Icons.Filled.Palette) {
                     ChoiceChips(
                         options = ThemeMode.entries,
                         selected = settings.themeMode,
@@ -61,7 +63,7 @@ fun SettingsScreen(
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.settings_reference_data)) {
+                SectionCard(title = stringResource(R.string.settings_reference_data), icon = Icons.Filled.Tune) {
                     ShootingButton(
                         text = stringResource(R.string.settings_cable_types),
                         onClick = onOpenReferences,
@@ -75,7 +77,7 @@ fun SettingsScreen(
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.settings_backup)) {
+                SectionCard(title = stringResource(R.string.settings_backup), icon = Icons.Filled.Backup) {
                     ShootingButton(
                         text = stringResource(R.string.settings_backup),
                         onClick = onOpenBackup,
@@ -84,7 +86,7 @@ fun SettingsScreen(
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.settings_updates)) {
+                SectionCard(title = stringResource(R.string.settings_updates), icon = Icons.Filled.SystemUpdate) {
                     Text(stringResource(R.string.settings_current_version, ir.hoboho.shooting.BuildConfig.APP_VERSION_NAME),
                         style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
                     ShootingButton(
@@ -109,7 +111,7 @@ fun SettingsScreen(
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.settings_about)) {
+                SectionCard(title = stringResource(R.string.settings_about), icon = Icons.Filled.Info) {
                     Text(stringResource(R.string.settings_about_text),
                         style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
                     Text("${stringResource(R.string.app_name)} ${ir.hoboho.shooting.core.backup.AppInfo.VERSION_NAME}",
