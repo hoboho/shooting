@@ -10,6 +10,7 @@ import ir.hoboho.shooting.core.pdf.PdfDocumentSpec
 import ir.hoboho.shooting.core.pdf.PdfTextStyle
 import ir.hoboho.shooting.domain.model.CableLengthRow
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
 import ir.hoboho.shooting.domain.model.Project
@@ -277,7 +278,7 @@ object ReportSpecBuilder {
 
     // ----------------------------------------------------------- expense report
 
-    fun expenses(rows: List<ExpenseReportRow>, range: DateRange): PdfDocumentSpec {
+    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList()): PdfDocumentSpec {
         val expenseRows = rows.mapIndexed { index, row ->
             val e = row.expense
             listOf(
@@ -305,6 +306,11 @@ object ReportSpecBuilder {
         val total = rows.sumOf { it.expense.amountToman }
         val settled = rows.sumOf { it.expense.settledAmountToman }
         val outstanding = rows.sumOf { it.expense.outstandingToman }
+        val receipts = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }
+        val received = receipts.sumOf { it.amountToman }
+        val approvedExpenses = rows.filter { it.expense.companyApproved }.sumOf { it.expense.amountToman }
+        val cashBalance = received - approvedExpenses
+        val receiptRows = receipts.map { listOf(DateFormatter.format(it.dateEpochDay), it.receiptReference.ifBlank { NumberFormatter.EM_DASH }, persianLong(it.amountToman), it.note.ifBlank { NumberFormatter.EM_DASH }) }
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
             subtitle = DateFormatter.formatRange(range),
@@ -313,8 +319,11 @@ object ReportSpecBuilder {
                 PdfBlock.KeyValueList(
                     listOf(
                         ReportText.TOTAL_EXPENSES to toman(total),
+                        "دریافتی ثبت‌شده از شرکت" to toman(received),
                         ReportText.TOTAL_SETTLED to toman(settled),
                         ReportText.TOTAL_OUTSTANDING to toman(outstanding),
+                        "مانده صندوق پروژه" to toman(cashBalance),
+                        "مطالبات از شرکت" to toman((-cashBalance).coerceAtLeast(0L)),
                     ),
                     emphasisedLabels = setOf(ReportText.TOTAL_OUTSTANDING),
                 ),
@@ -340,6 +349,14 @@ object ReportSpecBuilder {
                     aligns = List(9) { PdfAlign.CENTER },
                 ),
                 PdfBlock.Table(
+                    columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.RECEIPT, 1.2f), PdfColumn(ReportText.AMOUNT, 1f), PdfColumn(ReportText.NOTES, 2f)),
+                    header = listOf(ReportText.DATE, ReportText.RECEIPT, ReportText.AMOUNT, ReportText.NOTES),
+                    rows = receiptRows,
+                    caption = "دریافتی‌های ثبت‌شده از شرکت",
+                    aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER, PdfAlign.START),
+                ),
+                PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")),
+                PdfBlock.Table(
                     columns = listOf(
                         PdfColumn(ReportText.DATE, 1f),
                         PdfColumn(ReportText.DESCRIPTION, 2f),
@@ -360,5 +377,49 @@ object ReportSpecBuilder {
         SettlementStatus.UNSETTLED -> ReportText.UNSETTLED
         SettlementStatus.PARTIAL -> ReportText.PARTIAL
         SettlementStatus.SETTLED -> ReportText.SETTLED
+    } 
+    /** Concise executive view calculated from the same expense and receipt rows as the detailed report. */
+    fun expensesExecutiveSummary(
+        rows: List<ExpenseReportRow>,
+        companyPayments: List<CompanyPayment>,
+        range: DateRange,
+    ): PdfDocumentSpec {
+        val approved = rows.filter { it.expense.companyApproved }
+        val totalApproved = approved.sumOf { it.expense.amountToman }
+        val totalReceived = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }.sumOf { it.amountToman }
+        val balance = totalReceived - totalApproved
+        val categoryRows = approved.groupBy { it.expense.categoryName }.map { (name, items) ->
+            listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
+        }.sortedByDescending { it[2] }
+        val projectRows = approved.groupBy { it.expense.projectName ?: NumberFormatter.EM_DASH }.map { (name, items) ->
+            listOf(name, persianInt(items.size), toman(items.sumOf { it.expense.amountToman }))
+        }.sortedByDescending { it[2] }
+        return PdfDocumentSpec(
+            title = "خلاصه مدیریتی مالی پروژه",
+            subtitle = DateFormatter.formatRange(range),
+            headerLines = header() + listOf("شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}", "مبنای محاسبه: هزینه‌های تأییدشده و دریافتی‌های ثبت‌شده"),
+            blocks = buildList {
+                add(PdfBlock.KeyValueList(listOf(
+                    "جمع هزینه‌های تأییدشده" to toman(totalApproved),
+                    "جمع دریافتی از شرکت" to toman(totalReceived),
+                    "مانده صندوق پروژه" to toman(balance),
+                    "مطالبات از شرکت" to toman((-balance).coerceAtLeast(0L)),
+                    "تعداد اسناد هزینه" to persianInt(approved.size),
+                ), emphasisedLabels = setOf("مانده صندوق پروژه", "مطالبات از شرکت")))
+                add(PdfBlock.Table(
+                    columns = listOf(PdfColumn(ReportText.CATEGORY, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
+                    header = listOf(ReportText.CATEGORY, "تعداد", ReportText.AMOUNT),
+                    rows = categoryRows, caption = "خلاصه هزینه بر اساس دسته‌بندی",
+                ))
+                add(PdfBlock.Table(
+                    columns = listOf(PdfColumn(ReportText.PROJECT, 1.5f), PdfColumn("تعداد", 0.7f), PdfColumn(ReportText.AMOUNT, 1f)),
+                    header = listOf(ReportText.PROJECT, "تعداد", ReportText.AMOUNT),
+                    rows = projectRows, caption = "تخصیص هزینه بر اساس پروژه",
+                ))
+                add(PdfBlock.Paragraph("این خلاصه بر مبنای همان اسناد گزارش تفصیلی تهیه شده است. هزینه‌های تأییدنشده در گردش نقدی منظور نشده‌اند.", PdfTextStyle.Small))
+                add(PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")))
+            },
+        )
     }
+
 }

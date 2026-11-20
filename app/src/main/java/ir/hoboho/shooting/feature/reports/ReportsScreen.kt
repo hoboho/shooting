@@ -72,6 +72,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
     val exportPeriod = rememberFileSaveAction(viewModel::exportPeriodPdf)
     val exportExpenses = rememberFileSaveAction(viewModel::exportExpensesPdf)
+    val exportExpensesSummary = rememberFileSaveAction(viewModel::exportExpensesSummaryPdf)
     val exportProject = rememberFileSaveAction(viewModel::exportProjectPdf)
 
     LaunchedEffect(state.message) {
@@ -300,6 +301,13 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_expenses),
                             onClick = exportExpenses,
+                            icon = Icons.Filled.PictureAsPdf,
+                        )
+                    }
+                    item {
+                        ShootingButton(
+                            text = "خروجی خلاصه مدیریتی مالی",
+                            onClick = exportExpensesSummary,
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }
