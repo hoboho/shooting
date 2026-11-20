@@ -189,8 +189,8 @@ fun ShootingApp(
                                 drag += amount
                                 val destinations = TopLevelDestination.entries
                                 val index = destinations.indexOfFirst { it.route == currentRoute }
-                                val atEdge = (drag > 0f && index == 0) ||
-                                    (drag < 0f && index == destinations.lastIndex)
+                                val atEdge = (drag < 0f && index == 0) ||
+                                    (drag > 0f && index == destinations.lastIndex)
                                 val visualOffset = if (atEdge) {
                                     val limit = size.width * 0.22f
                                     sign(drag) * limit * (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.55f)))
@@ -201,8 +201,8 @@ fun ShootingApp(
                                 val destinations = TopLevelDestination.entries
                                 val index = destinations.indexOfFirst { it.route == currentRoute }
                                 val target = when {
-                                    drag < -size.width * 0.22f && index >= 0 && index < destinations.lastIndex -> destinations[index + 1]
-                                    drag > size.width * 0.22f && index > 0 -> destinations[index - 1]
+                                    drag > size.width * 0.22f && index >= 0 && index < destinations.lastIndex -> destinations[index + 1]
+                                    drag < -size.width * 0.22f && index > 0 -> destinations[index - 1]
                                     else -> null
                                 }
                                 target?.let { destination ->
