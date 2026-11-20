@@ -83,6 +83,7 @@ interface SettingsRepository {
     suspend fun getSettings(): AppSettings
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setDefaultProjectId(id: Long?)
+    suspend fun setOperatorName(value: String)
     suspend fun setLastBackupEpochMilli(value: Long)
 }
 
