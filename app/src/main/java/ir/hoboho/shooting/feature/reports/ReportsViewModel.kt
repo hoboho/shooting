@@ -78,15 +78,17 @@ class ReportsViewModel @Inject constructor(
                 workdayRepository.observeWorkdaysWithOperations(),
                 expenseRepository.observeExpenses(),
                 expenseRepository.observeAllSettlements(),
-                expenseRepository.observeCompanyPayments(),
                 combine(
-                    tab,
-                    range,
-                    projectFilter,
-                    selectedWorkdayId,
-                    referenceRepository.observeCableTypes(),
-                ) { t, r, p, s, cables -> ReportsInputs(t, r, p, s, cables) },
-            ) { projects, workdays, expenses, settlements, companyPayments, inputs ->
+                    expenseRepository.observeCompanyPayments(),
+                    combine(
+                        tab,
+                        range,
+                        projectFilter,
+                        selectedWorkdayId,
+                        referenceRepository.observeCableTypes(),
+                    ) { t, r, p, s, cables -> ReportsInputs(t, r, p, s, cables) },
+                ) { companyPayments, inputs -> inputs.copy(companyPayments = companyPayments) },
+            ) { projects, workdays, expenses, settlements, inputs ->
                 val filteredWorkdays = PeriodAggregator.filterWorkdays(workdays, inputs.range, inputs.projectId)
                 val filteredExpenses = PeriodAggregator.filterExpenses(expenses, inputs.range, inputs.projectId)
                 val settlementsByExpense = settlements.groupBy { it.expenseId }
@@ -111,7 +113,7 @@ class ReportsViewModel @Inject constructor(
                     expenseRows = filteredExpenses.map { expense ->
                         ExpenseReportRow(expense, settlementsByExpense[expense.id].orEmpty())
                     },
-                    companyPayments = companyPayments.filter { it.dateEpochDay in inputs.range.startEpochDay..inputs.range.endEpochDay },
+                    companyPayments = inputs.companyPayments.filter { it.dateEpochDay in inputs.range.startEpochDay..inputs.range.endEpochDay },
                 )
             }.collect { combined ->
                 _state.value = combined.copy(message = _state.value.message)
@@ -245,5 +247,6 @@ class ReportsViewModel @Inject constructor(
         val projectId: Long?,
         val selectedId: Long?,
         val cableTypes: List<CableType>,
+        val companyPayments: List<CompanyPayment> = emptyList(),
     )
 }
