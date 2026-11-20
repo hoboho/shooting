@@ -6,6 +6,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -82,6 +91,9 @@ fun ExpensesScreen(
     var paymentReceiptReference by remember { mutableStateOf("") }
     var paymentDateEpochDay by remember { mutableStateOf(JalaliCalendar.todayEpochDay()) }
     var showPaymentDatePicker by remember { mutableStateOf(false) }
+    var companyPaymentsExpanded by remember { mutableStateOf(false) }
+    var cashLedgerExpanded by remember { mutableStateOf(false) }
+    var financialDetailsExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(error) { error?.let { snackbar.showSnackbar(it); viewModel.consumeError() } }
     if (showPaymentDialog) {
@@ -167,48 +179,128 @@ fun ExpensesScreen(
                 )
             }
             item {
+                val totalReceived = companyPayments.sumOf { it.amountToman }
                 SectionCard(
                     title = stringResource(R.string.expense_overview),
-                    subtitle = stringResource(R.string.expenses_hint),
+                    subtitle = "نمای کلی وضعیت مالی پروژه",
                 ) {
                     StatRow(stringResource(R.string.label_total_expenses),
                         NumberFormatter.formatToman(overview.totalExpensesToman))
-                    val totalReceived = companyPayments.sumOf { it.amountToman }
-                    StatRow(stringResource(R.string.label_total_company_payments),
-                        NumberFormatter.formatToman(totalReceived))
-                    StatRow(stringResource(R.string.label_allocated_company_payments),
-                        NumberFormatter.formatToman(overview.totalReimbursedToman))
-                    StatRow(stringResource(R.string.label_unallocated_company_payments),
-                        NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
-                    StatRow("موجودی صندوق پروژه", NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
-                    StatRow("مطالبات از شرکت", NumberFormatter.formatToman(cashPosition.companyReceivableToman))
-                    StatRow(stringResource(R.string.label_outstanding_receivables),
-                        NumberFormatter.formatToman(overview.outstandingToman))
+                    CompanyIncomeRow(
+                        label = stringResource(R.string.label_total_company_payments),
+                        value = NumberFormatter.formatToman(totalReceived),
+                    )
+                    StatRow("موجودی صندوق پروژه",
+                        NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
+                    StatRow("مطالبات از شرکت",
+                        NumberFormatter.formatToman(cashPosition.companyReceivableToman))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            financialDetailsExpanded = !financialDetailsExpanded
+                        }.padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            if (financialDetailsExpanded) "پنهان کردن جزئیات تسویه" else "جزئیات تسویه و مطالبات",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Icon(
+                            if (financialDetailsExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    AnimatedVisibility(visible = financialDetailsExpanded) {
+                        Column {
+                            StatRow(stringResource(R.string.label_allocated_company_payments),
+                                NumberFormatter.formatToman(overview.totalReimbursedToman))
+                            StatRow(stringResource(R.string.label_unallocated_company_payments),
+                                NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
+                            StatRow(stringResource(R.string.label_outstanding_receivables),
+                                NumberFormatter.formatToman(overview.outstandingToman))
+                        }
+                    }
                 }
             }
             if (companyPayments.isNotEmpty()) {
                 item {
-                    SectionCard(title = stringResource(R.string.expense_company_payments)) {
-                        companyPayments.forEach { payment ->
-                            StatRow(
-                                DateFormatter.format(payment.dateEpochDay) +
-                                    if (payment.receiptReference.isBlank()) "" else " — ${payment.receiptReference}",
-                                NumberFormatter.formatToman(payment.amountToman),
-                            )
+                    SectionCard(
+                        title = stringResource(R.string.expense_company_payments),
+                        subtitle = "${NumberFormatter.formatInteger(companyPayments.size)} دریافتی ثبت‌شده",
+                        trailing = {
+                            IconButton(onClick = { companyPaymentsExpanded = !companyPaymentsExpanded }) {
+                                Icon(
+                                    if (companyPaymentsExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = if (companyPaymentsExpanded) "بستن سوابق دریافتی" else "نمایش سوابق دریافتی",
+                                )
+                            }
+                        },
+                    ) {
+                        AnimatedVisibility(visible = companyPaymentsExpanded) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                companyPayments.forEach { payment ->
+                                    Surface(
+                                        color = (if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844))
+                                            .copy(alpha = 0.09f),
+                                        shape = RoundedCornerShape(14.dp),
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    DateFormatter.format(payment.dateEpochDay),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                )
+                                                if (payment.receiptReference.isNotBlank()) {
+                                                    Text(
+                                                        payment.receiptReference,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                NumberFormatter.formatToman(payment.amountToman),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
             if (cashLedger.isNotEmpty()) {
                 item {
-                    SectionCard(title = "دفتر گردش نقدی و سوابق مالی") {
-                        cashLedger.forEach { entry ->
-                            StatRow(
-                                label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
-                                value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
-                                hint = "شناسه سند: ${entry.originType} #${entry.originId}" +
-                                    (entry.reversalOfEntryId?.let { " | برگشت سند #$it" } ?: ""),
-                            )
+                    SectionCard(
+                        title = "دفتر گردش مالی",
+                        subtitle = "${NumberFormatter.formatInteger(cashLedger.size)} تراکنش در دفتر",
+                        trailing = {
+                            IconButton(onClick = { cashLedgerExpanded = !cashLedgerExpanded }) {
+                                Icon(
+                                    if (cashLedgerExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = if (cashLedgerExpanded) "بستن دفتر گردش مالی" else "باز کردن دفتر گردش مالی",
+                                )
+                            }
+                        },
+                    ) {
+                        AnimatedVisibility(visible = cashLedgerExpanded) {
+                            Column {
+                                cashLedger.forEach { entry ->
+                                    StatRow(
+                                        label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                        value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -217,6 +309,7 @@ fun ExpensesScreen(
                 item { EmptyState(stringResource(R.string.expenses_empty)) }
             }
             itemsIndexed(expenses, key = { _, item -> item.id }) { index, expense ->
+                var expanded by remember(expense.id) { mutableStateOf(false) }
                 SectionCard(
                     title = expense.categoryName,
                     subtitle = "${DateFormatter.format(expense.dateEpochDay)} — ${expense.description}",
@@ -233,33 +326,55 @@ fun ExpensesScreen(
                         )
                     },
                     trailing = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             TagChip(stringResource(if (expense.companyApproved) R.string.expense_approved else R.string.expense_not_approved))
-                            TagChip(statusLabel(expense.status))
+                            IconButton(onClick = { expanded = !expanded }) {
+                                Icon(
+                                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = if (expanded) "بستن جزئیات هزینه" else "نمایش جزئیات هزینه",
+                                )
+                            }
                         }
                     },
                 ) {
-                    StatRow(stringResource(R.string.expense_amount),
-                        NumberFormatter.formatToman(expense.amountToman))
-                    StatRow(stringResource(R.string.expense_reimbursed),
-                        NumberFormatter.formatToman(expense.settledAmountToman))
-                    StatRow(stringResource(R.string.expense_outstanding),
-                        NumberFormatter.formatToman(expense.outstandingToman), emphasised = true)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { onEditExpense(expense.id) }) {
-                            Text(stringResource(R.string.action_edit))
-                        }
-                        Text(stringResource(R.string.expense_settlements) + ": " +
-                            NumberFormatter.formatInteger(expense.settlementCount),
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.weight(1f))
-                        IconButton(onClick = { pendingDelete = expense.id }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete),
-                                tint = MaterialTheme.colorScheme.error)
+                    AnimatedVisibility(visible = expanded) {
+                        Column {
+                            StatRow(stringResource(R.string.expense_amount),
+                                NumberFormatter.formatToman(expense.amountToman))
+                            StatRow(stringResource(R.string.expense_reimbursed),
+                                NumberFormatter.formatToman(expense.settledAmountToman))
+                            StatRow(stringResource(R.string.expense_outstanding),
+                                NumberFormatter.formatToman(expense.outstandingToman), emphasised = true)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = { onEditExpense(expense.id) }) {
+                                    Text(stringResource(R.string.action_edit))
+                                }
+                                Text(stringResource(R.string.expense_settlements) + ": " +
+                                    NumberFormatter.formatInteger(expense.settlementCount),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.weight(1f))
+                                IconButton(onClick = { pendingDelete = expense.id }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete),
+                                        tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompanyIncomeRow(label: String, value: String) {
+    val incomeColor = if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = incomeColor)
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = incomeColor)
     }
 }
