@@ -117,7 +117,7 @@ class ReportsViewModel @Inject constructor(
                     ),
                     expenseRows = filteredExpenses.filter { it.companyApproved }.map { expense ->
                         ExpenseReportRow(
-                            expense, emptyList(),
+                            expense,
                             filteredWorkdays.firstOrNull { it.id == expense.workdayId }?.workArea.orEmpty(),
                         )
                     },
