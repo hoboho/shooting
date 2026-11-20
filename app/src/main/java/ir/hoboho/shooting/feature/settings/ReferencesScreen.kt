@@ -2,6 +2,8 @@
 
 package ir.hoboho.shooting.feature.settings
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,7 +58,7 @@ fun ReferencesScreen(viewModel: ReferencesViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SectionCard(title = stringResource(R.string.settings_cable_types)) {
+                SectionCard(title = stringResource(R.string.settings_cable_types), icon = Icons.Filled.Cable) {
                     cableTypes.forEach { type ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(type.label, modifier = Modifier.weight(1f))
@@ -77,7 +79,7 @@ fun ReferencesScreen(viewModel: ReferencesViewModel = hiltViewModel()) {
                 }
             }
             item {
-                SectionCard(title = stringResource(R.string.settings_expense_categories)) {
+                SectionCard(title = stringResource(R.string.settings_expense_categories), icon = Icons.Filled.Category) {
                     categories.forEach { category ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(category.name, modifier = Modifier.weight(1f))
