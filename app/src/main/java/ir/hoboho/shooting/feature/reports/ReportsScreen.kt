@@ -11,6 +11,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -160,7 +161,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                                 val limit = size.width * 0.18f
                                                 sign(drag) * limit * (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.45f)))
                                             }
-                                            dailySwipeOffset.snapTo(visual)
+                                            dailySwipeScope.launch { dailySwipeOffset.snapTo(visual) }
                                         },
                                         onDragEnd = {
                                             val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
@@ -336,7 +337,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                     .sortedByDescending { it.dateEpochDay }
                                     .forEach { payment ->
                                         androidx.compose.foundation.layout.Row(
-                                            modifier = Modifier.fillMaxSize().padding(vertical = 7.dp),
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                         ) {
                                             androidx.compose.foundation.layout.Column {
