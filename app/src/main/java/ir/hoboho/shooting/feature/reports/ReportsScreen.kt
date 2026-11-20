@@ -250,10 +250,6 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         SectionCard(title = stringResource(R.string.label_expense_summary), icon = Icons.Filled.AccountBalanceWallet) {
                             StatRow(stringResource(R.string.reports_expense_totals),
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
-                            StatRow(stringResource(R.string.reports_settled),
-                                NumberFormatter.formatToman(state.periodReport.settledToman))
-                            StatRow(stringResource(R.string.reports_outstanding),
-                                NumberFormatter.formatToman(state.periodReport.outstandingToman), emphasised = true)
                             Text(stringResource(R.string.reports_note_length_money),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -301,10 +297,6 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         SectionCard(title = stringResource(R.string.label_expense_summary)) {
                             StatRow(stringResource(R.string.reports_expense_totals),
                                 NumberFormatter.formatToman(state.periodReport.totalExpensesToman))
-                            StatRow(stringResource(R.string.reports_settled),
-                                NumberFormatter.formatToman(state.periodReport.settledToman))
-                            StatRow(stringResource(R.string.reports_outstanding),
-                                NumberFormatter.formatToman(state.periodReport.outstandingToman), emphasised = true)
                         }
                     }
                     item {
@@ -315,7 +307,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                                 state.expenseRows.forEach { row ->
                                     StatRow(
                                         label = "${DateFormatter.format(row.expense.dateEpochDay)} — ${row.expense.categoryName}",
-                                        value = NumberFormatter.formatToman(row.expense.outstandingToman),
+                                        value = NumberFormatter.formatToman(row.expense.amountToman),
                                     )
                                 }
                             }
