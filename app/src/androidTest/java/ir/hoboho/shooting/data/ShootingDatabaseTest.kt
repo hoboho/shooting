@@ -31,7 +31,7 @@ import org.junit.runner.RunWith
 /**
  * On-device Room/repository tests. Run with `./gradlew connectedDebugAndroidTest`.
  * These verify the parts that cannot be tested on a plain JVM: SQLite foreign
- * keys, the unique (project, date) index, transaction-safe totals and restore.
+ * keys, multiple same-day reports, transaction-safe totals and restore.
  */
 @RunWith(AndroidJUnit4::class)
 class ShootingDatabaseTest {
@@ -255,6 +255,64 @@ class ShootingDatabaseTest {
         assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-4_000_000L)
         repository.delete(expenseId)
         assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+    }
+
+    @Test
+    fun backupRoundTrip_preservesApprovalLedgerReversalsAndDefaultProject() = runBlocking {
+        val projectId = projects().save(Project(name = "پروژه پشتیبان"))
+        db.appSettingDao().upsert(ir.hoboho.shooting.data.local.AppSettingEntity("default_project_id", projectId.toString()))
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val repo = expenses()
+        val expenseId = repo.save(Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 100L, companyApproved = true))
+        val original = repo.getExpense(expenseId)!!
+        repo.save(original.copy(amountToman = 150L))
+        repo.allocateCompanyPayment(200L, 20_001L, "receipt", "")
+        val removedId = repo.save(Expense(dateEpochDay = 20_002L, categoryId = categoryId, amountToman = 25L, companyApproved = true))
+        repo.delete(removedId)
+        repo.save(Expense(dateEpochDay = 20_003L, categoryId = categoryId, amountToman = 40L, companyApproved = false))
+
+        val source = backups().snapshot()
+        assertThat(source.expenses.map { it.companyApproved }).containsExactly(true, false)
+        val payload = ir.hoboho.shooting.core.backup.BackupMapper.toPayload(source, "2.2.3", 2020003, 10L)
+        val decoded = ir.hoboho.shooting.core.backup.BackupCodec.decode(
+            ir.hoboho.shooting.core.backup.BackupCodec.encode(payload),
+        ) as ir.hoboho.shooting.core.backup.BackupReadResult.Success
+        assertThat(ir.hoboho.shooting.core.backup.BackupMapper.validate(decoded.payload)).isEmpty()
+        val incoming = ir.hoboho.shooting.core.backup.BackupMapper.toData(decoded.payload)
+        val beforeBalance = repo.observeCashPosition().first().cashboxBalanceToman
+        backups().restore(incoming, RestoreStrategy.ADD_ONLY)
+        backups().restore(incoming, RestoreStrategy.MERGE)
+        assertThat(repo.observeCashPosition().first().cashboxBalanceToman).isEqualTo(beforeBalance)
+        assertThat(backups().snapshot().cashLedger).containsExactlyElementsIn(source.cashLedger!!).inOrder()
+        backups().restore(incoming, RestoreStrategy.REPLACE)
+        val restored = backups().snapshot()
+        assertThat(restored.cashLedger).containsExactlyElementsIn(source.cashLedger!!)
+        assertThat(repo.observeCashPosition().first().cashboxBalanceToman).isEqualTo(beforeBalance)
+        assertThat(restored.expenses.map { it.companyApproved }).containsExactly(true, false)
+        assertThat(restored.projects.single().id).isNotEqualTo(projectId)
+        assertThat(restored.settings.defaultProjectId).isEqualTo(restored.projects.single().id)
+        assertThat(db.cashLedgerDao().getAll().filter { it.reversalOfEntryId != null }).hasSize(2)
+    }
+
+    @Test
+    fun mergeConflictingLedgerRollsBack_andLegacyAddOnlyDoesNotDoubleDebit() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val repo = expenses()
+        val id = repo.save(Expense(dateEpochDay = 20_000L, categoryId = categoryId, amountToman = 100L, companyApproved = true))
+        val old = backups().snapshot()
+        backups().restore(old.copy(cashLedger = null), RestoreStrategy.ADD_ONLY)
+        assertThat(repo.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-100L)
+        repo.save(repo.getExpense(id)!!.copy(amountToman = 200L))
+        val current = backups().snapshot()
+        var rejected = false
+        try {
+            backups().restore(old, RestoreStrategy.MERGE)
+        } catch (expected: ir.hoboho.shooting.core.backup.BackupIntegrityException) {
+            rejected = true
+        }
+        assertThat(rejected).isTrue()
+        assertThat(repo.getExpense(id)!!.amountToman).isEqualTo(200L)
+        assertThat(backups().snapshot().cashLedger).isEqualTo(current.cashLedger)
     }
 
 }

@@ -93,7 +93,7 @@ class ReportsViewModel @Inject constructor(
                 val filteredExpenses = PeriodAggregator.filterExpenses(expenses, inputs.range, inputs.projectId)
                 val settlementsByExpense = settlements.groupBy { it.expenseId }
                 val projectName = inputs.projectId?.let { id -> projects.firstOrNull { it.id == id }?.name }
-                val chosenId = inputs.selectedId ?: filteredWorkdays.firstOrNull()?.id
+                val chosenId = selectVisibleWorkday(inputs.selectedId, filteredWorkdays.map { it.id })
                 ReportsUiState(
                     tab = inputs.tab,
                     range = inputs.range,
@@ -120,6 +120,9 @@ class ReportsViewModel @Inject constructor(
                 )
             }.collect { combined ->
                 _state.value = combined.copy(message = _state.value.message)
+                if (selectedWorkdayId.value != combined.selectedWorkdayId) {
+                    selectedWorkdayId.value = combined.selectedWorkdayId
+                }
             }
         }
     }
@@ -136,7 +139,7 @@ class ReportsViewModel @Inject constructor(
     fun setSelectedWorkday(id: Long) { selectedWorkdayId.value = id }
 
     fun exportDailyPdf() {
-        val id = _state.value.selectedWorkdayId ?: run {
+        val id = _state.value.selectedWorkdayId?.takeIf { id -> _state.value.workdays.any { it.id == id } } ?: run {
             showMessage(strings.get(R.string.msg_no_data_for_pdf)); return
         }
         viewModelScope.launch {
@@ -200,7 +203,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments)
+                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null)
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
@@ -219,7 +222,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val spec = ReportSpecBuilder.expensesExecutiveSummary(
-                    current.expenseRows, current.companyPayments, current.range,
+                    current.expenseRows, current.companyPayments, current.range, current.projectFilter != null,
                 )
                 val name = "financial-summary-${DateFormatter.format(current.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }

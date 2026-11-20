@@ -191,6 +191,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_daily),
                             onClick = exportDaily,
+                            enabled = state.workdays.any { it.id == state.selectedWorkdayId },
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }

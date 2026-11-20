@@ -40,6 +40,7 @@ data class BackupPayload(
     val expenses: List<ExpenseDto> = emptyList(),
     val settlements: List<SettlementDto> = emptyList(),
     val companyPayments: List<CompanyPaymentDto> = emptyList(),
+    val cashLedger: List<CashLedgerDto> = emptyList(),
 )
 
 data class SettingsDto(
@@ -124,6 +125,19 @@ data class SettlementDto(
     val createdAt: Long,
 )
 
+/** Stable origin and reversal references survive database ID remapping and deleted expenses. */
+data class CashLedgerDto(
+    val uuid: String,
+    val idempotencyKey: String,
+    val originType: String,
+    val originUuid: String,
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val description: String,
+    val createdAt: Long,
+    val reversalOfUuid: String = "",
+)
+
 /** Everything in the local database that a backup must cover. */
 data class BackupData(
     val settings: AppSettings = AppSettings(),
@@ -135,6 +149,8 @@ data class BackupData(
     val expenses: List<Expense> = emptyList(),
     val settlements: List<Settlement> = emptyList(),
     val companyPayments: List<CompanyPayment> = emptyList(),
+    // null denotes a legacy file with no ledger history.
+    val cashLedger: List<CashLedgerDto>? = null,
 )
 
 data class BackupCounts(

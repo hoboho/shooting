@@ -82,6 +82,7 @@ object BackupMapper {
                 CompanyPaymentDto(it.uuid, it.amountToman, it.dateEpochDay,
                     it.receiptReference, it.note, it.createdAt)
             },
+            cashLedger = data.cashLedger.orEmpty(),
         )
     }
 
@@ -195,13 +196,60 @@ object BackupMapper {
             expenses = rebuiltExpenses,
             settlements = settlements,
             companyPayments = companyPayments,
+            cashLedger = if (payload.formatVersion >= 2) payload.cashLedger else null,
         )
     }
 
     /** Structural + business validation performed before any write. */
     fun validate(payload: BackupPayload): List<String> = buildList {
-        if (payload.formatVersion != BackupCodec.FORMAT_VERSION) {
+        if (payload.formatVersion !in 1..BackupCodec.FORMAT_VERSION) {
             add("نسخه قالب پشتیبانی نمی شود: ${payload.formatVersion}")
+        }
+        if (payload.formatVersion >= 2) {
+            val entries = payload.cashLedger
+            val byUuid = entries.associateBy { it.uuid }
+            if (entries.any { it.uuid.isBlank() || it.idempotencyKey.isBlank() || it.originUuid.isBlank() } ||
+                byUuid.size != entries.size || entries.map { it.idempotencyKey }.toSet().size != entries.size
+            ) add("شناسه گردش نقدی نامعتبر یا تکراری است")
+            entries.forEach { entry ->
+                if (entry.originType !in setOf("RECEIPT", "EXPENSE", "REVERSAL")) add("نوع گردش نقدی نامعتبر است: ${entry.uuid}")
+                if (entry.reversalOfUuid.isNotBlank()) {
+                    val original = byUuid[entry.reversalOfUuid]
+                    if (entry.originType != "REVERSAL" || original == null ||
+                        original.originType != "EXPENSE" || original.originUuid != entry.originUuid
+                    ) add("ارجاع برگشت گردش نقدی نامعتبر است: ${entry.uuid}")
+                }
+            }
+        }
+        if (payload.formatVersion >= 2) {
+            val entries = payload.cashLedger
+            for (entry in entries) {
+                if ((entry.originType == "EXPENSE" && entry.amountToman >= 0L) ||
+                    (entry.originType in setOf("RECEIPT", "REVERSAL") && entry.amountToman <= 0L)
+                ) add("مبلغ گردش نقدی نامعتبر است: ${entry.uuid}")
+            }
+            val expenseUuids = payload.expenses.map { it.uuid }.toSet()
+            val paymentUuids = payload.companyPayments.map { it.uuid }.toSet()
+            if (entries.any { it.originType == "RECEIPT" && it.originUuid !in paymentUuids })
+                add("گردش نقدی بدون دریافتی است")
+            entries.filter { it.originType in setOf("EXPENSE", "REVERSAL") && it.originUuid !in expenseUuids }
+                .groupBy { it.originUuid }.forEach { (uuid, movements) ->
+                    val total = runCatching { movements.fold(0L) { sum, e -> Math.addExact(sum, e.amountToman) } }.getOrNull()
+                    if (total != 0L) add("گردش هزینه حذف‌شده نامتوازن است: $uuid")
+                }
+            for (expense in payload.expenses) {
+                val movements = entries.filter { it.originUuid == expense.uuid && it.originType in setOf("EXPENSE", "REVERSAL") }
+                val total = runCatching { movements.fold(0L) { sum, e -> Math.addExact(sum, e.amountToman) } }.getOrNull()
+                val expected = if (expense.companyApproved) -expense.amountToman else 0L
+                if (total == null || total != expected || (expense.companyApproved && movements.none { it.originType == "EXPENSE" }))
+                    add("گردش نقدی با هزینه ناسازگار است: ${expense.uuid}")
+            }
+            for (payment in payload.companyPayments) {
+                val movements = entries.filter { it.originUuid == payment.uuid && it.originType == "RECEIPT" }
+                val total = runCatching { movements.fold(0L) { sum, e -> Math.addExact(sum, e.amountToman) } }.getOrNull()
+                if (movements.isEmpty() || total != payment.amountToman)
+                    add("گردش نقدی با دریافتی ناسازگار است: ${payment.uuid}")
+            }
         }
         val projectUuids = payload.projects.map { it.uuid }.toSet()
         val workdayUuids = payload.workdays.map { it.uuid }.toSet()

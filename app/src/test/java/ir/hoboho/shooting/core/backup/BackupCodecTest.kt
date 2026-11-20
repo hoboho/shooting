@@ -28,7 +28,7 @@ class BackupCodecTest {
         val result = BackupCodec.decode(text)
         assertTrue(result is BackupReadResult.Success)
         val payload = (result as BackupReadResult.Success).payload
-        assertEquals(1, payload.formatVersion)
+        assertEquals(BackupCodec.FORMAT_VERSION, payload.formatVersion)
         assertEquals("DARK", payload.settings.themeMode)
         assertEquals(1, payload.projects.size)
         assertEquals("پروژه \"الف\"", payload.projects.single().name)
@@ -65,4 +65,31 @@ class BackupCodecTest {
         assertTrue(result is BackupReadResult.Success)
         assertEquals(0, BackupCounts.from((result as BackupReadResult.Success).payload).total)
     }
+    @Test
+    fun preservesApprovalAndLedger_andReadsLegacyApprovalDefault() {
+        val ledger = CashLedgerDto("l1", "expense:e-1:l1", "EXPENSE", "e-1", -1_000_000L, 20_759L, "", 1L)
+        val payload = sample().copy(
+            expenses = listOf(sample().expenses.single().copy(companyApproved = false)),
+            settlements = emptyList(), cashLedger = listOf(ledger),
+        )
+        val decoded = BackupCodec.decode(BackupCodec.encode(payload)) as BackupReadResult.Success
+        assertEquals(false, decoded.payload.expenses.single().companyApproved)
+        assertEquals(listOf(ledger), decoded.payload.cashLedger)
+
+        // Historical v1 files did not contain the approval field.
+        val old = BackupCodec.encode(sample().copy(formatVersion = 1))
+        val root = SimpleJson.parse(old).asObj()!!
+        val node = root.field("payload").asObj()!!
+        val oldExpense = node.field("expenses").asArr()!!.values.single().asObj()!!
+        val legacyNode = JsonValue.Obj((node.values - "cashLedger") +
+            ("expenses" to JsonValue.Arr(listOf(JsonValue.Obj(oldExpense.values - "companyApproved")))))
+        val legacyRoot = JsonValue.Obj(root.values + mapOf(
+            "payload" to legacyNode,
+            "sha256" to JsonValue.Str(BackupCodec.sha256Hex(SimpleJson.stringify(legacyNode))),
+        ))
+        val legacy = BackupCodec.decode(SimpleJson.stringify(legacyRoot)) as BackupReadResult.Success
+        assertTrue(legacy.payload.expenses.single().companyApproved)
+        assertEquals(null, BackupMapper.toData(legacy.payload).cashLedger)
+    }
+
 }

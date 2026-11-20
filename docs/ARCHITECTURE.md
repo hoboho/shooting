@@ -7,9 +7,9 @@
 | جداسازی لایه ها | `core` (ابزار های بدون وابستگی پلتفرم)، `domain` (منطق خالص Kotlin)، `data` (Room + نگاشت + مخازن)، `ui`/`feature` (Compose) |
 | منبع حقیقت | Room روی دستگاه؛ هیچ کش ابری/همگامسازی وجود ندارد |
 | یکطرفگی وابستگی | `feature` → `domain.repository` (interface)؛ `data` پیادهسازی می کند؛ `di` آن ها را با Hilt میبندد |
-| آفلاین مطلق | مانیفست فاقد `INTERNET`؛ `FileProvider` فقط برای اشتراک گذاری فایل محلی |
+| کار محلی | داده‌ها محلی‌اند؛ دسترسی `INTERNET` برای بررسی دستی به‌روزرسانی است و `FileProvider` برای اشتراک فایل به کار می‌رود |
 | قابل آزمون بودن | محاسبات، اعتبارسنجی، تجمیع، نگاشت پشتیبان و ساخت مشخصات PDF هیچ وابست های به Android ندارند |
-| عدم از دست رفتن داده | ذخیرهٔ نامعتبر ممنوع (`ValidationException`)، مهاجرت مخرب ممنوع، حذف هزینهٔ دارای تسویه ممنوع، بازیابی همراه نسخهٔ ایمنی |
+| محافظت از داده | اعتبارسنجی، عدم استفاده از مهاجرت مخرب، منع حذف هزینهٔ دارای تسویه و ساخت نسخهٔ ایمنی پیش از بازیابی؛ این موارد به‌تنهایی تضمین سلامت بازیابی نیستند |
 
 ## نمودار جریان داده
 
@@ -18,7 +18,7 @@ Compose Screen ──(intent)──> ViewModel ──> Repository interface
                                    ▲              │
                               StateFlow      Room DAO (Flow / suspend)
                                    │              │
-                                   └──────── SQLite (shooting.db، نسخه ۱)
+                                   └──────── SQLite (shooting.db، نسخه ۶)
 ```
 
 * مشاهده: DAOها `Flow` میدهند، مخازن به مدل دامنه نگاشت می کنند، ViewModel آن ها را
@@ -60,7 +60,7 @@ Compose Screen ──(intent)──> ViewModel ──> Repository interface
 مخازن. هیچ `import android.*` در این بسته وجود ندارد.
 
 ### `data`
-هشت موجودیت Room، هشت DAO، `ShootingDatabase` (v1، `exportSchema=true`)،
+ده موجودیت Room، ده DAO، `ShootingDatabase` (v6، `exportSchema=true`)،
 نگاشت ها و شش پیادهسازی مخزن. طول عملیات و جمع روزانه **همیشه** دوباره محاسبه
 می شود؛ `Workday.totalLengthMeters` فقط کشِ مشتقشده است و با
 `WorkdayDao.recomputeTotal` همگام نگه داشته می شود.
@@ -68,8 +68,8 @@ Compose Screen ──(intent)──> ViewModel ──> Repository interface
 ### `di`
 `AppModule` پایگاه داده، `Clock` و DAOها را فراهم می کند؛ `SeedCallback` در اولین
 ایجاد، کور ها و دسته های پیش فرض را وارد می کند؛ `RepositoryModule` رابط ها را به
-پیادهسازی ها میبندد؛ `Migrations.ALL` خالی است (v1) و سیاست مهاجرت افزودنی در
-کامنت و [DATA_MODEL](DATA_MODEL.md) ثبت شده است.
+پیادهسازی ها میبندد؛ `Migrations.ALL` مهاجرت‌های ۱ تا ۶ را ثبت می‌کند.
+وضعیت آزمون مهاجرت و اسکیما در [DATA_MODEL](DATA_MODEL.md) آمده است.
 
 ### `ui` / `feature`
 `ShootingTheme` دقیقاً توکن های Metra را بازتولید می کند: سبز `#176B5B`،
@@ -87,9 +87,8 @@ Compose Screen ──(intent)──> ViewModel ──> Repository interface
 
 ## تصمیم های مهم
 
-* **گزارش تکراری ممنوع است، جریان چندگزارش های عمداً طراحی نشده**: ایندکس
- یکتای `(projectId, dateEpochDay)` در DB + بررسی `Validator.isDuplicateWorkday`
- + بررسی در `WorkdayRepositoryImpl.save`.
+* **چند گزارش برای یک پروژه و تاریخ مجاز است**: مهاجرت ۴→۵ ایندکس یکتای
+ `(projectId, dateEpochDay)` را حذف می‌کند و مخزن ذخیره آن را منع نمی‌کند.
 * **جهت قرقره مهم نیست**: `abs` در `ShootingCalculator` و `Validator` اختلاف
  منفی raw را خطا نمیدانند.
 * **طول و پول جدا هستند**: `PeriodReport` دو گروه فیلد مجزا دارد؛

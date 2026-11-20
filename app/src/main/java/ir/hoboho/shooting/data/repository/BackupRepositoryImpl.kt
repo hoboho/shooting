@@ -4,6 +4,8 @@ import androidx.room.withTransaction
 import ir.hoboho.shooting.core.backup.BackupCounts
 import ir.hoboho.shooting.core.backup.BackupData
 import ir.hoboho.shooting.core.backup.BackupIntegrityException
+import ir.hoboho.shooting.core.backup.CashLedgerDto
+import ir.hoboho.shooting.data.local.CashLedgerEntryEntity
 import ir.hoboho.shooting.data.local.AppSettingDao
 import ir.hoboho.shooting.data.local.CableTypeDao
 import ir.hoboho.shooting.data.local.CompanyPaymentDao
@@ -78,8 +80,11 @@ class BackupRepositoryImpl @Inject constructor(
                 settledAmountToman = settledByExpense[entity.id]?.sumOf { it.amountToman } ?: 0L,
                 settlementCount = settledByExpense[entity.id]?.size ?: 0,
                 createdAt = entity.createdAt, updatedAt = entity.updatedAt,
+                companyApproved = entity.companyApproved,
             )
         }
+        val payments = companyPaymentDao.getAll().map { it.toDomain() }
+        val ledger = ledgerSnapshot(expenses, payments, cashLedgerDao.getAll())
         BackupData(
             settings = settingDao.getAll().toDomain(),
             projects = projects,
@@ -89,14 +94,42 @@ class BackupRepositoryImpl @Inject constructor(
             categories = categories,
             expenses = expenses,
             settlements = settlements,
-            companyPayments = companyPaymentDao.getAll().map { it.toDomain() },
+            companyPayments = payments,
+            cashLedger = ledger,
         )
+    }
+
+    private fun ledgerSnapshot(
+        expenses: List<Expense>,
+        payments: List<ir.hoboho.shooting.domain.model.CompanyPayment>,
+        rows: List<CashLedgerEntryEntity>,
+    ): List<CashLedgerDto> {
+        val byId = rows.associateBy { it.id }
+        val expenseById = expenses.associate { it.id to it.uuid }
+        val paymentById = payments.associate { it.id to it.uuid }
+        return rows.map { row ->
+            val originUuid = if (row.originType == "RECEIPT") {
+                paymentById[row.originId] ?: row.idempotencyKey.removePrefix("receipt:")
+            } else {
+                expenseById[row.originId] ?: rows.lastOrNull {
+                    it.originType == "EXPENSE" && it.originId == row.originId && it.idempotencyKey.startsWith("expense:")
+                }?.idempotencyKey?.removePrefix("expense:")?.substringBefore(':')
+            } ?: throw BackupIntegrityException("Ledger origin is missing: ${row.uuid}")
+            if (originUuid.isBlank()) throw BackupIntegrityException("Ledger origin is blank: ${row.uuid}")
+            val reversalUuid = row.reversalOfEntryId?.let { id ->
+                byId[id]?.uuid ?: throw BackupIntegrityException("Ledger reversal is missing: ${row.uuid}")
+            }.orEmpty()
+            CashLedgerDto(row.uuid, row.idempotencyKey, row.originType, originUuid,
+                row.amountToman, row.dateEpochDay, row.description, row.createdAt, reversalUuid)
+        }
     }
 
     override suspend fun counts(): BackupCounts = BackupCounts.from(snapshot())
 
     override suspend fun restore(data: BackupData, strategy: RestoreStrategy): BackupCounts =
         db.withTransaction {
+            val existingData = if (strategy == RestoreStrategy.REPLACE) null else snapshot()
+            val existingLedgerRows = if (existingData == null) emptyList() else cashLedgerDao.getAll()
             if (strategy == RestoreStrategy.REPLACE) {
                 // Child-first order keeps every FK satisfied.
                 settlementDao.deleteAll()
@@ -211,6 +244,9 @@ class BackupRepositoryImpl @Inject constructor(
                     workdayUuidById[id]?.let { uuid -> workdayIds[uuid] }
                 }
                 val existing = expenseDao.getByUuid(expense.uuid)
+                if (existing != null && overwrite && data.cashLedger == null &&
+                    (existing.amountToman != expense.amountToman || existing.companyApproved != expense.companyApproved)
+                ) throw BackupIntegrityException("Legacy backup would change an existing ledger expense: ${expense.uuid}")
                 if (existing == null) {
                     expenseIds[expense.uuid] = expenseDao.upsert(
                         expense.copy(
@@ -232,10 +268,17 @@ class BackupRepositoryImpl @Inject constructor(
             }
 
             var importedPayments = 0
+            val paymentIds = HashMap<String, Long>()
             for (payment in data.companyPayments) {
                 val existing = companyPaymentDao.getByUuid(payment.uuid)
-                if (existing != null && !overwrite) continue
-                companyPaymentDao.upsert(payment.copy(id = existing?.id ?: 0L).toEntity())
+                if (existing != null && overwrite && data.cashLedger == null && existing.amountToman != payment.amountToman)
+                    throw BackupIntegrityException("Legacy backup would change an existing receipt: ${payment.uuid}")
+                if (existing != null && !overwrite) {
+                    paymentIds[payment.uuid] = existing.id
+                    continue
+                }
+                val inserted = companyPaymentDao.upsert(payment.copy(id = existing?.id ?: 0L).toEntity())
+                paymentIds[payment.uuid] = existing?.id ?: inserted
                 importedPayments++
             }
 
@@ -254,19 +297,102 @@ class BackupRepositoryImpl @Inject constructor(
             }
             // Final invariant: settlements never exceed the expense amount.
             for ((uuid, id) in expenseIds) {
-                val amount = expenseDao.getById(id)?.expense?.amountToman ?: 0L
+                val expense = expenseDao.getById(id)?.expense
+                    ?: throw BackupIntegrityException("Missing expense $uuid")
                 val settled = settlementDao.totalForExpense(id)
-                if (settled > amount) {
+                if (settled > expense.amountToman || (settled > 0L && !expense.companyApproved)) {
                     throw BackupIntegrityException("Settlements exceed expense $uuid")
                 }
             }
 
+            data.cashLedger?.let { incoming ->
+                val oldLedger = existingData?.cashLedger.orEmpty()
+                val oldByUuid = oldLedger.associateBy { it.uuid }
+                val oldEntities = existingLedgerRows.associateBy { it.uuid }
+                val existingExpenseUuids = existingData?.expenses.orEmpty().map { it.uuid }.toSet()
+                val existingPaymentUuids = existingData?.companyPayments.orEmpty().map { it.uuid }.toSet()
+                fun group(entry: CashLedgerDto) = (if (entry.originType == "RECEIPT") "receipt:" else "expense:") + entry.originUuid
+                val existingGroups = oldLedger.groupBy(::group)
+                val incomingGroups = incoming.groupBy(::group)
+                val insertedIds = oldEntities.mapValues { it.value.id }.toMutableMap()
+                var syntheticId = cashLedgerDao.minimumSyntheticOriginId()
+                for ((groupKey, entries) in incomingGroups) {
+                    val isReceipt = entries.first().originType == "RECEIPT"
+                    val originUuid = entries.first().originUuid
+                    val local = existingGroups[groupKey].orEmpty()
+                    val existingRecord = if (isReceipt) originUuid in existingPaymentUuids else originUuid in existingExpenseUuids
+                    if (strategy == RestoreStrategy.ADD_ONLY && (existingRecord || local.isNotEmpty())) continue
+                    if (strategy == RestoreStrategy.MERGE && local.any { old -> entries.none { it == old } }) {
+                        throw BackupIntegrityException("Conflicting ledger history for $groupKey")
+                    }
+                    entries.forEach { entry ->
+                        val old = oldByUuid[entry.uuid]
+                        if (old != null && old != entry) throw BackupIntegrityException("Conflicting ledger entry: ${entry.uuid}")
+                    }
+                    val priorId = local.firstOrNull()?.let { oldEntities[it.uuid]?.originId }
+                    val originId = if (isReceipt) paymentIds[originUuid] ?: priorId
+                        else expenseIds[originUuid] ?: priorId
+                    val mappedOriginId = originId ?: (--syntheticId)
+                    val pending = entries.filter { it.uuid !in insertedIds }.toMutableList()
+                    while (pending.isNotEmpty()) {
+                        val ready = pending.filter { it.reversalOfUuid.isBlank() || it.reversalOfUuid in insertedIds }
+                        if (ready.isEmpty()) throw BackupIntegrityException("Unresolved ledger reversals: $groupKey")
+                        for (entry in ready) {
+                            val id = cashLedgerDao.insert(CashLedgerEntryEntity(
+                                uuid = entry.uuid, idempotencyKey = entry.idempotencyKey,
+                                originType = entry.originType, originId = mappedOriginId,
+                                amountToman = entry.amountToman, dateEpochDay = entry.dateEpochDay,
+                                description = entry.description, createdAt = entry.createdAt,
+                                reversalOfEntryId = entry.reversalOfUuid.takeIf { it.isNotBlank() }?.let { insertedIds[it] },
+                            ))
+                            if (id == -1L) throw BackupIntegrityException("Conflicting ledger key: ${entry.idempotencyKey}")
+                            insertedIds[entry.uuid] = id
+                        }
+                        pending.removeAll(ready.toSet())
+                    }
+                }
+            }
+            if (data.cashLedger != null) {
+                val expenseUuids = existingData?.expenses.orEmpty().map { it.uuid }.toSet()
+                val paymentUuids = existingData?.companyPayments.orEmpty().map { it.uuid }.toSet()
+                for (expense in data.expenses) {
+                    if (expense.companyApproved && expense.uuid !in expenseUuids &&
+                        data.cashLedger.none { it.originType == "EXPENSE" && it.originUuid == expense.uuid }
+                    ) throw BackupIntegrityException("Missing ledger for expense ${expense.uuid}")
+                }
+                for (payment in data.companyPayments) {
+                    if (payment.uuid !in paymentUuids &&
+                        data.cashLedger.none { it.originType == "RECEIPT" && it.originUuid == payment.uuid }
+                    ) throw BackupIntegrityException("Missing ledger for payment ${payment.uuid}")
+                }
+            }
             cashLedgerDao.seedReceipts()
             cashLedgerDao.seedApprovedExpenses()
+            // The imported state and immutable ledger must agree; reject divergent merges.
+            val ledgerRows = cashLedgerDao.getAll()
+            for ((uuid, id) in expenseIds) {
+                val expense = expenseDao.getById(id)?.expense ?: throw BackupIntegrityException("Missing expense $uuid")
+                val actual = ledgerRows.filter { it.originId == id && it.originType in setOf("EXPENSE", "REVERSAL") }
+                    .fold(0L) { total, row -> Math.addExact(total, row.amountToman) }
+                val expected = if (expense.companyApproved) -expense.amountToman else 0L
+                if (actual != expected) throw BackupIntegrityException("Ledger conflict for expense $uuid")
+            }
+            for ((uuid, id) in paymentIds) {
+                val payment = companyPaymentDao.getByUuid(uuid) ?: throw BackupIntegrityException("Missing payment $uuid")
+                val actual = ledgerRows.filter { it.originId == id && it.originType == "RECEIPT" }
+                    .fold(0L) { total, row -> Math.addExact(total, row.amountToman) }
+                if (actual != payment.amountToman) throw BackupIntegrityException("Ledger conflict for payment $uuid")
+            }
 
             if (overwrite) {
                 settingDao.deleteAll()
-                data.settings.toEntities().forEach { settingDao.upsert(it) }
+                val remappedDefaultProjectId = data.settings.defaultProjectId?.let { incomingId ->
+                    val uuid = projectUuidById[incomingId]
+                        ?: throw BackupIntegrityException("Unknown default project id: $incomingId")
+                    projectIds[uuid] ?: throw BackupIntegrityException("Unknown default project: $uuid")
+                }
+                data.settings.copy(defaultProjectId = remappedDefaultProjectId)
+                    .toEntities().forEach { settingDao.upsert(it) }
             }
             BackupCounts(
                 projects = data.projects.size,

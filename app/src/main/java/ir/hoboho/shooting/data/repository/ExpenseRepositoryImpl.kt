@@ -72,8 +72,8 @@ class ExpenseRepositoryImpl @Inject constructor(
         }
         val now = clock.nowEpochMilli()
         val entity = expense.copy(
-            uuid = expense.uuid.ifBlank { UUID.randomUUID().toString() },
-            createdAt = if (expense.id == 0L) now else expense.createdAt,
+            uuid = existing?.expense?.uuid ?: expense.uuid.ifBlank { UUID.randomUUID().toString() },
+            createdAt = existing?.expense?.createdAt ?: if (expense.id == 0L) now else expense.createdAt,
             updatedAt = now,
         ).toEntity()
         val inserted = dao.upsert(entity)

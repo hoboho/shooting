@@ -265,6 +265,8 @@
     <string name="backup_pick">انتخاب فایل پشتیبان</string>
     <string name="backup_preview">پیش‌نمایش محتوا</string>
     <string name="backup_format_version">نسخه قالب</string>
+    <string name="backup_legacy_warning">این فایل قدیمی وضعیت تأیید هزینه و تاریخچهٔ کامل دفتر نقدی را ذخیره نکرده است؛ پیش از بازیابی، اطلاعات مالی را بررسی کنید.</string>
+    <string name="backup_restore_conflict">اطلاعات پشتیبان با داده‌های فعلی سازگار نیست؛ بازیابی اعمال نشد.</string>
     <string name="backup_exported_at">تاریخ ایجاد</string>
     <string name="backup_counts">پروژه‌ها: %1$s | گزارش‌ها: %2$s | عملیات‌ها: %3$s | هزینه‌ها: %4$s | تسویه‌ها: %5$s</string>
     <string name="backup_strategy">روش بازیابی</string>

@@ -1,103 +1,46 @@
-# آزمون ها
+# آزمون‌ها
 
-> **توجه:** وضعیت زیر مربوط به کامیت پیش از تغییرات اخیر (کیبورد عددی، ذخیرهٔ
-> فایل ها، کور های استاندارد، تفکیک نوع کابل و اصلاح نگارشی) است؛ اجرا های تازهٔ
-> این شاخه در برگهٔ Actions مخزن قابل بررسی اند.
+این راهنما پوشش و دستورات نسخهٔ فعلی مخزن را شرح می‌دهد؛ وجود آزمون به‌معنای عبور آن در این شاخه نیست. نتیجهٔ اجراهای تاریخی و وضعیت بررسی دستی را در [QA.md](QA.md) ببینید.
 
-## لایه ها
+## دستورات و پیش‌نیازها
 
-| لایه | مسیر | اجرا |
+برای دستورات Gradle به JDK 21 و Android SDK مطابق [BUILD.md](BUILD.md) نیاز است. آزمون‌های دستگاه به امولاتور یا دستگاه متصل نیاز دارند؛ CI از امولاتور API 34 استفاده می‌کند.
+
+| بررسی | مسیر | فرمان |
 | --- | --- | --- |
-| منطق خالص JVM | `app/src/test` (۱۳ فایل، ۶۲ آزمون) | `./gradlew :app:testDebugUnitTest` |
-| منابع/ناوبری/قواعد ایستا | `scripts/check_sources.py` | `python3 scripts/check_sources.py` |
-| کامپایل منطق/داده با استاب | `scripts/offline-compile-check/` | `bash scripts/offline-compile-check/run.sh` |
-| Android lint | قواعد `app/lint.xml` | `./gradlew :app:lintDebug` |
-| Room/مخازن/اسکیما و جریان های کاری روی SQLite | `app/src/androidTest` (۳ فایل، ۱۲ آزمون) | `./gradlew :app:connectedDebugAndroidTest` |
-| ساخت | — | `./gradlew :app:assembleDebug` |
+| بررسی ایستای منابع و ناوبری | `scripts/check_sources.py` | `python3 scripts/check_sources.py` |
+| آزمون‌های واحد JVM | `app/src/test` | `./gradlew :app:testDebugUnitTest` |
+| Android lint | `app/lint.xml` | `./gradlew :app:lintDebug` |
+| ساخت APK دیباگ | `app/` | `./gradlew :app:assembleDebug` |
+| تولید اسکیمای Room | `app/schemas/` | `./gradlew :app:kspDebugKotlin` |
+| آزمون‌های Room، مخازن و جریان کاری | `app/src/androidTest` | `./gradlew :app:connectedDebugAndroidTest` |
 
-## پوشش آزمون های JVM
+برای شمارش تعریف‌های آزمون از `rg -n '@Test' app/src/test app/src/androidTest` استفاده کنید. تعداد تعریف‌ها نتیجهٔ اجرا نیست؛ برای نتیجهٔ واقعی به گزارش Gradle یا artifact همان اجرای CI مراجعه کنید.
 
-| فایل | موضوع |
-| --- | --- |
-| `JalaliCalendarTest`, `DateRangeExtraTest` | جدول نوروز/سال های کبیسه، لنگر های ۱۴۰۳/۱۴۰۴/۱۴۰۵، تبدیل دوسویه، مرز ماه/سال/هفته، شمول بازه، `fromEpochMilli` |
-| `FormatterTest`, `NumberFormatterExtraTest` | ارقام فارسی/عربی، جداکنندهها، گروهبندی، واحد متر/تومان، رد صریح منفی/اعشار/ورودی غیرعددی، عدم پنهانسازی ورودی نامعتبر |
-| `ShootingCalculatorTest` | `abs(end−start)`، اختلاف منفی مجاز، به روز رسانی طول با تغییر هر کنتور، عدم سرریز، رد پیشنویس ناقص، `DailyTotal = ΣL` |
-| `ValidatorTest` | نام پروژه/تکراری، جلوگیری از گزارش تکراری همان پروژه+تاریخ، الزام پروژه/تاریخ/عملیات، اعتبار سطر به سطر، پیش فرض ۰ کارگر |
-| `ExpenseCalculatorTest` | تسویه نشده/جزئی/کامل، مانده، جلوگیری از تسویهٔ بیش از مانده، تجمع صحیح تومان |
-| `PeriodAggregatorTest` | فیلتر بازه و پروژه، تفکیک روزانه/پروژه/**نوع کابل**، **عدم ترکیب طول و پول** |
-| `ReportSpecBuilderTest` | جمع طول روزانه + جدول جداگانه تفکیک نوع کابل، تفکیک بلوک طول و مبالغ در گزارش دوره ای، فهرست تسویه ها و تومان صحیح |
-| `SimpleJsonTest`, `BackupCodecTest`, `BackupMapperTest`, `RestoreModelsTest` | JSON قطعی، MAGIC/نسخه/SHA-256/دستکاری checksum، نگاشت رفتوبرگشت همهٔ موجودیتها، پرچم های صریح راهبرد |
+## پوشش موجود
 
-## آزمون های on-device (اجراشده در CI)
+- آزمون‌های JVM تقویم جلالی و بازهٔ تاریخ، قالب‌بندی اعداد، طول عملیات، اعتبارسنجی، جست‌وجوی عملیات، محاسبات هزینه و وضعیت نقدی، تجمیع دوره، نام و محتوای گزارش، پشتیبان و مقایسهٔ نسخه را پوشش می‌دهند.
+- `ShootingDatabaseTest` داده‌های مرجع، محاسبهٔ طول، ثبت چند گزارش برای یک پروژه و تاریخ، محدودیت تسویه، تخصیص FIFO و مازاد دریافتی، بازیابی افزودنی و ثبت و برگشت دفتر نقدی را بررسی می‌کند.
+- `DatabaseSchemaTest` ایجاد جداول نسخهٔ ۶، برخی ستون‌ها، پذیرش چند گزارش برای یک پروژه و تاریخ و اجرای کلید خارجی را روی SQLite بررسی می‌کند. این آزمون جایگزین آزمون مهاجرت از نسخهٔ قدیمی نیست.
+- `LegacyFatCodeMigrationTest` و `CashLedgerMigrationTest` به‌ترتیب SQL مهاجرت‌های ۳ به ۴ و ۵ به ۶ را روی جداول حداقلی بررسی می‌کنند؛ بازشدن پایگاه دادهٔ تاریخی با Room و زنجیرهٔ کامل مهاجرت‌ها را تأیید نمی‌کنند.
+- `WorkflowIntegrationTest` جریان گزارش روزانه و PDF، هزینه و تسویه، و ساخت و پیش‌نمایش پشتیبان و بازیابی را هدف می‌گیرد. آزمون رندر PDF جایگزین بازبینی بصری انسانی نیست.
 
-`ShootingDatabaseTest` — seed داده های مرجع و افزودن کور جدید بدون مهاجرت،
-ذخیرهٔ گزارش و محاسبهٔ مجدد طول ها/جمع، جلوگیری از تکرار پروژه+تاریخ، جلوگیری از
-تسویهٔ بیش از مانده و حذف هزینهٔ دارای تسویه، بازیابی `ADD_ONLY` بدون تکرار/حذف.
-`DatabaseSchemaTest` — هشت جدول، ستون های عددی تاریخ/مبلغ، ایندکس یکتا و اعمال FK
-روی SQLite واقعی. `WorkflowIntegrationTest` — گردش روزانه با قرقرهٔ معکوس،
-جلوگیری از گزارش تکراری و PDF روزانه؛ تسویهٔ جزئی/کامل، جلوگیری از بیشبود،
-گزارش دوره ای و PDF هزینهها؛ و پیش نمایش پشتیبان، نسخهٔ ایمنی، راهبرد تراکنشی و
-رد دستکاری checksum. هر PDF با `PdfRenderer` بررسی و از طریق
-`MediaStore.Downloads` به artifact `qa-pdf-samples` منتقل می شود؛ این بررسی
-قابلبازشدن و وجود پیکسل متن است، نه بازبینی بصری انسانی.
+ثبت چند گزارش مستقل برای یک پروژه و تاریخ مجاز است. تابع کمکی تشخیص تکرار در `Validator` وجود دارد، اما مخزن ذخیرهٔ گزارش از آن برای منع این حالت استفاده نمی‌کند.
 
-در اجرا های مرجع [PR 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
-و [push 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)،
-job سوم `connectedDebugAndroidTest` را روی امولاتور API 34 اجرا کرد؛ خروجی XML
-چاپشده `tests="12" failures="0" errors="0" skipped="0"` است. اجرای قدیمی
-[41394294285](https://github.com/hoboho/shooting/actions/runs/41394294285)
-نخستین ساخت کامل با ۹ آزمون on-device بود.
-
-## اجرای آفلاین (بدون Gradle/Android SDK)
+## بررسی‌های آفلاین
 
 ```bash
-KOTLINC=/path/to/kotlinc bash scripts/run-offline-tests.sh
 python3 scripts/check_sources.py
 KOTLINC=/path/to/kotlinc COROUTINES_JAR=/path/to/kotlinx-coroutines-core-jvm.jar \
   bash scripts/offline-compile-check/run.sh
 ```
 
-اسکریپت اول فایل های خالص `core/` + `domain/` بههمراه ۱۳ فایل آزمون و دو فایل
-`scripts/offline-test-harness/` را با `kotlinc` کامپایل می کند و با یک
-اجراکنندهٔ بازتابی کوچک اجرا مینماید. آزمون ها خودشان از API استاندارد
-`org.junit.Test` / `org.junit.Assert` استفاده می کنند، بنابراین در Gradle بدون
-هیچ تغییری با JUnit واقعی اجرا می شوند.
+بررسی استابی از APIهای تقریبی Android/Room/Hilt استفاده می‌کند و جایگزین کامپایل Android، تولید کد KSP/Hilt، Compose، lint یا آزمون دستگاه نیست؛ جزئیات در [راهنمای آن](../scripts/offline-compile-check/README.md) است.
 
-اسکریپت سوم ۴۲ فایل `core/`, `domain/`, `data/`, `di/` را با `kotlinc` واقعی،
-`kotlinx-coroutines-core` واقعی و استاب های کوچک Android/Room/Hilt کامپایل
-می کند؛ خطا های نوع/`suspend`/ارجاع در لایهٔ داده را میگیرد ولی **کامپایل
-اندروید، KSP، Hilt codegen یا Compose نیست** (جزئیات در
-`scripts/offline-compile-check/README.md`).
+`scripts/run-offline-tests.sh` یک اجراکنندهٔ قدیمی و کمکی است؛ در وضعیت فعلی همهٔ فایل‌های `app/src/test` را انتخاب می‌کند، ولی منابع و وابستگی‌های لازم برای همهٔ آزمون‌های جدید (از جمله `AppUpdater` و Truth) را فراهم نمی‌کند. بنابراین تا اصلاح harness، آن را دستور معتبر برای اجرای کل مجموعه ندانید؛ از `testDebugUnitTest` استفاده کنید.
 
-**نتیجهٔ واقعی ابزار های آفلاین (محیط محلی):** کامپایل `exit 0`،
-`62 passed, 0 failed`، `exit 0`؛ بررسی های ایستا `0 error, 0 warning`؛ کامپایل
-استابی ۴۲ فایل `exit 0`. هیچکدام اجرای JUnit/Gradle یا کامپایل اندروید **نیست**
-و نباید بهعنوان چنین گزارش شود.
+## CI و محدودیت‌ها
 
-## اجرای واقعی روی GitHub Actions
+گردشکار [android.yml](../.github/workflows/android.yml) بررسی ایستا، آزمون JVM، lint، ساخت دیباگ، خروجی اسکیما و آزمون دستگاه روی API 34 را تعریف می‌کند و گزارش‌ها را به‌صورت artifact بارگذاری می‌کند. برای وضعیت **همین کامیت** نتیجهٔ همان اجرای Actions و XML آزمون‌ها را بررسی کنید؛ موفقیت اجراهای قدیمی اثبات موفقیت شاخهٔ فعلی نیست.
 
-گردشکار [`.github/workflows/android.yml`](../.github/workflows/android.yml) روی
-runner دارای Android SDK اجرا شد؛
-[PR run 41480196402](https://github.com/hoboho/shooting/actions/runs/41480196402)
-و [push run 41480188364](https://github.com/hoboho/shooting/actions/runs/41480188364)
-نتیجهٔ `success` برای هر سه job دارند:
-
-1. **Offline source checks**: `check_sources.py`.
-2. **JVM tests, lint & debug APK**: `testDebugUnitTest` با JUnit واقعی،
- `lintDebug`، `assembleDebug` و `kspDebugKotlin` برای تولید اسکیمای Room.
-3. **Room/repository tests (API 34)**: `connectedDebugAndroidTest` و چاپ XML
- نتایج؛ ۱۲ آزمون، بدون شکست/خطا/ردشده.
-
-گزارش JUnit، lint، instrumentation، اسکیمای Room، APK دیباگ و سه نمونهٔ PDF
-(`qa-pdf-samples`) بهعنوان artifact همان اجرا ها موجوداند. این اجرا ها جایگزین ابزار های آفلاین نیستند؛ ابزار های آفلاین
-همچنان برای محیط بدون SDK مفیدند، ولی مرجع تأیید ساخت اندروید، CI است. جزئیات
-وضعیت در [QA.md](QA.md).
-
-## چکلیست پیش از اعلام آمادگی
-
-مراحل خودکار بالا (کامپایل، JUnit، لینت، APK، آزمون Room/اسکیما و سه آزمون
-جریان کاری شامل رندر PDF) اجرا و عبور کردهاند. [docs/QA.md](QA.md) همچنان فهرست موارد **انسانی** انجامنشده را نگه
-میدارد: نصب/بازبینی بصری صفحات، جریان روزانه، جریان هزینه/تسویه، تولید و
-**بازبینی بصری** PDF، پشتیبان/بازیابی، حالت تاریک/چرخش و آزمون مهاجرت پس از
-نخستین تغییر اسکیما. تا زمان انجام آنها، کیفیت نهایی و آمادگی انتشار تأیید
-نشده است.
+پوشش لازم اما موجودنبودن آن در مخزن: JSON اسکیماهای تاریخی و آزمون `MigrationTestHelper` برای ارتقاهای واقعی تا نسخهٔ ۶، و آزمون‌های جامع round-trip پشتیبان/دفتر نقدی برای هر راهبرد. جزئیات اسکیما در [راهنمای Room](../app/schemas/README.md) است. بررسی دستی رابط، PDF و بازیابی همچنان ضروری است؛ چک‌لیست [QA.md](QA.md) را ببینید.
