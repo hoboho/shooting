@@ -182,3 +182,17 @@ object ReferenceData {
 
 /** Cash balance is ledger-derived; a negative balance is also a company receivable. */
 data class CashPosition(val cashboxBalanceToman: Long, val companyReceivableToman: Long = (-cashboxBalanceToman).coerceAtLeast(0L))
+
+
+data class CashLedgerEntry(
+    val id: Long = 0L,
+    val uuid: String,
+    val idempotencyKey: String,
+    val originType: String,
+    val originId: Long,
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val description: String = "",
+    val createdAt: Long,
+    val reversalOfEntryId: Long? = null,
+)
