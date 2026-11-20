@@ -46,7 +46,8 @@ class ReportSpecBuilderTest {
             operations = listOf(operation(cableId = 3L, length = 800)),
             totalLengthMeters = 800,
         )
-        val spec = ReportSpecBuilder.daily(workday, cableTypes)
+        val spec = ReportSpecBuilder.daily(workday, cableTypes, operatorName = "علی رضایی")
+        assertTrue(spec.headerLines.single().contains("اپراتور: علی رضایی"))
         assertEquals(ReportText.TITLE_DAILY, spec.title)
         assertTrue(spec.blocks.filterIsInstance<PdfBlock.KeyValueList>()
             .flatMap { it.entries }.any { it.first == ReportText.DAILY_TOTAL && it.second.contains("۸۰۰") })
@@ -103,6 +104,7 @@ class ReportSpecBuilderTest {
             cableTypes = cableTypes,
             range = DateRange(20_759L, 20_759L),
         )
+        assertTrue(spec.headerLines.single().startsWith("اپراتور:"))
         val table = spec.blocks.filterIsInstance<PdfBlock.Table>().single()
         assertEquals(listOf(
             ReportText.DATE, ReportText.WORK_AREA, ReportText.START_POINT, ReportText.START_METER,
@@ -159,6 +161,8 @@ class ReportSpecBuilderTest {
             cashLedger = listOf(reversal),
         )
         assertEquals(ReportText.TITLE_EXPENSES, spec.title)
+        assertTrue(spec.headerLines.first().contains("مسئول تهیه گزارش"))
+        assertTrue(spec.blocks.any { it is PdfBlock.SignatureBlock })
         val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
         assertEquals(3, tables.size)
         assertEquals("۱٬۰۰۰٬۰۰۰", tables[0].rows.single()[5])
@@ -183,6 +187,8 @@ class ReportSpecBuilderTest {
             listOf(ExpenseReportRow(expense)), listOf(receipt), DateRange(20_759L, 20_759L),
         )
         val entries = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
+        assertTrue(spec.headerLines.first().contains("مسئول تهیه گزارش"))
+        assertTrue(spec.blocks.any { it is PdfBlock.SignatureBlock })
         assertTrue(entries.any { it.first == "خالص گردش نقدی دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
         assertTrue(entries.any { it.first == "کسری خالص گردش دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
     }
