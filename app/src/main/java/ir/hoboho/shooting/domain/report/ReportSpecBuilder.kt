@@ -172,7 +172,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = ReportText.TITLE_PERIOD,
             subtitle = "${DateFormatter.formatRange(report.range)} — ${report.projectFilterName ?: ReportText.ALL_PROJECTS}",
-            headerLines = header(),
+            headerLines = operatorHeader(operatorName),
             blocks = buildList {
                 add(
                     PdfBlock.KeyValueList(
