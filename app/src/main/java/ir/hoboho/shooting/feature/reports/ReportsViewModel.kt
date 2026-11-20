@@ -10,6 +10,7 @@ import ir.hoboho.shooting.core.format.DateFormatter
 import ir.hoboho.shooting.core.share.PublicDownloadSaver
 import ir.hoboho.shooting.core.share.ReportFileWriter
 import ir.hoboho.shooting.domain.PeriodAggregator
+import ir.hoboho.shooting.domain.model.CashLedgerEntry
 import ir.hoboho.shooting.domain.model.CableType
 import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.PeriodReport
@@ -23,6 +24,8 @@ import ir.hoboho.shooting.domain.repository.ProjectRepository
 import ir.hoboho.shooting.domain.repository.ReferenceRepository
 import ir.hoboho.shooting.domain.repository.WorkdayRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +66,9 @@ class ReportsViewModel @Inject constructor(
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
+
+    private val cashLedger = expenseRepository.observeCashLedger()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val tab = MutableStateFlow(ReportTab.DAILY)
     private val range = MutableStateFlow(DateRange.thisMonth())
@@ -203,7 +209,7 @@ class ReportsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null)
+                val spec = ReportSpecBuilder.expenses(rows, _state.value.range, _state.value.companyPayments, _state.value.projectFilter != null, cashLedger.value)
                 val name = "expenses-${DateFormatter.format(_state.value.range.startEpochDay, false).replace('/', '-')}.pdf"
                 val file = withContext(Dispatchers.IO) { writer.writePdf(spec, name) }
                 val saved = persistPdf(file, name)
