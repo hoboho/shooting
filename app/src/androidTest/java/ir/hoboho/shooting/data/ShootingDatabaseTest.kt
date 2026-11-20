@@ -102,22 +102,17 @@ class ShootingDatabaseTest {
     }
 
     @Test
-    fun duplicateProjectDate_isRejectedBeforeWriting() = runBlocking {
+    fun multipleDailyReports_sameProjectDateCanBeSaved() = runBlocking {
         val projectId = projects().save(Project(name = "پروژه ب"))
         val cableId = db.cableTypeDao().getByCoreCount(12)!!.id
         fun operation() = ShootingOperation(
             startCode = "A", startMeter = 0, endCode = "B", endMeter = 10,
             cableTypeId = cableId,
         )
-        workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L), listOf(operation()))
-        var rejected = false
-        try {
-            workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L), listOf(operation()))
-        } catch (e: ValidationException) {
-            rejected = true
-        }
-        assertThat(rejected).isTrue()
-        assertThat(db.workdayDao().getAll()).hasSize(1)
+        val first = workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L, workArea = "محدوده اول"), listOf(operation()))
+        val second = workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L, workArea = "محدوده دوم"), listOf(operation()))
+        assertThat(second).isNotEqualTo(first)
+        assertThat(db.workdayDao().getAll()).hasSize(2)
     }
 
     @Test
