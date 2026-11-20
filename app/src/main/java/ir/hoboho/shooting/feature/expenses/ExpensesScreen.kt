@@ -83,6 +83,12 @@ fun ExpensesScreen(
     var paymentReceiptReference by remember { mutableStateOf("") }
     var paymentDateEpochDay by remember { mutableStateOf(JalaliCalendar.todayEpochDay()) }
     var showPaymentDatePicker by remember { mutableStateOf(false) }
+    var selectedCompanyPayment by remember { mutableStateOf<ir.hoboho.shooting.domain.model.CompanyPayment?>(null) }
+    var editPaymentAmount by remember { mutableStateOf("") }
+    var editPaymentReceipt by remember { mutableStateOf("") }
+    var editPaymentDateEpochDay by remember { mutableStateOf(JalaliCalendar.todayEpochDay()) }
+    var showEditPaymentDatePicker by remember { mutableStateOf(false) }
+    var pendingDeleteCompanyPayment by remember { mutableStateOf<Long?>(null) }
     var companyPaymentsExpanded by remember { mutableStateOf(false) }
     var cashLedgerExpanded by remember { mutableStateOf(false) }
 
@@ -134,6 +140,84 @@ fun ExpensesScreen(
             initialEpochDay = paymentDateEpochDay,
             onDismiss = { showPaymentDatePicker = false },
             onDateSelected = { paymentDateEpochDay = it },
+        )
+    }
+    if (selectedCompanyPayment != null) {
+        AlertDialog(
+            onDismissRequest = { if (!paymentSaving) selectedCompanyPayment = null },
+            title = { Text("ویرایش دریافتی شرکت") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = editPaymentAmount,
+                        onValueChange = { editPaymentAmount = it },
+                        label = { Text(stringResource(R.string.label_amount)) },
+                        suffix = { Text(stringResource(R.string.toman)) },
+                        singleLine = true,
+                    )
+                    ClickableField(
+                        label = stringResource(R.string.label_date),
+                        value = DateFormatter.format(editPaymentDateEpochDay),
+                        onClick = { showEditPaymentDatePicker = true },
+                    )
+                    OutlinedTextField(
+                        value = editPaymentReceipt,
+                        onValueChange = { editPaymentReceipt = it },
+                        label = { Text(stringResource(R.string.label_receipt_reference)) },
+                        singleLine = true,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = !paymentSaving, onClick = {
+                    val amount = NumberFormatter.parseToman(editPaymentAmount)
+                    if (amount == null || amount <= 0L) {
+                        snackbar.currentSnackbarData?.dismiss()
+                        return@TextButton
+                    }
+                    selectedCompanyPayment?.let { payment ->
+                        viewModel.updateCompanyPayment(payment.copy(
+                            amountToman = amount,
+                            dateEpochDay = editPaymentDateEpochDay,
+                            receiptReference = editPaymentReceipt.trim(),
+                        ))
+                    }
+                    selectedCompanyPayment = null
+                }) { Text("ذخیره تغییرات") }
+            },
+            dismissButton = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(enabled = !paymentSaving, onClick = {
+                        pendingDeleteCompanyPayment = selectedCompanyPayment?.id
+                    }) { Text("حذف دریافتی", color = MaterialTheme.colorScheme.error) }
+                    TextButton(enabled = !paymentSaving, onClick = { selectedCompanyPayment = null }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            },
+        )
+    }
+    if (showEditPaymentDatePicker) {
+        JalaliDatePickerDialog(
+            initialEpochDay = editPaymentDateEpochDay,
+            onDismiss = { showEditPaymentDatePicker = false },
+            onDateSelected = {
+                editPaymentDateEpochDay = it
+                showEditPaymentDatePicker = false
+            },
+        )
+    }
+    if (pendingDeleteCompanyPayment != null) {
+        ConfirmDialog(
+            title = "حذف دریافتی شرکت",
+            message = "این عملیات دریافتی انتخاب‌شده و تراکنش متناظر آن را از دفتر گردش مالی حذف می‌کند. ادامه می‌دهید؟",
+            confirmLabel = stringResource(R.string.action_delete),
+            onConfirm = {
+                viewModel.deleteCompanyPayment(pendingDeleteCompanyPayment!!)
+                pendingDeleteCompanyPayment = null
+                selectedCompanyPayment = null
+            },
+            onDismiss = { pendingDeleteCompanyPayment = null },
         )
     }
     if (pendingDelete != null) {
@@ -207,6 +291,12 @@ fun ExpensesScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 companyPayments.forEach { payment ->
                                     Surface(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            selectedCompanyPayment = payment
+                                            editPaymentAmount = NumberFormatter.formatToman(payment.amountToman)
+                                            editPaymentDateEpochDay = payment.dateEpochDay
+                                            editPaymentReceipt = payment.receiptReference
+                                        },
                                         color = (if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844))
                                             .copy(alpha = 0.09f),
                                         shape = RoundedCornerShape(14.dp),
@@ -261,10 +351,36 @@ fun ExpensesScreen(
                         AnimatedVisibility(visible = cashLedgerExpanded) {
                             Column {
                                 cashLedger.forEach { entry ->
-                                    StatRow(
-                                        label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
-                                        value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
-                                    )
+                                    if (entry.originType == "RECEIPT") {
+                                        val incomeColor = if (isSystemInDarkTheme()) Color(0xFF69F0AE) else Color(0xFF00A844)
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                            color = incomeColor.copy(alpha = 0.09f),
+                                            shape = RoundedCornerShape(14.dp),
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(
+                                                    "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                )
+                                                Text(
+                                                    "+${NumberFormatter.formatToman(entry.amountToman)}",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = incomeColor,
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        StatRow(
+                                            label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                            value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
+                                        )
+                                    }
                                 }
                             }
                         }
