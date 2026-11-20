@@ -40,6 +40,15 @@ class FileSharer @Inject constructor(
 
     fun sharePdf(file: File) = share(file, "application/pdf")
 
+    fun openPdf(file: File) {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
+
     fun shareBackup(file: File) = share(file, "application/octet-stream")
 
     fun openBackup(file: File) {
