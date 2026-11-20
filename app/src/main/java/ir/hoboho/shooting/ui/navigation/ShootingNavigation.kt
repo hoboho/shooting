@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -109,9 +108,9 @@ fun ShootingApp(
                             selected = selected,
                             onClick = {
                                 navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    popUpTo(Routes.DASHBOARD) { inclusive = false }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             },
                             icon = {
