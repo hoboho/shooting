@@ -3,6 +3,14 @@
 package ir.hoboho.shooting.feature.workdays
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.sign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,6 +64,9 @@ fun WorkdayDetailScreen(
     val orderedWorkdays by viewModel.orderedWorkdays.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val swipeOffset = remember { Animatable(0f) }
+    val swipeScope = rememberCoroutineScope()
+    val pdfReady by viewModel.pdfReady.collectAsStateWithLifecycle()
     val exportPdf = rememberFileSaveAction(viewModel::exportPdf)
 
     LaunchedEffect(workdayId) { viewModel.load(workdayId) }
@@ -82,22 +93,39 @@ fun WorkdayDetailScreen(
             return@Scaffold
         }
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).pointerInput(report.id, orderedWorkdays) {
-                var drag = 0f
-                detectHorizontalDragGestures(
-                    onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
-                    onDragEnd = {
-                        val index = orderedWorkdays.indexOfFirst { it.id == report.id }
-                        if (index >= 0 && drag < -80f && index < orderedWorkdays.lastIndex) {
-                            onNavigateWorkday(orderedWorkdays[index + 1].id)
-                        } else if (index > 0 && drag > 80f) {
-                            onNavigateWorkday(orderedWorkdays[index - 1].id)
-                        }
-                        drag = 0f
-                    },
-                    onDragCancel = { drag = 0f },
-                )
-            },
+            modifier = Modifier.fillMaxSize().padding(padding)
+                .graphicsLayer { translationX = swipeOffset.value }
+                .pointerInput(report.id, orderedWorkdays) {
+                    var drag = 0f
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            drag += amount
+                            val index = orderedWorkdays.indexOfFirst { it.id == report.id }
+                            val hasTarget = (drag < 0f && index >= 0 && index < orderedWorkdays.lastIndex) ||
+                                (drag > 0f && index > 0)
+                            val visual = if (hasTarget) drag.coerceIn(-size.width * 0.72f, size.width * 0.72f)
+                                else sign(drag) * size.width * 0.18f *
+                                    (1f - exp(-abs(drag) / (size.width.coerceAtLeast(1) * 0.45f)))
+                            swipeScope.launch { swipeOffset.snapTo(visual) }
+                        },
+                        onDragEnd = {
+                            val index = orderedWorkdays.indexOfFirst { it.id == report.id }
+                            when {
+                                drag < -size.width * 0.18f && index >= 0 && index < orderedWorkdays.lastIndex ->
+                                    onNavigateWorkday(orderedWorkdays[index + 1].id)
+                                drag > size.width * 0.18f && index > 0 ->
+                                    onNavigateWorkday(orderedWorkdays[index - 1].id)
+                            }
+                            swipeScope.launch { swipeOffset.animateTo(0f, spring(dampingRatio = 0.72f, stiffness = 420f)) }
+                            drag = 0f
+                        },
+                        onDragCancel = {
+                            swipeScope.launch { swipeOffset.animateTo(0f, spring()) }
+                            drag = 0f
+                        },
+                    )
+                },
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -172,6 +200,13 @@ fun WorkdayDetailScreen(
                         level = ButtonLevel.Secondary,
                         fullWidth = false,
                         modifier = Modifier.weight(1f),
+                    )
+                }
+                if (pdfReady) {
+                    ShootingButton(
+                        text = "باز کردن فایل PDF",
+                        onClick = viewModel::openGeneratedPdf,
+                        level = ButtonLevel.Outline,
                     )
                 }
             }
