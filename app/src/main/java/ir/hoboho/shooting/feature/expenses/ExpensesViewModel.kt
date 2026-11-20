@@ -40,7 +40,7 @@ class ExpensesViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val overview: StateFlow<ExpenseOverview> = expenses
-        .map { ExpenseCalculator.overview(it) }
+        .map { ExpenseCalculator.overview(it.filter { expense -> expense.companyApproved }) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpenseOverview())
 
     private val _paymentSaving = MutableStateFlow(false)
