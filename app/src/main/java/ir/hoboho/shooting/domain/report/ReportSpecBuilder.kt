@@ -242,7 +242,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = "ریز کارکرد پروژه",
             subtitle = "${project.name} — ${DateFormatter.formatRange(range)}",
-            headerLines = header(),
+            headerLines = operatorHeader(operatorName),
             blocks = buildList {
                 add(PdfBlock.KeyValueList(listOf(
                     ReportText.PROJECT to project.name,
