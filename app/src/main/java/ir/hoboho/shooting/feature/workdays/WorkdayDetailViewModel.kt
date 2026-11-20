@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -29,6 +31,9 @@ class WorkdayDetailViewModel @Inject constructor(
     private val saver: PublicDownloadSaver,
     private val strings: StringProvider,
 ) : ViewModel() {
+
+    val orderedWorkdays = workdayRepository.observeWorkdaysWithOperations()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _workday = MutableStateFlow<Workday?>(null)
     val workday: StateFlow<Workday?> = _workday.asStateFlow()
