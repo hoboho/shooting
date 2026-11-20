@@ -10,6 +10,7 @@ import ir.hoboho.shooting.core.pdf.PdfDocumentSpec
 import ir.hoboho.shooting.core.pdf.PdfTextStyle
 import ir.hoboho.shooting.domain.model.CableLengthRow
 import ir.hoboho.shooting.domain.model.CableType
+import ir.hoboho.shooting.domain.model.CashLedgerEntry
 import ir.hoboho.shooting.domain.model.CompanyPayment
 import ir.hoboho.shooting.domain.model.Expense
 import ir.hoboho.shooting.domain.model.PeriodReport
@@ -273,7 +274,7 @@ object ReportSpecBuilder {
 
     // ----------------------------------------------------------- expense report
 
-    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false): PdfDocumentSpec {
+    fun expenses(rows: List<ExpenseReportRow>, range: DateRange, companyPayments: List<CompanyPayment> = emptyList(), projectScoped: Boolean = false, cashLedger: List<CashLedgerEntry> = emptyList()): PdfDocumentSpec {
         val approved = rows.filter { it.expense.companyApproved }
         val expenseRows = approved.mapIndexed { index, row ->
             val e = row.expense
@@ -289,7 +290,10 @@ object ReportSpecBuilder {
         val totalApproved = approved.sumOf { it.expense.amountToman }
         val receipts = companyPayments.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }
         val received = receipts.sumOf { it.amountToman }
-        val net = received - totalApproved
+        val periodLedger = cashLedger.filter { it.dateEpochDay in range.startEpochDay..range.endEpochDay }
+        val reversals = periodLedger.filter { it.originType == "REVERSAL" }
+        val reversedTotal = reversals.sumOf { it.amountToman }
+        val net = if (periodLedger.isNotEmpty()) periodLedger.sumOf { it.amountToman } else received - totalApproved
         val receiptRows = receipts.map { listOf(DateFormatter.format(it.dateEpochDay), it.receiptReference.ifBlank { NumberFormatter.EM_DASH }, persianLong(it.amountToman), it.note.ifBlank { NumberFormatter.EM_DASH }) }
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
@@ -305,7 +309,8 @@ object ReportSpecBuilder {
                     buildList {
                         add("جمع هزینه‌های تأییدشده" to toman(totalApproved))
                         add("دریافتی واقعی شرکت" to toman(received))
-                        if (!projectScoped) add("خالص گردش مالی" to toman(net))
+                        add("مجموع برگشتی‌ها" to toman(reversedTotal))
+                        if (!projectScoped) add("خالص گردش مالی دفترکل" to toman(net))
                         add("تعداد هزینه‌های تأییدشده" to persianInt(approved.size))
                     },
                     emphasisedLabels = setOf("خالص گردش مالی"),
@@ -330,6 +335,13 @@ object ReportSpecBuilder {
                     rows = receiptRows,
                     caption = "دریافتی‌های واقعی شرکت",
                     aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER, PdfAlign.START),
+                ),
+                PdfBlock.Table(
+                    columns = listOf(PdfColumn(ReportText.DATE, 1f), PdfColumn(ReportText.DESCRIPTION, 2f), PdfColumn(ReportText.AMOUNT, 1f)),
+                    header = listOf(ReportText.DATE, ReportText.DESCRIPTION, ReportText.AMOUNT),
+                    rows = reversals.map { listOf(DateFormatter.format(it.dateEpochDay), it.description.ifBlank { "برگشت هزینه" }, persianLong(it.amountToman)) },
+                    caption = "اسناد برگشت هزینه",
+                    aligns = listOf(PdfAlign.CENTER, PdfAlign.START, PdfAlign.CENTER),
                 ),
                 PdfBlock.Paragraph("دریافتی‌ها مستقل از هزینه‌ها ثبت شده‌اند و به هیچ سندی تخصیص داده نمی‌شوند.", PdfTextStyle.Small),
                 PdfBlock.KeyValueList(listOf("تهیه‌کننده" to "................................", "تأیید شرکت / مهر" to "................................")),
