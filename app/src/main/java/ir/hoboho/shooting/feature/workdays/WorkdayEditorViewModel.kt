@@ -112,16 +112,32 @@ class WorkdayEditorViewModel @Inject constructor(
             } else {
                 val previousProjectId = workdayRepository.getAllWorkdaysWithOperations()
                     .maxByOrNull { it.dateEpochDay }?.projectId
-                val projectId = previousProjectId?.takeIf { id ->
-                    _state.value.projects.any { it.id == id }
-                } ?: initialProjectId.takeIf { it > 0L }
+                val projectId = initialProjectId.takeIf { id -> id > 0L && _state.value.projects.any { it.id == id } }
+                    ?: previousProjectId?.takeIf { id -> _state.value.projects.any { it.id == id } }
                     ?: _state.value.projects.firstOrNull()?.id ?: 0L
-                _state.value = WorkdayEditorState(
-                    projects = _state.value.projects,
-                    cableTypes = _state.value.cableTypes,
-                    projectId = projectId,
-                )
-                applyProjectDefaults(projectId)
+                val existingToday = if (!forceNew) {
+                    workdayRepository.getAllWorkdaysWithOperations().firstOrNull {
+                        it.projectId == projectId && it.dateEpochDay == JalaliCalendar.todayEpochDay()
+                    }
+                } else null
+                if (existingToday != null) {
+                    _state.value = WorkdayEditorState(
+                        workdayId = existingToday.id, uuid = existingToday.uuid,
+                        createdAt = existingToday.createdAt, projectId = existingToday.projectId,
+                        dateEpochDay = existingToday.dateEpochDay, workArea = existingToday.workArea,
+                        employer = existingToday.employer, supervisor = existingToday.supervisor,
+                        workerCount = existingToday.workerCount.toString(), notes = existingToday.notes,
+                        operations = existingToday.operations.map { OperationDraft.fromOperation(it, nextKey++) },
+                        projects = _state.value.projects, cableTypes = _state.value.cableTypes,
+                    )
+                } else {
+                    _state.value = WorkdayEditorState(
+                        projects = _state.value.projects,
+                        cableTypes = _state.value.cableTypes,
+                        projectId = projectId,
+                    )
+                    applyProjectDefaults(projectId)
+                }
             }
         }
     }
