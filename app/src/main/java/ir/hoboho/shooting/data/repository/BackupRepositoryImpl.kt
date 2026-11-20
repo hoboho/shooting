@@ -7,6 +7,7 @@ import ir.hoboho.shooting.core.backup.BackupIntegrityException
 import ir.hoboho.shooting.data.local.AppSettingDao
 import ir.hoboho.shooting.data.local.CableTypeDao
 import ir.hoboho.shooting.data.local.CompanyPaymentDao
+import ir.hoboho.shooting.data.local.CashLedgerDao
 import ir.hoboho.shooting.data.local.ExpenseCategoryDao
 import ir.hoboho.shooting.data.local.ExpenseDao
 import ir.hoboho.shooting.data.local.OperationDao
@@ -42,6 +43,7 @@ class BackupRepositoryImpl @Inject constructor(
     private val expenseDao: ExpenseDao,
     private val settlementDao: SettlementDao,
     private val companyPaymentDao: CompanyPaymentDao,
+    private val cashLedgerDao: CashLedgerDao,
     private val settingDao: AppSettingDao,
 ) : BackupRepository {
 
@@ -99,6 +101,7 @@ class BackupRepositoryImpl @Inject constructor(
                 // Child-first order keeps every FK satisfied.
                 settlementDao.deleteAll()
                 companyPaymentDao.deleteAll()
+                cashLedgerDao.deleteAll()
                 operationDao.deleteAll()
                 expenseDao.deleteAll()
                 workdayDao.deleteAll()
@@ -257,6 +260,9 @@ class BackupRepositoryImpl @Inject constructor(
                     throw BackupIntegrityException("Settlements exceed expense $uuid")
                 }
             }
+
+            cashLedgerDao.seedReceipts()
+            cashLedgerDao.seedApprovedExpenses()
 
             if (overwrite) {
                 settingDao.deleteAll()

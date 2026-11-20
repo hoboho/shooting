@@ -367,3 +367,25 @@ interface AppSettingDao {
     @Query("DELETE FROM app_settings")
     suspend fun deleteAll()
 }
+
+
+@Dao
+interface CashLedgerDao {
+    @Query("SELECT * FROM cash_ledger ORDER BY dateEpochDay DESC, id DESC")
+    fun observeAll(): Flow<List<CashLedgerEntryEntity>>
+
+    @Query("SELECT COALESCE(SUM(amountToman), 0) FROM cash_ledger")
+    fun observeBalance(): Flow<Long>
+    @Query("SELECT * FROM cash_ledger WHERE idempotencyKey = :key LIMIT 1")
+    suspend fun getByIdempotencyKey(key: String): CashLedgerEntryEntity?
+    @Query("SELECT * FROM cash_ledger WHERE originType = 'EXPENSE' AND originId = :expenseId ORDER BY id DESC LIMIT 1")
+    suspend fun latestExpenseDebit(expenseId: Long): CashLedgerEntryEntity?
+    @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insert(entry: CashLedgerEntryEntity): Long
+    @Query("DELETE FROM cash_ledger")
+    suspend fun deleteAll()
+    @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'receipt:' || uuid, 'RECEIPT', id, amountToman, dateEpochDay, note, createdAt, NULL FROM company_payments""")
+    suspend fun seedReceipts()
+    @Query("""INSERT OR IGNORE INTO cash_ledger (uuid, idempotencyKey, originType, originId, amountToman, dateEpochDay, description, createdAt, reversalOfEntryId) SELECT lower(hex(randomblob(16))), 'expense:' || uuid, 'EXPENSE', id, -amountToman, dateEpochDay, description, createdAt, NULL FROM expenses WHERE companyApproved = 1""")
+    suspend fun seedApprovedExpenses()
+}

@@ -4,6 +4,8 @@ package ir.hoboho.shooting.feature.reports
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -72,6 +74,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val exportDaily = rememberFileSaveAction(viewModel::exportDailyPdf)
     val exportPeriod = rememberFileSaveAction(viewModel::exportPeriodPdf)
     val exportExpenses = rememberFileSaveAction(viewModel::exportExpensesPdf)
+    val exportExpensesSummary = rememberFileSaveAction(viewModel::exportExpensesSummaryPdf)
     val exportProject = rememberFileSaveAction(viewModel::exportProjectPdf)
 
     LaunchedEffect(state.message) {
@@ -125,7 +128,25 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
             when (state.tab) {
                 ReportTab.DAILY -> {
                     item {
-                        SectionCard(title = stringResource(R.string.reports_daily)) {
+                        SectionCard(
+                            title = stringResource(R.string.reports_daily),
+                            modifier = Modifier.pointerInput(state.selectedWorkdayId, state.workdays) {
+                                var drag = 0f
+                                detectHorizontalDragGestures(
+                                    onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
+                                    onDragEnd = {
+                                        val index = state.workdays.indexOfFirst { it.id == state.selectedWorkdayId }
+                                        if (drag < -80f && index >= 0 && index < state.workdays.lastIndex) {
+                                            viewModel.setSelectedWorkday(state.workdays[index + 1].id)
+                                        } else if (drag > 80f && index > 0) {
+                                            viewModel.setSelectedWorkday(state.workdays[index - 1].id)
+                                        }
+                                        drag = 0f
+                                    },
+                                    onDragCancel = { drag = 0f },
+                                )
+                            },
+                        ) {
                             if (state.workdays.isEmpty()) {
                                 EmptyState(stringResource(R.string.label_no_data))
                             } else {
@@ -300,6 +321,13 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         ShootingButton(
                             text = stringResource(R.string.reports_pdf_expenses),
                             onClick = exportExpenses,
+                            icon = Icons.Filled.PictureAsPdf,
+                        )
+                    }
+                    item {
+                        ShootingButton(
+                            text = "خروجی خلاصه مدیریتی مالی",
+                            onClick = exportExpensesSummary,
                             icon = Icons.Filled.PictureAsPdf,
                         )
                     }

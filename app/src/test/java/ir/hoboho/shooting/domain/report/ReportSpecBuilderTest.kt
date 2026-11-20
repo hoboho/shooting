@@ -158,10 +158,28 @@ class ReportSpecBuilderTest {
         val spec = ReportSpecBuilder.expenses(rows, DateRange(20_759L, 20_760L))
         assertEquals(ReportText.TITLE_EXPENSES, spec.title)
         val tables = spec.blocks.filterIsInstance<PdfBlock.Table>()
-        assertEquals(2, tables.size)
+        assertEquals(3, tables.size) // expenses, company receipts, and settlement allocations
         assertEquals("۱٬۰۰۰٬۰۰۰", tables[0].rows.single()[5])
         assertEquals("۶۰۰٬۰۰۰", tables[0].rows.single()[7])
         assertEquals(ReportText.PARTIAL, tables[0].rows.single()[8])
-        assertEquals("۴۰۰٬۰۰۰", tables[1].rows.single()[2])
+        assertEquals("۴۰۰٬۰۰۰", tables[2].rows.single()[2])
     }
+    @Test
+    fun financialExecutiveSummaryUsesApprovedExpensesAndCompanyReceipts() {
+        val expense = Expense(
+            dateEpochDay = 20_759L, categoryId = 1L, categoryName = "سوخت خودرو",
+            amountToman = 13_000_000L, description = "سوخت", companyApproved = true,
+            projectName = "پروژه الف",
+        )
+        val receipt = ir.hoboho.shooting.domain.model.CompanyPayment(
+            amountToman = 10_000_000L, dateEpochDay = 20_759L, receiptReference = "رسید ۱",
+        )
+        val spec = ReportSpecBuilder.expensesExecutiveSummary(
+            listOf(ExpenseReportRow(expense)), listOf(receipt), DateRange(20_759L, 20_759L),
+        )
+        val entries = spec.blocks.filterIsInstance<PdfBlock.KeyValueList>().flatMap { it.entries }
+        assertTrue(entries.any { it.first == "خالص گردش نقدی دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
+        assertTrue(entries.any { it.first == "کسری خالص گردش دوره" && it.second.contains("۳٬۰۰۰٬۰۰۰") })
+    }
+
 }

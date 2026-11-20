@@ -77,19 +77,6 @@ class BackupManager @Inject constructor(
                     warnings += "نام پروژه «${project.name}» در اطلاعات فعلی متعلق به شناسه دیگری است"
                 }
             }
-            val existingProjectUuidById = existing.projects.associate { it.id to it.uuid }
-            val existingWorkdayKeys = existing.workdays.mapNotNull { day ->
-                val projectUuid = existingProjectUuidById[day.projectId] ?: return@mapNotNull null
-                "${projectUuid}:${day.dateEpochDay}" to day.uuid
-            }.toMap()
-            incoming.workdays.forEach { day ->
-                val projectUuid = projectUuidByIncomingId[day.projectId] ?: return@forEach
-                val key = "${projectUuid}:${day.dateEpochDay}"
-                val ownerUuid = existingWorkdayKeys[key]
-                if (ownerUuid != null && ownerUuid != day.uuid) {
-                    warnings += "برای این پروژه در تاریخ گزارش «${day.dateEpochDay}» گزارش دیگری ثبت شده است"
-                }
-            }
         }
         val preview = RestorePreview(
             formatVersion = payload.formatVersion,

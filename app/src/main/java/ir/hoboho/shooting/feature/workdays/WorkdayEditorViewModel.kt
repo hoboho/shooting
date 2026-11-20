@@ -19,6 +19,7 @@ import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.repository.ProjectRepository
 import ir.hoboho.shooting.domain.repository.ReferenceRepository
 import ir.hoboho.shooting.domain.repository.WorkdayRepository
+import ir.hoboho.shooting.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,6 +57,7 @@ data class WorkdayEditorState(
 @HiltViewModel
 class WorkdayEditorViewModel @Inject constructor(
     private val workdayRepository: WorkdayRepository,
+    private val settingsRepository: SettingsRepository,
     private val projectRepository: ProjectRepository,
     private val referenceRepository: ReferenceRepository,
     private val strings: StringProvider,
@@ -91,7 +93,7 @@ class WorkdayEditorViewModel @Inject constructor(
         }
     }
 
-    fun load(workdayId: Long, initialProjectId: Long) {
+    fun load(workdayId: Long, initialProjectId: Long, forceNew: Boolean = true) {
         viewModelScope.launch {
             if (workdayId > 0L) {
                 workdayRepository.getWorkday(workdayId)?.let { workday ->
@@ -112,16 +114,34 @@ class WorkdayEditorViewModel @Inject constructor(
             } else {
                 val previousProjectId = workdayRepository.getAllWorkdaysWithOperations()
                     .maxByOrNull { it.dateEpochDay }?.projectId
-                val projectId = previousProjectId?.takeIf { id ->
-                    _state.value.projects.any { it.id == id }
-                } ?: initialProjectId.takeIf { it > 0L }
+                val defaultProjectId = settingsRepository.getSettings().defaultProjectId
+                val projectId = initialProjectId.takeIf { id -> id > 0L && _state.value.projects.any { it.id == id } }
+                    ?: defaultProjectId?.takeIf { id -> _state.value.projects.any { it.id == id } }
+                    ?: previousProjectId?.takeIf { id -> _state.value.projects.any { it.id == id } }
                     ?: _state.value.projects.firstOrNull()?.id ?: 0L
-                _state.value = WorkdayEditorState(
-                    projects = _state.value.projects,
-                    cableTypes = _state.value.cableTypes,
-                    projectId = projectId,
-                )
-                applyProjectDefaults(projectId)
+                val existingToday = if (!forceNew) {
+                    workdayRepository.getAllWorkdaysWithOperations()
+                        .filter { it.projectId == projectId && it.dateEpochDay == JalaliCalendar.todayEpochDay() }
+                        .maxByOrNull { it.id }
+                } else null
+                if (existingToday != null) {
+                    _state.value = WorkdayEditorState(
+                        workdayId = existingToday.id, uuid = existingToday.uuid,
+                        createdAt = existingToday.createdAt, projectId = existingToday.projectId,
+                        dateEpochDay = existingToday.dateEpochDay, workArea = existingToday.workArea,
+                        employer = existingToday.employer, supervisor = existingToday.supervisor,
+                        workerCount = existingToday.workerCount.toString(), notes = existingToday.notes,
+                        operations = existingToday.operations.map { OperationDraft.fromOperation(it, nextKey++) },
+                        projects = _state.value.projects, cableTypes = _state.value.cableTypes,
+                    )
+                } else {
+                    _state.value = WorkdayEditorState(
+                        projects = _state.value.projects,
+                        cableTypes = _state.value.cableTypes,
+                        projectId = projectId,
+                    )
+                    applyProjectDefaults(projectId)
+                }
             }
         }
     }
@@ -246,9 +266,8 @@ class WorkdayEditorViewModel @Inject constructor(
                 return@launch
             }
             val projectExists = projectRepository.getProject(current.projectId) != null
-            val duplicate = workdayRepository.duplicateExists(
-                current.projectId, current.dateEpochDay, current.workdayId,
-            )
+            // A project can have multiple separate reports on the same date.
+            val duplicate = false
             val workerCount = NumberFormatter.parseNonNegativeInt(current.workerCount) ?: -1
             val workdayIssues = Validator.workday(
                 projectId = current.projectId,

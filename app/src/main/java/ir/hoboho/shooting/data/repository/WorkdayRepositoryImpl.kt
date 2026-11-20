@@ -60,7 +60,8 @@ class WorkdayRepositoryImpl @Inject constructor(
     override suspend fun save(workday: Workday, operations: List<ShootingOperation>): Long =
         db.withTransaction {
             val projectExists = projectDao.getById(workday.projectId) != null
-            val duplicate = dao.countDuplicates(workday.projectId, workday.dateEpochDay, workday.id) > 0
+            // Same-project, same-date reports are valid: each may represent a distinct work area.
+            val duplicate = false
             val issues = Validator.workday(
                 projectId = workday.projectId,
                 projectExists = projectExists,

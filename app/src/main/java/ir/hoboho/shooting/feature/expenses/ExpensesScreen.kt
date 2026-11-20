@@ -6,13 +6,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -69,7 +71,10 @@ fun ExpensesScreen(
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val overview by viewModel.overview.collectAsStateWithLifecycle()
     val companyPayments by viewModel.companyPayments.collectAsStateWithLifecycle()
+    val cashPosition by viewModel.cashPosition.collectAsStateWithLifecycle()
+    val cashLedger by viewModel.cashLedger.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val paymentSaving by viewModel.paymentSaving.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Long?>(null) }
     var showPaymentDialog by remember { mutableStateOf(false) }
@@ -106,7 +111,7 @@ fun ExpensesScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(enabled = !paymentSaving, onClick = {
                     viewModel.allocateCompanyPayment(paymentAmount, paymentDateEpochDay, paymentReceiptReference)
                     paymentAmount = ""
                     paymentReceiptReference = ""
@@ -175,8 +180,10 @@ fun ExpensesScreen(
                         NumberFormatter.formatToman(overview.totalReimbursedToman))
                     StatRow(stringResource(R.string.label_unallocated_company_payments),
                         NumberFormatter.formatToman((totalReceived - overview.totalReimbursedToman).coerceAtLeast(0L)))
+                    StatRow("موجودی صندوق پروژه", NumberFormatter.formatToman(cashPosition.cashboxBalanceToman), emphasised = true)
+                    StatRow("مطالبات از شرکت", NumberFormatter.formatToman(cashPosition.companyReceivableToman))
                     StatRow(stringResource(R.string.label_outstanding_receivables),
-                        NumberFormatter.formatToman(overview.outstandingToman), emphasised = true)
+                        NumberFormatter.formatToman(overview.outstandingToman))
                 }
             }
             if (companyPayments.isNotEmpty()) {
@@ -192,13 +199,39 @@ fun ExpensesScreen(
                     }
                 }
             }
+            if (cashLedger.isNotEmpty()) {
+                item {
+                    SectionCard(title = "دفتر گردش نقدی و سوابق مالی") {
+                        cashLedger.forEach { entry ->
+                            StatRow(
+                                label = "${DateFormatter.format(entry.dateEpochDay)} — ${entry.description.ifBlank { entry.originType }}",
+                                value = (if (entry.amountToman > 0L) "+" else "") + NumberFormatter.formatToman(entry.amountToman),
+                                hint = "شناسه سند: ${entry.originType} #${entry.originId}" +
+                                    (entry.reversalOfEntryId?.let { " | برگشت سند #$it" } ?: ""),
+                            )
+                        }
+                    }
+                }
+            }
             if (expenses.isEmpty()) {
                 item { EmptyState(stringResource(R.string.expenses_empty)) }
             }
-            items(expenses, key = { it.id }) { expense ->
+            itemsIndexed(expenses, key = { _, item -> item.id }) { index, expense ->
                 SectionCard(
                     title = expense.categoryName,
                     subtitle = "${DateFormatter.format(expense.dateEpochDay)} — ${expense.description}",
+                    modifier = Modifier.pointerInput(expense.id, expenses) {
+                        var drag = 0f
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { change, amount -> change.consume(); drag += amount },
+                            onDragEnd = {
+                                if (drag < -80f && index < expenses.lastIndex) onEditExpense(expenses[index + 1].id)
+                                else if (drag > 80f && index > 0) onEditExpense(expenses[index - 1].id)
+                                drag = 0f
+                            },
+                            onDragCancel = { drag = 0f },
+                        )
+                    },
                     trailing = {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TagChip(stringResource(if (expense.companyApproved) R.string.expense_approved else R.string.expense_not_approved))

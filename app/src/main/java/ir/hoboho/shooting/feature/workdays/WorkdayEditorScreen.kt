@@ -69,6 +69,7 @@ private fun pointTypeLabel(type: PointType): String = stringResource(
 fun WorkdayEditorScreen(
     workdayId: Long,
     initialProjectId: Long,
+    forceNew: Boolean = true,
     onDone: () -> Unit,
     viewModel: WorkdayEditorViewModel = hiltViewModel(),
 ) {
@@ -76,7 +77,7 @@ fun WorkdayEditorScreen(
     val snackbar = remember { SnackbarHostState() }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(workdayId, initialProjectId) { viewModel.load(workdayId, initialProjectId) }
+    LaunchedEffect(workdayId, initialProjectId, forceNew) { viewModel.load(workdayId, initialProjectId, forceNew) }
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
     LaunchedEffect(state.error) { state.error?.let { snackbar.showSnackbar(it) } }
 
@@ -92,7 +93,7 @@ fun WorkdayEditorScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if (workdayId == 0L) R.string.workday_new else R.string.workday_edit)) },
+                title = { Text(stringResource(if (state.workdayId == 0L) R.string.workday_new else R.string.workday_edit)) },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -120,7 +121,7 @@ fun WorkdayEditorScreen(
                     selected = state.projects.firstOrNull { it.id == state.projectId },
                     onSelected = { viewModel.setProject(it.id) },
                     labelOf = { it.name },
-                    enabled = workdayId == 0L,
+                    enabled = state.workdayId == 0L,
                 )
                 ClickableField(
                     label = stringResource(R.string.workday_date),

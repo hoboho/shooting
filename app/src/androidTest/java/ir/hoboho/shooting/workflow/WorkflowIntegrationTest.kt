@@ -91,14 +91,14 @@ class WorkflowIntegrationTest {
     )
 
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), db.cashLedgerDao(), clock,
     )
 
     private fun references() = ReferenceRepositoryImpl(db.cableTypeDao(), db.expenseCategoryDao())
 
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.cashLedgerDao(), db.appSettingDao(),
     )
 
     private fun settings() = SettingsRepositoryImpl(db.appSettingDao())
@@ -191,7 +191,7 @@ class WorkflowIntegrationTest {
     }
 
     @Test
-    fun dailyWorkflow_reverseReelDuplicatePrevention_andDailyPdf() = runBlocking {
+    fun dailyWorkflow_reverseReelAndMultipleReportsSameDate_andDailyPdf() = runBlocking {
         val projectId = projects().save(
             Project(name = "پروژه الف", workArea = "منطقه ۱", employer = "کارفرما", supervisor = "سرپرست"),
         )
@@ -218,17 +218,12 @@ class WorkflowIntegrationTest {
         assertThat(detail.operations.map { it.lengthMeters }).containsExactly(800, 125).inOrder()
         assertThat(detail.totalLengthMeters).isEqualTo(925)
 
-        var duplicateRejected = false
-        try {
-            workdays().save(
-                Workday(projectId = projectId, dateEpochDay = day),
-                listOf(operation(cableId, start = 0, end = 10)),
-            )
-        } catch (e: ValidationException) {
-            duplicateRejected = true
-        }
-        assertThat(duplicateRejected).isTrue()
-        assertThat(db.workdayDao().getAll()).hasSize(1)
+        val secondWorkdayId = workdays().save(
+            Workday(projectId = projectId, dateEpochDay = day, workArea = "منطقه ۲"),
+            listOf(operation(cableId, start = 0, end = 10)),
+        )
+        assertThat(secondWorkdayId).isNotEqualTo(workdayId)
+        assertThat(db.workdayDao().getAll()).hasSize(2)
 
         val cableTypes = references().getAllCableTypes()
         render(

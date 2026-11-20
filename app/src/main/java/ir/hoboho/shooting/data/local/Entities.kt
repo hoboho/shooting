@@ -37,8 +37,7 @@ data class ProjectEntity(
     indices = [
         Index(value = ["uuid"], unique = true),
         Index(value = ["projectId"]),
-        // DB-level second line of defence against duplicate daily reports.
-        Index(value = ["projectId", "dateEpochDay"], unique = true),
+        // Multiple independent daily reports may exist for the same project and date.
     ],
 )
 data class WorkdayEntity(
@@ -197,4 +196,20 @@ data class CompanyPaymentEntity(
 data class AppSettingEntity(
     @PrimaryKey val key: String,
     val value: String,
+)
+
+
+/** Immutable cash movement. Positive values increase project cash; negative values decrease it. */
+@Entity(tableName = "cash_ledger", indices = [Index(value = ["idempotencyKey"], unique = true), Index(value = ["originType", "originId"]), Index(value = ["dateEpochDay"])])
+data class CashLedgerEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val uuid: String,
+    val idempotencyKey: String,
+    val originType: String,
+    val originId: Long,
+    val amountToman: Long,
+    val dateEpochDay: Long,
+    val description: String = "",
+    val createdAt: Long,
+    val reversalOfEntryId: Long? = null,
 )

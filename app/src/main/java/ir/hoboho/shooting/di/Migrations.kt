@@ -38,5 +38,30 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /** Permit multiple independent reports for one project/date (e.g. separate work areas). */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP INDEX IF EXISTS index_workdays_projectId_dateEpochDay")
+        }
+    }
+
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""CREATE TABLE IF NOT EXISTS cash_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                uuid TEXT NOT NULL, idempotencyKey TEXT NOT NULL, originType TEXT NOT NULL,
+                originId INTEGER NOT NULL, amountToman INTEGER NOT NULL, dateEpochDay INTEGER NOT NULL,
+                description TEXT NOT NULL, createdAt INTEGER NOT NULL, reversalOfEntryId INTEGER
+            )""")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_cash_ledger_idempotencyKey ON cash_ledger(idempotencyKey)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_cash_ledger_originType_originId ON cash_ledger(originType, originId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_cash_ledger_dateEpochDay ON cash_ledger(dateEpochDay)")
+            db.execSQL("""INSERT OR IGNORE INTO cash_ledger (uuid,idempotencyKey,originType,originId,amountToman,dateEpochDay,description,createdAt,reversalOfEntryId)
+                SELECT lower(hex(randomblob(16))), 'receipt:' || uuid, 'RECEIPT', id, amountToman, dateEpochDay, note, createdAt, NULL FROM company_payments""")
+            db.execSQL("""INSERT OR IGNORE INTO cash_ledger (uuid,idempotencyKey,originType,originId,amountToman,dateEpochDay,description,createdAt,reversalOfEntryId)
+                SELECT lower(hex(randomblob(16))), 'expense:' || uuid, 'EXPENSE', id, -amountToman, dateEpochDay, description, createdAt, NULL FROM expenses WHERE companyApproved = 1""")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

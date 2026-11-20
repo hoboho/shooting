@@ -297,6 +297,7 @@ jobs:
   # published as a release, and no keystore/password is written to the repo,
   # logs or artifacts.
   release:
+    if: github.ref == 'refs/heads/main'
     name: Signed release APK
     runs-on: ubuntu-latest
     timeout-minutes: 40

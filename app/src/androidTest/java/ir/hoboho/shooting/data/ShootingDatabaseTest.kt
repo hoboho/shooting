@@ -22,6 +22,7 @@ import ir.hoboho.shooting.domain.model.Settlement
 import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -55,11 +56,11 @@ class ShootingDatabaseTest {
         db, db.workdayDao(), db.operationDao(), db.projectDao(), db.cableTypeDao(), clock,
     )
     private fun expenses() = ExpenseRepositoryImpl(
-        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), clock,
+        db, db.expenseDao(), db.settlementDao(), db.expenseCategoryDao(), db.companyPaymentDao(), db.cashLedgerDao(), clock,
     )
     private fun backups() = BackupRepositoryImpl(
         db, db.projectDao(), db.workdayDao(), db.operationDao(), db.cableTypeDao(),
-        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.appSettingDao(),
+        db.expenseCategoryDao(), db.expenseDao(), db.settlementDao(), db.companyPaymentDao(), db.cashLedgerDao(), db.appSettingDao(),
     )
 
     @Test
@@ -102,22 +103,17 @@ class ShootingDatabaseTest {
     }
 
     @Test
-    fun duplicateProjectDate_isRejectedBeforeWriting() = runBlocking {
+    fun multipleDailyReports_sameProjectDateCanBeSaved() = runBlocking {
         val projectId = projects().save(Project(name = "پروژه ب"))
         val cableId = db.cableTypeDao().getByCoreCount(12)!!.id
         fun operation() = ShootingOperation(
             startCode = "A", startMeter = 0, endCode = "B", endMeter = 10,
             cableTypeId = cableId,
         )
-        workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L), listOf(operation()))
-        var rejected = false
-        try {
-            workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L), listOf(operation()))
-        } catch (e: ValidationException) {
-            rejected = true
-        }
-        assertThat(rejected).isTrue()
-        assertThat(db.workdayDao().getAll()).hasSize(1)
+        val first = workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L, workArea = "محدوده اول"), listOf(operation()))
+        val second = workdays().save(Workday(projectId = projectId, dateEpochDay = 20_001L, workArea = "محدوده دوم"), listOf(operation()))
+        assertThat(second).isNotEqualTo(first)
+        assertThat(db.workdayDao().getAll()).hasSize(2)
     }
 
     @Test
@@ -219,4 +215,46 @@ class ShootingDatabaseTest {
         assertThat(db.workdayDao().getAll().single().totalLengthMeters).isEqualTo(75)
         assertThat(db.operationDao().getAll()).hasSize(1)
     }
+    @Test
+    fun cashLedger_postsOnlyApprovedExpenses_andUsesCompensatingEntries() = runBlocking {
+        val categoryId = db.expenseCategoryDao().getAll().first().id
+        val repository = expenses()
+        repository.allocateCompanyPayment(
+            amountToman = 10_000_000L,
+            dateEpochDay = 20_100L,
+            receiptReference = "ADV-100",
+            note = "پیش‌پرداخت شرکت",
+        )
+        val unapproved = Expense(
+            dateEpochDay = 20_100L,
+            categoryId = categoryId,
+            amountToman = 13_000_000L,
+            description = "هزینه تأییدنشده",
+        )
+        val expenseId = repository.save(unapproved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+
+        val approved = unapproved.copy(id = expenseId, companyApproved = true)
+        repository.save(approved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-3_000_000L)
+        assertThat(repository.observeCashPosition().first().companyReceivableToman).isEqualTo(3_000_000L)
+
+        // Re-saving an unchanged approved expense must not create a second debit.
+        repository.save(approved)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-3_000_000L)
+
+        val revised = approved.copy(amountToman = 14_000_000L)
+        repository.save(revised)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-4_000_000L)
+
+        repository.save(revised.copy(companyApproved = false))
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+        assertThat(repository.observeCashPosition().first().companyReceivableToman).isEqualTo(0L)
+
+        repository.save(revised)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(-4_000_000L)
+        repository.delete(expenseId)
+        assertThat(repository.observeCashPosition().first().cashboxBalanceToman).isEqualTo(10_000_000L)
+    }
+
 }

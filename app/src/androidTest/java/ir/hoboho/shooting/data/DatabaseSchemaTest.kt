@@ -60,11 +60,11 @@ class DatabaseSchemaTest {
     }
 
     @Test
-    fun version4_createsEveryTable() {
-        assertThat(db.openHelper.writableDatabase.version).isEqualTo(4)
+    fun version6_createsEveryTable() {
+        assertThat(db.openHelper.writableDatabase.version).isEqualTo(6)
         assertThat(tableNames()).containsExactly(
             "projects", "workdays", "operations", "cable_types",
-            "expense_categories", "expenses", "settlements", "company_payments", "app_settings",
+            "expense_categories", "expenses", "settlements", "company_payments", "cash_ledger", "app_settings",
         )
     }
 
@@ -81,7 +81,7 @@ class DatabaseSchemaTest {
     }
 
     @Test
-    fun uniqueIndex_preventsAccidentalDuplicateProjectDate() {
+    fun multipleDailyReports_allowSameProjectAndDate() {
         sqlite().execSQL(
             "INSERT INTO projects (uuid, name, workArea, employer, supervisor, description, " +
                 "active, createdAt, updatedAt) VALUES ('p1', 'پروژه', '', '', '', '', 1, 0, 0)",
@@ -91,15 +91,11 @@ class DatabaseSchemaTest {
         sqlite().execSQL(
             "INSERT INTO workdays $workdayValues ('w1', 1, 20000, '', '', '', 0, '', 0, 0, 0)",
         )
-        var rejected = false
-        try {
-            sqlite().execSQL(
-                "INSERT INTO workdays $workdayValues ('w2', 1, 20000, '', '', '', 0, '', 0, 0, 0)",
-            )
-        } catch (e: SQLiteConstraintException) {
-            rejected = true
-        }
-        assertThat(rejected).isTrue()
+        sqlite().execSQL(
+            "INSERT INTO workdays $workdayValues ('w2', 1, 20000, '', '', '', 0, '', 0, 0, 0)",
+        )
+        val cursor = sqlite().query("SELECT COUNT(*) FROM workdays WHERE projectId = 1 AND dateEpochDay = 20000")
+        cursor.use { it.moveToFirst(); assertThat(it.getInt(0)).isEqualTo(2) }
     }
 
     @Test
