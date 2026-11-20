@@ -152,6 +152,7 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val defaultProjectId: Long? = null,
     val lastBackupEpochMilli: Long = 0L,
+    val operatorName: String = "",
 )
 
 /** Seed values for the two manageable reference tables. */
