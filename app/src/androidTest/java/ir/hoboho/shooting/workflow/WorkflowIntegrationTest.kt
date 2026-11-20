@@ -43,6 +43,7 @@ import ir.hoboho.shooting.domain.model.ShootingOperation
 import ir.hoboho.shooting.domain.model.Workday
 import ir.hoboho.shooting.domain.report.ExpenseReportRow
 import ir.hoboho.shooting.domain.report.ReportSpecBuilder
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
