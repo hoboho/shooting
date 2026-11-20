@@ -73,6 +73,7 @@ fun ExpensesScreen(
     val companyPayments by viewModel.companyPayments.collectAsStateWithLifecycle()
     val cashPosition by viewModel.cashPosition.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val paymentSaving by viewModel.paymentSaving.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Long?>(null) }
     var showPaymentDialog by remember { mutableStateOf(false) }
@@ -109,7 +110,7 @@ fun ExpensesScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(enabled = !paymentSaving, onClick = {
                     viewModel.allocateCompanyPayment(paymentAmount, paymentDateEpochDay, paymentReceiptReference)
                     paymentAmount = ""
                     paymentReceiptReference = ""

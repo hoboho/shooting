@@ -39,24 +39,32 @@ class ExpensesViewModel @Inject constructor(
         .map { ExpenseCalculator.overview(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpenseOverview())
 
+    private val _paymentSaving = MutableStateFlow(false)
+    val paymentSaving: StateFlow<Boolean> = _paymentSaving.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    fun allocateCompanyPayment(amountText: String, dateEpochDay: Long, receiptReference: String) = viewModelScope.launch {
-        val amount = NumberFormatter.parseToman(amountText)
-        if (amount == null || amount <= 0L) {
-            _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_positive)
-            return@launch
-        }
-        try {
-            repository.allocateCompanyPayment(
-                amountToman = amount,
-                dateEpochDay = dateEpochDay,
-                receiptReference = receiptReference.trim(),
-                note = strings.get(ir.hoboho.shooting.R.string.expense_company_payment_note),
-            )
-        } catch (e: Exception) {
-            _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
+    fun allocateCompanyPayment(amountText: String, dateEpochDay: Long, receiptReference: String) {
+        if (_paymentSaving.value) return
+        _paymentSaving.value = true
+        viewModelScope.launch {
+            try {
+                val amount = NumberFormatter.parseToman(amountText)
+                if (amount == null || amount <= 0L) {
+                    _error.value = strings.get(ir.hoboho.shooting.R.string.msg_settlement_positive)
+                    return@launch
+                }
+                repository.allocateCompanyPayment(
+                    amountToman = amount, dateEpochDay = dateEpochDay,
+                    receiptReference = receiptReference.trim(),
+                    note = strings.get(ir.hoboho.shooting.R.string.expense_company_payment_note),
+                )
+            } catch (e: Exception) {
+                _error.value = strings.get(ir.hoboho.shooting.R.string.error_generic)
+            } finally {
+                _paymentSaving.value = false
+            }
         }
     }
 
