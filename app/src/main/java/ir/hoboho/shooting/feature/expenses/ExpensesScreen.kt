@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
@@ -183,6 +184,7 @@ fun ExpensesScreen(
                 val totalReceived = companyPayments.sumOf { it.amountToman }
                 SectionCard(
                     title = stringResource(R.string.expense_overview),
+                    icon = Icons.Filled.AccountBalanceWallet,
                     subtitle = "نمای کلی وضعیت مالی پروژه",
                 ) {
                     StatRow(stringResource(R.string.label_total_expenses),
@@ -229,6 +231,7 @@ fun ExpensesScreen(
                 item {
                     SectionCard(
                         title = stringResource(R.string.expense_company_payments),
+                        icon = Icons.Filled.Payments,
                         subtitle = "${NumberFormatter.formatInteger(companyPayments.size)} دریافتی ثبت‌شده",
                         trailing = {
                             IconButton(onClick = { companyPaymentsExpanded = !companyPaymentsExpanded }) {
@@ -283,6 +286,7 @@ fun ExpensesScreen(
                 item {
                     SectionCard(
                         title = "دفتر گردش مالی",
+                        icon = Icons.Filled.ReceiptLong,
                         subtitle = "${NumberFormatter.formatInteger(cashLedger.size)} تراکنش در دفتر",
                         trailing = {
                             IconButton(onClick = { cashLedgerExpanded = !cashLedgerExpanded }) {
@@ -313,6 +317,7 @@ fun ExpensesScreen(
                 var expanded by remember(expense.id) { mutableStateOf(false) }
                 SectionCard(
                     title = expense.categoryName,
+                    icon = Icons.Filled.ReceiptLong,
                     subtitle = "${DateFormatter.format(expense.dateEpochDay)} — ${expense.description}",
                     modifier = Modifier.pointerInput(expense.id, expenses) {
                         var drag = 0f
