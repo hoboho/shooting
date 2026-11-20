@@ -39,6 +39,9 @@ class WorkdayDetailViewModel @Inject constructor(
     val workday: StateFlow<Workday?> = _workday.asStateFlow()
 
     private val _message = MutableStateFlow<String?>(null)
+    private val _pdfReady = MutableStateFlow(false)
+    val pdfReady: StateFlow<Boolean> = _pdfReady.asStateFlow()
+    private var generatedPdf: java.io.File? = null
     val message: StateFlow<String?> = _message.asStateFlow()
 
     fun load(id: Long) {
@@ -56,7 +59,8 @@ class WorkdayDetailViewModel @Inject constructor(
                 val saved = withContext(Dispatchers.IO) {
                     runCatching { saver.savePdf(file, name) }.getOrNull()
                 }
-                sharer.sharePdf(file)
+                generatedPdf = file
+                _pdfReady.value = true
                 _message.value = saved?.let {
                     strings.get(ir.hoboho.shooting.R.string.msg_pdf_saved, it.displayPath)
                 } ?: strings.get(ir.hoboho.shooting.R.string.msg_save_failed)
@@ -65,6 +69,8 @@ class WorkdayDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun openGeneratedPdf() { generatedPdf?.let { runCatching { sharer.openPdf(it) } } }
 
     fun consumeMessage() { _message.value = null }
 }
