@@ -32,6 +32,7 @@ data class ExpenseReportRow(
 object ReportSpecBuilder {
 
     private fun operatorHeader(name: String) = listOf("اپراتور: ${name.ifBlank { "ثبت نشده" }}")
+    private fun preparerHeader(name: String) = listOf("مسئول تهیه گزارش: ${name.ifBlank { "ثبت نشده" }}")
 
     private fun persianInt(value: Int) = NumberFormatter.formatInteger(value)
     private fun persianLong(value: Long) = NumberFormatter.formatPersian(value)
@@ -297,7 +298,7 @@ object ReportSpecBuilder {
         return PdfDocumentSpec(
             title = ReportText.TITLE_EXPENSES,
             subtitle = DateFormatter.formatRange(range),
-            headerLines = operatorHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
+            headerLines = preparerHeader(operatorName) + "شماره گزارش: FIN-${range.startEpochDay}-${range.endEpochDay}",
             blocks = listOf(
                 PdfBlock.KeyValueList(
                     buildList {
