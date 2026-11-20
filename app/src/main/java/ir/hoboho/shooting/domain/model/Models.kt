@@ -178,3 +178,7 @@ object ReferenceData {
     fun cableLabel(coreCount: Int): String =
         "${ir.hoboho.shooting.core.format.PersianDigits.toPersian(coreCount.toString())} کور"
 }
+
+
+/** Cash balance is ledger-derived; a negative balance is also a company receivable. */
+data class CashPosition(val cashboxBalanceToman: Long, val companyReceivableToman: Long = (-cashboxBalanceToman).coerceAtLeast(0L))
